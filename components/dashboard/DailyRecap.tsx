@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarCheck, DollarSign, Trophy, Wallet } from 'lucide-react';
 
@@ -26,28 +26,13 @@ interface DailyStats {
     }[];
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export default function DailyRecap() {
-    const [stats, setStats] = useState<DailyStats | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { data: stats, error, isLoading } = useSWR<DailyStats>('/api/dashboard/daily', fetcher);
 
-    useEffect(() => {
-        const fetchDaily = async () => {
-            try {
-                const res = await fetch('/api/dashboard/daily');
-                if (res.ok) {
-                    const data = await res.json();
-                    setStats(data);
-                }
-            } catch (error) {
-                console.error("Failed to load daily recap", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchDaily();
-    }, []);
-
-    if (loading) return <div className="h-[200px] flex items-center justify-center animate-pulse text-muted-foreground">Loading Daily Recap...</div>;
+    if (isLoading) return <div className="h-[200px] flex items-center justify-center animate-pulse text-muted-foreground">Loading Daily Recap...</div>;
+    if (error) return <div className="h-[200px] flex items-center justify-center text-destructive">Failed to load daily recap</div>;
     if (!stats) return null;
 
     return (
@@ -125,8 +110,8 @@ export default function DailyRecap() {
                                             <td className="px-4 py-3 font-bold text-foreground">IDR {tx.totalAmount.toLocaleString('id-ID')}</td>
                                             <td className="px-4 py-3 text-right">
                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${tx.paymentMethod === 'cash'
-                                                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                                                        : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                                                    ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                                                    : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
                                                     }`}>
                                                     {tx.paymentMethod.toUpperCase()}
                                                 </span>

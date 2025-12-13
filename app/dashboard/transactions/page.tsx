@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import useSWR from 'swr';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -18,20 +19,13 @@ interface Transaction {
   paymentMethod: string;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export default function TransactionsPage() {
   const router = useRouter();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/transactions')
-      .then((res) => res.json())
-      .then((data) => {
-        setTransactions(data);
-        setLoading(false);
-      })
-      .catch((err) => console.error(err));
-  }, []);
+  const { data: transactions = [], error, isLoading } = useSWR<Transaction[]>('/api/transactions', fetcher);
+  const loading = isLoading;
 
   const handlePrint = (tx: Transaction) => {
     // Create a temporary hidden iframe or new window for printing

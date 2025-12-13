@@ -1,6 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,9 +14,7 @@ import { ArrowDownCircle, ArrowUpCircle, DollarSign, Plus, Pencil, Trash2 } from
 import { format } from 'date-fns';
 
 export default function ExpensesPage() {
-    const [expenses, setExpenses] = useState<any[]>([]);
-    const [stats, setStats] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+
     const [openDialog, setOpenDialog] = useState(false);
 
     // Form State
@@ -22,30 +23,17 @@ export default function ExpensesPage() {
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState('operational');
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            // Parallel fetch
-            const [expRes, statsRes] = await Promise.all([
-                fetch('/api/expenses'),
-                fetch('/api/dashboard/stats')
-            ]);
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { data: expenses = [], mutate: mutateExpenses, isLoading: loadingExpenses } = useSWR<any[]>('/api/expenses', fetcher);
+    const { data: statsData, mutate: mutateStats, isLoading: loadingStats } = useSWR<any>('/api/dashboard/stats', fetcher);
 
-            const expData = await expRes.json();
-            const statsData = await statsRes.json();
+    const stats = statsData?.stats;
+    const loading = loadingExpenses || loadingStats;
 
-            setExpenses(expData);
-            setStats(statsData.stats);
-        } catch (error) {
-            console.error("Failed to load finance data", error);
-        } finally {
-            setLoading(false);
-        }
+    const refreshData = () => {
+        mutateExpenses();
+        mutateStats();
     };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     const resetForm = () => {
         setEditingId(null);
@@ -78,7 +66,7 @@ export default function ExpensesPage() {
             });
 
             if (res.ok) {
-                fetchData();
+                refreshData();
             } else {
                 alert('Failed to delete expense');
             }
@@ -109,7 +97,7 @@ export default function ExpensesPage() {
             if (res.ok) {
                 alert(editingId ? 'Expense updated' : 'Expense recorded');
                 handleOpenDialog(false);
-                fetchData(); // Refresh data
+                refreshData(); // Refresh data
             } else {
                 const d = await res.json();
                 alert(d.error || 'Failed to save expense');

@@ -10,7 +10,8 @@ import {
     CalendarDays,
     Menu
 } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { signOut, useSession } from 'next-auth/react';
@@ -27,7 +28,6 @@ const sidebarItems = [
 
 export function AppSidebar({ className }: { className?: string }) {
     const pathname = usePathname();
-    const router = useRouter();
     const { data: session } = useSession();
 
     return (
@@ -50,10 +50,12 @@ export function AppSidebar({ className }: { className?: string }) {
                                         ? "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
                                         : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                                 )}
-                                onClick={() => router.push(item.href)}
+                                asChild
                             >
-                                <item.icon className="mr-3 h-5 w-5" />
-                                {item.name}
+                                <Link href={item.href}>
+                                    <item.icon className="mr-3 h-5 w-5" />
+                                    {item.name}
+                                </Link>
                             </Button>
                         ))}
                     </div>

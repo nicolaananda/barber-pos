@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import useSWR from 'swr';
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,36 +26,22 @@ const MONTHS = [
 
 export default function PayrollPage() {
     const router = useRouter(); // eslint-disable-line @typescript-eslint/no-unused-vars
-    const [stats, setStats] = useState<PayrollStat[]>([]);
-    const [loading, setLoading] = useState(true);
+
 
     // Default to current month/year
     const today = new Date();
     const [selectedMonth, setSelectedMonth] = useState(today.getMonth().toString());
     const [selectedYear, setSelectedYear] = useState(today.getFullYear().toString());
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const query = new URLSearchParams({
-                    month: selectedMonth,
-                    year: selectedYear,
-                });
+    // Construct URL based on state
+    const query = new URLSearchParams({
+        month: selectedMonth,
+        year: selectedYear,
+    });
 
-                const res = await fetch(`/api/payroll?${query}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setStats(data);
-                }
-                setLoading(false);
-            } catch (error) {
-                console.error(error);
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, [selectedMonth, selectedYear]);
+    // Use SWR dependent on key
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { data: stats = [], isLoading: loading } = useSWR<PayrollStat[]>(`/api/payroll?${query}`, fetcher);
 
     const handlePrintSlip = (stat: PayrollStat) => {
         const printWindow = window.open('', '_blank', 'width=800,height=600');
