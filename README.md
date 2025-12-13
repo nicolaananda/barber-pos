@@ -1,40 +1,54 @@
 # Staycool POS ✂️
 
-**Staycool POS** is a premium, mobile-first Point of Sale and management system designed specifically for **Staycool Hairlab**. It streamlines barbershop operations, from transaction processing to payroll management, with a focus on speed, aesthetics, and ease of use.
+**Staycool POS** is a premium, high-performance Point of Sale and management ecosystem customized for **Staycool Hairlab**. Built with the latest web technologies, it merges a "Dark Luxury" aesthetic with lightning-fast performance to streamline barbershop operations—from the barber's chair to the owner's financial reports.
 
 ![Staycool POS](app/icon.jpg)
 
 ## 🚀 Key Features
 
-### 1. Point of Sale (POS) Station
--   **Mobile-First Design**: Optimized for tablets and mobile devices with a "Dark Luxury" aesthetic.
--   **Quick Checkout**: Seamless cart management, service selection, and instant receipt generation.
--   **Staff & Admin Modes**: Auto-redirects staff directly to the POS for focus, while owners get full dashboard access.
--   **Payment Support**: Handles Cash and QRIS payments with automatic change calculation.
+### 1. ⚡ High-Performance POS Station
+-   **Instant Navigation**: Powered by Next.js App Router and intelligent prefetching, switching between screens is instantaneous.
+-   **Dark Luxury UI**: A visually stunning interface designed for modern tablets and low-light environments.
+-   **Quick Checkout**: Seamless items selection, cart management, and rapid receipt generation.
+-   **Dual Payment Support**: Integrated workflows for both **Cash** and **QRIS** payments.
 
-### 2. Dashboard & Analytics
--   **Real-Time Overview**: Track daily revenue, transaction counts, and growth trends instantly.
--   **Daily Report**: A dedicated page for end-of-day reconciliation, showing detailed transaction history and top performers.
--   **Visual Charts**: Weekly revenue breakdowns and recent activity feeds.
+### 2. 📊 Live Dashboard & Analytics
+-   **Real-Time Data**: Revenue, transaction counts, and customer footfall are updated live.
+-   **Smart Caching**: All reports use Client-Side Caching (SWR) for instant access to previous data without loading screens.
+-   **Daily Reconciliation**: Specialized "Daily Report" for end-of-day closing, featuring top barber stats and cuts history.
 
-### 3. Operational Management
--   **Payroll System**: Automated commission calculation based on barber performance (Flat or Percentage). Includes salary slip generation.
--   **Expense Tracking**: Log and categorize shop expenses (Operational, Purchasing, etc.) to keep net profit accurate.
--   **Shift Management**: Simple shift tracking for cash drawers (Opening/Closing amounts).
+### 3. 💰 Comprehensive Financial Suite
+-   **Expenses Bookkeeping**: Record and categorize operational costs (Supplies, Salary, electricity, etc.).
+-   **Net Profit Calculation**: Automatic calculation of straightforward Gross Revenue vs. Expenses.
+-   **Automated Payroll**: One-click salary slip generation with automatic commission calculations (Percentage or Flat Rate) based on barber performance.
+-   **Transaction History**: Searchable, filterable archive of all past sales with **CSV Export** capability.
+
+### 4. 🔒 Role-Based Security
+-   **Staff Mode**: Restricted access focused solely on taking orders and checking shifts.
+-   **Admin Mode**: Full access to financial data, payroll, and business settings.
+-   **Secure Authentication**: Robust session management via **NextAuth.js**.
+
+---
 
 ## 🛠 Tech Stack
 
--   **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
--   **Database**: PostgreSQL
--   **ORM**: [Prisma](https://www.prisma.io/)
+Built on the bleeding edge of the React ecosystem:
+
+-   **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+-   **Language**: [TypeScript](https://www.typescriptlang.org/)
+-   **UI Library**: [React 19](https://react.dev/)
 -   **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/)
--   **Auth**: [NextAuth.js](https://next-auth.js.org/)
--   **Deployment**: Docker
+-   **Data Caching**: [SWR](https://swr.vercel.app/)
+-   **Database**: [PostgreSQL](https://www.postgresql.org/) (via Neon/Supabase)
+-   **ORM**: [Prisma](https://www.prisma.io/)
+-   **Deployment**: Docker Containerized
+
+---
 
 ## 🏁 Getting Started
 
 ### Prerequisites
--   Node.js 18+
+-   Node.js 20+
 -   PostgreSQL Database
 
 ### Local Development
@@ -51,10 +65,10 @@
     ```
 
 3.  **Setup Environment**
-    Create a `.env` file based on `.env.example` (or use your local config):
+    Create a `.env` file in the root directory:
     ```env
     DATABASE_URL="postgresql://user:password@localhost:5432/staycool?schema=public"
-    NEXTAUTH_SECRET="your-secret-key"
+    NEXTAUTH_SECRET="your-super-secret-key"
     NEXTAUTH_URL="http://localhost:3000"
     ```
 
@@ -69,20 +83,27 @@
     ```bash
     npm run dev
     ```
+    Open [http://localhost:3000](http://localhost:3000) with your browser.
+
+---
 
 ## 🐳 Docker Deployment
 
-The project is containerized for easy deployment on any VPS.
+The application is fully containerized for production stability.
 
 1.  **Build & Run**
     ```bash
     docker-compose up -d --build
     ```
-    *Note: Ensure your `.env` file is present in the root directory.*
+    
+2.  **Verify Status**
+    ```bash
+    docker ps
+    ```
 
-2.  **Access the App**
-    The application will be available at `http://localhost:3000`.
+---
 
 ## 📜 License
 
-Private software for Staycool Hairlab.
+Private software developed for Staycool Hairlab.
+© 2024 Nicola Ananda. All rights reserved.
