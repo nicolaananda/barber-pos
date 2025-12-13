@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
-import CashShift from '@/models/CashShift';
+import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -13,11 +12,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
         const { id } = await params;
         const body = await req.json();
-        const { closingCash, closedBy, totalSystemRevenue, totalExpenses } = body;
+        const { closingCash, closedBy, totalSystemRevenue } = body; // totalExpenses, expectedCash, discrepancy unused in Prisma schema
 
-        await dbConnect();
+        const shiftId = parseInt(id);
 
-        const shift = await CashShift.findById(id);
+        const shift = await prisma.cashShift.findUnique({
+            where: { id: shiftId }
+        });
+
         if (!shift) {
             return NextResponse.json({ error: 'Shift not found' }, { status: 404 });
         }
@@ -26,31 +28,36 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             return NextResponse.json({ error: 'Shift is already closed' }, { status: 400 });
         }
 
-        const expectedCash = shift.openingCash + totalSystemRevenue - totalExpenses;
-        const discrepancy = closingCash - expectedCash;
+        // We only update what exists in the schema
+        const updatedShift = await prisma.cashShift.update({
+            where: { id: shiftId },
+            data: {
+                actualEndCash: closingCash,
+                closedById: closedBy ? parseInt(closedBy) : undefined, // Assuming closedBy is passed as ID
+                totalRevenue: totalSystemRevenue,
+                status: 'closed',
+                endTime: new Date()
+            }
+        });
 
-        shift.closingCash = closingCash;
-        shift.closedBy = closedBy;
-        shift.totalSystemRevenue = totalSystemRevenue;
-        shift.totalExpenses = totalExpenses;
-        shift.expectedCash = expectedCash;
-        shift.discrepancy = discrepancy;
-        shift.status = 'closed';
-
-        await shift.save();
-
-        return NextResponse.json(shift);
+        return NextResponse.json(updatedShift);
     } catch (error) {
-        console.error(error);
+        console.error("Shift Close Error:", error);
         return NextResponse.json({ error: 'Failed to close shift' }, { status: 500 });
     }
 }
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        await dbConnect();
         const { id } = await params;
-        const shift = await CashShift.findById(id).populate('openedBy closedBy', 'name');
+        const shift = await prisma.cashShift.findUnique({
+            where: { id: parseInt(id) },
+            include: {
+                openedBy: { select: { name: true } },
+                closedBy: { select: { name: true } }
+            }
+        });
+
         if (!shift) {
             return NextResponse.json({ error: 'Shift not found' }, { status: 404 });
         }
