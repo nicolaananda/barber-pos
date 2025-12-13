@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -20,9 +21,9 @@ model User {
   updatedAt       DateTime @updatedAt
 
   // Relations
-  openedShifts    CashShift[] @relation("OpenedShifts")
-  closedShifts    CashShift[] @relation("ClosedShifts")
-  transactions    Transaction[]
+  openedShifts CashShift[]   @relation("OpenedShifts")
+  closedShifts CashShift[]   @relation("ClosedShifts")
+  transactions Transaction[]
 }
 
 model Service {
@@ -45,20 +46,20 @@ model Customer {
 }
 
 model CashShift {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   openedById    Int
   closedById    Int?
   startCash     Float
-  actualEndCash Float?   @default(0)
-  totalRevenue  Float    @default(0) // Calculated from transactions
-  status        String   @default("open") // 'open' | 'closed'
-  startTime     DateTime @default(now())
+  actualEndCash Float?    @default(0)
+  totalRevenue  Float     @default(0) // Calculated from transactions
+  status        String    @default("open") // 'open' | 'closed'
+  startTime     DateTime  @default(now())
   endTime       DateTime?
   notes         String?
 
   // Relations
-  openedBy      User     @relation("OpenedShifts", fields: [openedById], references: [id])
-  closedBy      User?    @relation("ClosedShifts", fields: [closedById], references: [id])
+  openedBy User  @relation("OpenedShifts", fields: [openedById], references: [id])
+  closedBy User? @relation("ClosedShifts", fields: [closedById], references: [id])
 }
 
 model Transaction {
@@ -67,13 +68,13 @@ model Transaction {
   barberId      Int
   customerName  String?
   customerPhone String?
-  items         Json     // Stores array of {name, price, qty}
+  items         Json // Stores array of {name, price, qty}
   totalAmount   Float
   paymentMethod String   @default("cash") // 'cash' | 'qris'
   date          DateTime @default(now())
-  
+
   // Relations
-  barber        User     @relation(fields: [barberId], references: [id])
+  barber User @relation(fields: [barberId], references: [id])
 }
 
 model Expense {
@@ -85,15 +86,15 @@ model Expense {
 }
 
 model Payroll {
-  id            Int      @id @default(autoincrement())
-  barberId      Int
-  period        String   // YYYY-MM
-  totalServices Int
+  id              Int      @id @default(autoincrement())
+  barberId        Int
+  period          String // YYYY-MM
+  totalServices   Int
   totalCommission Float
-  baseSalary    Float    @default(0) // If any
-  bonuses       Float    @default(0)
-  deductions    Float    @default(0) // Kasbon etc
-  totalPayout   Float
-  status        String   @default("draft") // draft, paid
-  generatedAt   DateTime @default(now())
+  baseSalary      Float    @default(0) // If any
+  bonuses         Float    @default(0)
+  deductions      Float    @default(0) // Kasbon etc
+  totalPayout     Float
+  status          String   @default("draft") // draft, paid
+  generatedAt     DateTime @default(now())
 }
