@@ -1,0 +1,16 @@
+
+version: '3.9'
+
+services:
+  app:
+    container_name: staycool-pos
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    # Env variables will be read from the .env file in the same directory
+    env_file:
+      - .env
+
