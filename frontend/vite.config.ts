@@ -12,6 +12,13 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
+    port: 7781,
+    allowedHosts: [
+      'cukur.nicola.id',
+      'localhost',
+      '.nicola.id'
+    ],
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
