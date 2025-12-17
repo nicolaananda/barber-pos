@@ -1,6 +1,9 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
+
+# Install OpenSSL untuk Prisma
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Install backend dependencies
 COPY backend/package*.json ./backend/
@@ -23,8 +26,4 @@ EXPOSE 7763
 EXPOSE 7764
 
 # Jalankan frontend (Vite) di 7763 dan backend (Express) di 7764 dalam satu container
-CMD sh -c "\
-  cd /app/backend && PORT=7764 npm run server & \
-  cd /app/frontend && npm run dev -- --host 0.0.0.0 --port 7763 & \
-  wait -n \
-"
+CMD ["sh", "-c", "cd /app/backend && PORT=7764 npm run server & cd /app/frontend && npm run dev -- --host 0.0.0.0 --port 7763 & wait -n"]
