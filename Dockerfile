@@ -2,9 +2,6 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Install OpenSSL untuk Prisma
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
-
 # Install backend dependencies
 COPY backend/package*.json ./backend/
 RUN cd backend && npm ci
