@@ -1,48 +1,30 @@
-# =========================
-# 1. Build Stage
-# =========================
-FROM node:20-alpine AS builder
-
-# Install OpenSSL and other dependencies for Prisma
-RUN apk add --no-cache libc6-compat openssl
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Install deps
-COPY package*.json ./
-RUN npm ci
+# Install backend dependencies
+COPY backend/package*.json ./backend/
+RUN cd backend && npm ci
 
-# Copy source
-COPY . .
+# Install frontend dependencies
+COPY frontend/package*.json ./frontend/
+RUN cd frontend && npm ci
 
-# Generate Prisma Client
+# Copy backend and frontend source code
+COPY backend ./backend
+COPY frontend ./frontend
+
+# Generate Prisma client for backend
+WORKDIR /app/backend
 RUN npx prisma generate
 
-# Build Next.js
-RUN npm run build
+# Expose frontend and backend ports
+EXPOSE 7763
+EXPOSE 7764
 
-
-# =========================
-# 2. Production Stage
-# =========================
-FROM node:20-alpine AS runner
-
-# Install OpenSSL and other dependencies for Prisma
-RUN apk add --no-cache libc6-compat openssl
-
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV PORT=8878
-
-# Copy only required files
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.ts ./next.config.ts
-COPY --from=builder /app/prisma ./prisma
-
-EXPOSE 8878
-
-CMD ["npm", "start"]
+# Jalankan frontend (Vite) di 7763 dan backend (Express) di 7764 dalam satu container
+CMD sh -c "\
+  cd /app/backend && PORT=7764 npm run server & \
+  cd /app/frontend && npm run dev -- --host 0.0.0.0 --port 7763 & \
+  wait -n \
+"
