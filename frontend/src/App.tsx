@@ -8,7 +8,9 @@ import ServicesPage from './pages/dashboard/Services';
 import CustomersPage from './pages/dashboard/Customers';
 import TransactionsPage from './pages/dashboard/Transactions';
 import ExpensesPage from './pages/dashboard/Expenses';
+import PayrollPage from './pages/dashboard/Payroll';
 import BookingsPage from './pages/dashboard/Bookings';
+import BarbersPage from './pages/dashboard/Barbers';
 import PosPage from './pages/POS';
 import StatusPage from './pages/Status';
 
@@ -47,7 +49,9 @@ export default function App() {
             <Route path="customers" element={<CustomersPage />} />
             <Route path="transactions" element={<TransactionsPage />} />
             <Route path="expenses" element={<ExpensesPage />} />
+            <Route path="payroll" element={<PayrollPage />} />
             <Route path="bookings" element={<BookingsPage />} />
+            <Route path="barbers" element={<BarbersPage />} />
           </Route>
           <Route
             path="/pos"

@@ -9,7 +9,9 @@ import {
     Wallet,
     LogOut,
     CalendarClock,
-    Calendar
+    Calendar,
+    DollarSign,
+    UserCog
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -24,7 +26,9 @@ export function AppSidebar() {
         { name: 'Customers', href: '/dashboard/customers', icon: Users },
         { name: 'Transactions', href: '/dashboard/transactions', icon: Receipt },
         { name: 'Expenses', href: '/dashboard/expenses', icon: Wallet },
+        { name: 'Payroll', href: '/dashboard/payroll', icon: DollarSign },
         { name: 'Bookings', href: '/dashboard/bookings', icon: Calendar },
+        ...(user?.role === 'owner' ? [{ name: 'Barbers', href: '/dashboard/barbers', icon: UserCog }] : []),
     ];
 
     return (
