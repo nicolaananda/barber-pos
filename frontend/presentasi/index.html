@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StayCool Digital Ecosystem - Presentation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-dark: #050505;
+            --bg-card: #121212;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --accent: #FFD700; /* Gold */
+            --accent-glow: rgba(255, 215, 0, 0.3);
+            --border: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Presentation Container */
+        #deck {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            overflow: hidden;
+        }
+
+        /* Animated Background for Cover */
+        .bg-mesh {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: 
+                radial-gradient(circle at 15% 50%, rgba(25, 25, 25, 1) 0%, transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(20, 20, 20, 1) 0%, transparent 25%);
+            filter: contrast(120%);
+        }
+        
+        .bg-glow-orb {
+             position: absolute;
+             width: 800px;
+             height: 800px;
+             background: radial-gradient(circle, rgba(255, 215, 0, 0.03) 0%, transparent 70%);
+             top: 50%;
+             left: 50%;
+             transform: translate(-50%, -50%);
+             z-index: 0;
+             animation: pulse-glow 8s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulse-glow {
+            0% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        /* Slide Styles */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform: scale(0.98) translateY(20px);
+            display: flex;
+            flex-direction: column;
+            padding: 4rem 6rem;
+            z-index: 1;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) translateY(0);
+            z-index: 10;
+        }
+
+        /* Slide Content Layouts */
+        .layout-cover {
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 2; /* Above bg */
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 5rem;
+            height: 100%;
+            align-items: center;
+        }
+
+        .layout-center {
+             align-items: center;
+             justify-content: center;
+             text-align: center;
+        }
+
+        /* Typography */
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 6.5rem;
+            font-weight: 800;
+            line-height: 0.95;
+            letter-spacing: -2px;
+            background: linear-gradient(180deg, #fff 0%, #aaa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: text-reveal 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0;
+            transform: translateY(30px);
+            animation-delay: 0.2s;
+        }
+
+        h2.slide-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            letter-spacing: -1px;
+        }
+        
+        h2.slide-title::before {
+            content: '//';
+            color: var(--accent);
+            font-weight: 300;
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+
+        h3 {
+             font-family: 'Outfit', sans-serif;
+             font-size: 2.2rem;
+             color: var(--text-primary);
+             margin-bottom: 0.8rem;
+        }
+
+        p.subtitle {
+            font-size: 1.6rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            max-width: 900px;
+            line-height: 1.5;
+            margin-bottom: 3rem;
+            animation: text-reveal 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0;
+            transform: translateY(30px);
+            animation-delay: 0.5s;
+        }
+        
+        @keyframes text-reveal {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        p.description {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        /* Components */
+        .feature-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .feature-item {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+            border-left: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 0 12px 12px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-item:hover {
+             border-left-color: var(--accent);
+             background: linear-gradient(90deg, rgba(255, 215, 0, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+             transform: translateX(10px);
+        }
+
+        .feature-item.highlight {
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+            border-left: 4px solid var(--accent);
+            box-shadow: 0 10px 30px -10px rgba(255, 215, 0, 0.1);
+        }
+
+        .feature-title {
+            color: var(--accent);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feature-desc {
+             color: #ccc;
+             line-height: 1.5;
+             font-weight: 300;
+        }
+
+        .logo-large {
+            width: 140px;
+            height: 140px;
+            border-radius: 30px;
+            margin-bottom: 3rem;
+            box-shadow: 0 0 80px rgba(255, 215, 0, 0.15);
+            object-fit: cover;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: logo-float 6s ease-in-out infinite;
+        }
+
+        @keyframes logo-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .screenshot-container {
+            position: relative;
+            perspective: 2000px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .screenshot {
+            max-width: 100%;
+            max-height: 75vh;
+            border-radius: 16px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+            transform: rotateY(-10deg) rotateX(2deg);
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+            filter: brightness(0.9);
+        }
+        
+        .screenshot:hover {
+             transform: rotateY(0) rotateX(0) scale(1.02);
+             z-index: 5;
+             filter: brightness(1);
+             box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,215,0,0.2);
+        }
+
+        /* Navigation Controls */
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .btn-nav {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-nav:hover {
+            background: rgba(255, 215, 0, 0.8);
+            border-color: transparent;
+            color: black;
+            transform: scale(1.1);
+        }
+
+        .slide-number {
+             position: absolute;
+             bottom: 2rem;
+             left: 2rem;
+             font-family: monospace;
+             color: var(--text-secondary);
+             opacity: 0.3;
+             letter-spacing: 2px;
+        }
+        
+        /* Grid for Problem Slide */
+        .problem-grid {
+             display: grid;
+             grid-template-columns: repeat(3, 1fr);
+             gap: 2rem;
+             margin-top: 4rem;
+             width: 100%;
+             max-width: 1400px;
+        }
+        
+        .problem-card {
+             background: linear-gradient(145deg, #150f0f 0%, #0a0505 100%);
+             border: 1px solid rgba(255, 50, 50, 0.1);
+             padding: 3rem 2.5rem;
+             border-radius: 20px;
+             text-align: left;
+             transition: all 0.4s ease;
+             position: relative;
+             overflow: hidden;
+        }
+        
+        .problem-card::before {
+             content: '';
+             position: absolute;
+             top: 0; left: 0; width: 100%; height: 4px;
+             background: linear-gradient(90deg, #ff4444, transparent);
+             opacity: 0;
+             transition: opacity 0.3s;
+        }
+        
+        .problem-card:hover {
+             transform: translateY(-10px);
+             border-color: rgba(255, 50, 50, 0.3);
+             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        
+        .problem-card:hover::before { opacity: 1; }
+        
+        .problem-icon {
+             font-size: 3rem;
+             margin-bottom: 1.5rem;
+             filter: drop-shadow(0 0 20px rgba(255, 50, 50, 0.2));
+        }
+        
+        /* Tag styling */
+        .tag {
+             display: inline-block;
+             padding: 6px 16px;
+             border-radius: 100px;
+             background: rgba(255, 255, 255, 0.05);
+             border: 1px solid rgba(255, 255, 255, 0.1);
+             font-size: 0.8rem;
+             text-transform: uppercase;
+             letter-spacing: 1px;
+             color: var(--accent);
+             margin-bottom: 2rem;
+             backdrop-filter: blur(10px);
+        }
+        
+        .start-hint {
+            margin-top: 4rem; 
+            opacity: 0; 
+            animation: fade-pulse 2s infinite, text-reveal 1s forwards 1s;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            color: #666;
+        }
+        
+        @keyframes fade-pulse {
+             0%, 100% { opacity: 0.5; }
+             50% { opacity: 1; }
+        }
+
+        /* Utility */
+        .text-accent { color: var(--accent); text-shadow: 0 0 30px rgba(255, 215, 0, 0.3); }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 1024px) {
+            h1 { font-size: 4rem; }
+            h2.slide-title { font-size: 2.5rem; }
+            .slide { padding: 3rem; }
+            .layout-grid { gap: 3rem; }
+            .screenshot-container { perspective: 1000px; }
+        }
+
+        @media (max-width: 768px) {
+            body { overflow-y: auto; height: 100%; } /* Allow scrolling on mobile if content overflows */
+            #deck { display: block; height: auto; min-height: 100vh; overflow: visible; }
+            
+            .slide { 
+                position: relative; 
+                height: auto; 
+                min-height: 100vh; 
+                padding: 2rem 1.5rem; 
+                display: none; /* Hide non-active slides */
+                opacity: 1;
+                transform: none;
+                visibility: visible;
+                overflow-y: visible;
+            }
+            
+            .slide.active { 
+                display: flex; 
+                opacity: 1;
+                transform: none;
+            }
+            
+            .layout-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                text-align: center;
+            }
+            
+            .layout-grid .text-col { order: 1; }
+            .layout-grid .screenshot-container { order: 2; margin-top: 1rem; }
+            /* Exception for text-first slides */
+            .layout-grid:has(.text-col:first-child) .screenshot-container { order: 1; } 
+            
+            h1 { font-size: 3rem; margin-bottom: 1rem; }
+            h2.slide-title { font-size: 2rem; justify-content: center; text-align: center; flex-direction: column; gap: 0.5rem; }
+            h2.slide-title::before { font-size: 1.5rem; display: none; } /* Hide the // decoration on mobile */
+            
+            p.subtitle { font-size: 1.1rem; margin-bottom: 2rem; }
+            p.description { font-size: 1rem; }
+            
+            .logo-large { width: 100px; height: 100px; margin-bottom: 2rem; }
+            
+            .screenshot { 
+                transform: none !important; 
+                max-height: 50vh;
+                margin: 0 auto;
+            }
+            
+            .screenshot:hover { transform: scale(1.02); }
+            
+            .problem-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                margin-top: 2rem;
+            }
+            
+            .problem-card { padding: 1.5rem; }
+            .problem-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+            
+            .controls {
+                bottom: 1rem;
+                right: 1rem;
+                gap: 0.5rem;
+            }
+            
+            .btn-nav {
+                width: 44px;
+                height: 44px;
+                background: rgba(255, 215, 0, 0.2); /* More visible on mobile */
+            }
+
+            .slide-number { display: none; }
+            
+            .feature-item { text-align: left; }
+            .feature-title { justify-content: center; }
+            
+            /* Center feature titles on mobile for symmetry */
+            .layout-center .feature-item { text-align: center; }
+            .layout-center .feature-title { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="deck">
+
+        <div class="bg-mesh"></div>
+        <div class="bg-glow-orb"></div>
+
+        <!-- SLIDE 1: Cover -->
+        <div class="slide layout-cover active">
+            <div class="tag">Strategic Proposal 2025</div>
+            <img src="./logo.jpg" class="logo-large" alt="StayCool Logo">
+            
+            <h1>StayCool Digital<br><span class="text-accent">Ecosystem</span></h1>
+            
+            <p class="subtitle">
+                Cetak biru transformasi digital untuk <strong style="color:white;">StayCool Hair Lab</strong>. <br>
+                Efisiensi operasional. Akuntabilitas total. Pengalaman premium.
+            </p>
+            
+            <div class="start-hint">
+                [ TEKAN SPASI ATAU PANAH KANAN UNTUK MULAI ]
+            </div>
+        </div>
+
+        <!-- SLIDE 2: The Problems -->
+        <div class="slide layout-center">
+            <h2 class="slide-title" style="justify-content: center;">Current Challenges</h2>
+            <p class="subtitle">Hambatan operasional yang diam-diam menggerus keuntungan Anda setiap hari.</p>
+            
+            <div class="problem-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">💸</div>
+                    <h3>Revenue Leakage</h3>
+                    <p class="feature-desc">Tanpa sistem kasir yang terintegrasi ketat, risiko "uang hantu" atau selisih setoran kasir sangat tinggi dan sulit dilacak.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🐌</div>
+                    <h3>Operational Friction</h3>
+                    <p class="feature-desc">Proses manual memperlambat layanan saat jam sibuk, mengurangi jumlah pelanggan yang bisa dilayani per hari.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🕶️</div>
+                    <h3>Data Blindspots</h3>
+                    <p class="feature-desc">Sulit menentukan strategi promosi atau bonus karyawan karena tidak ada data akurat tentang performa historis.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: The Solution Overview -->
+        <div class="slide layout-center">
+             <h2 class="slide-title" style="justify-content: center;">The StayCool Ecosystem</h2>
+             <p class="subtitle">Platform all-in-one yang dirancang khusus untuk operasional barbershop.</p>
+             
+             <div style="display: flex; gap: 3rem; margin-top: 2rem; justify-content: center; flex-wrap: wrap;">
+                 <div style="background: var(--bg-card); padding: 2rem; border-radius: 12px; border: 1px solid var(--border); width: 300px;">
+                     <h3 class="text-accent">01. Control</h3>
+                     <p>Executive Dashboard & Finansial</p>
+                 </div>
+                 <div style="background: var(--bg-card); padding: 2rem; border-radius: 12px; border: 1px solid var(--border); width: 300px;">
+                     <h3 class="text-accent">02. Operate</h3>
+                     <p>Smart POS & Payroll</p>
+                 </div>
+                 <div style="background: var(--bg-card); padding: 2rem; border-radius: 12px; border: 1px solid var(--border); width: 300px;">
+                     <h3 class="text-accent">03. Experience</h3>
+                     <p>Booking & Antrian Live</p>
+                 </div>
+             </div>
+        </div>
+
+        <!-- SLIDE 4: Executive Dashboard -->
+        <div class="slide layout-grid">
+            <div class="text-col">
+                <h2 class="slide-title">Executive Control</h2>
+                <p class="description">Pusat kendali bisnis Anda. Pantau omset dan kinerja toko secara <i>real-time</i> dari mana saja, bahkan saat Anda sedang liburan.</p>
+                
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-title">Real-Time Insights</div>
+                        <div class="feature-desc">Data omset terupdate detik itu juga saat transaksi terjadi di kasir.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Fraud Prevention</div>
+                        <div class="feature-desc">Log aktivitas mencatat setiap tindakan sensitif, menutup celah kecurangan internal.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="screenshot-container">
+                <img src="./dashboard_1766397974797.png" class="screenshot" alt="Dashboard">
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Smart POS -->
+        <div class="slide layout-grid">
+             <div class="screenshot-container">
+                <img src="./pos_1766398085835.png" class="screenshot" style="transform: rotateY(5deg) rotateX(2deg);" alt="POS">
+            </div>
+            <div class="text-col">
+                <h2 class="slide-title">High-Speed POS</h2>
+                <p class="description">Dibuat untuk kecepatan. Proses checkout 3-klik yang memastikan antrian kasir tetap lancar.</p>
+                
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-title">Error-Free Checkout</div>
+                        <div class="feature-desc">Harga layanan dan produk sudah tersistem, mencegah kesalahan input harga oleh kasir.</div>
+                    </div>
+                    <div class="feature-item highlight">
+                        <div class="feature-title">🧾 Professional Invoice</div>
+                        <div class="feature-desc">Kirim struk digital otomatis via WhatsApp ke pelanggan atau cetak struk fisik yang profesional. Tingkatkan kepercayaan customer.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Barber Attribution</div>
+                        <div class="feature-desc">Kunci pendapatan ke barber yang tepat, menjamin perhitungan komisi 100% akurat.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Booking System -->
+        <div class="slide layout-grid">
+            <div class="text-col">
+                <h2 class="slide-title">Smart Booking</h2>
+                <p class="description">Sistem reservasi profesional yang menghilangkan masalah jadwal bentrok.</p>
+                
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-title">Conflict Detection</div>
+                        <div class="feature-desc">Otomatis memblokir jam sibuk sehingga pelanggan tidak bisa booking barber yang sedang bekerja.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">CRM Database</div>
+                        <div class="feature-desc">Simpan riwayat cukur pelanggan. Berikan layanan personal (misal: "potongan seperti biasa mas?") yang membuat mereka loyal.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="screenshot-container">
+                <img src="./bookings_1766398062491.png" class="screenshot" alt="Bookings">
+            </div>
+        </div>
+
+        <!-- SLIDE 7: Queue Display -->
+        <div class="slide layout-grid">
+             <div class="screenshot-container">
+                <img src="./status_page.png" class="screenshot" style="transform: rotateY(5deg) rotateX(2deg);" alt="Queue Screen">
+            </div>
+            <div class="text-col">
+                <h2 class="slide-title">Live Queue Display</h2>
+                <p class="description">Tampilan antrian digital untuk TV ruang tunggu Anda.</p>
+                
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-title">Premium Experience</div>
+                        <div class="feature-desc">Tampilan modern yang menunjukkan siapa yang sedang dicukur dan siapa yang menunggu. Kesan "High-Tech" untuk barbershop Anda.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Reduced Anxiety</div>
+                        <div class="feature-desc">Transparansi antrian menghilangkan pertanyaan berulang "masih lama nggak mas?" dari pelanggan.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: Financials -->
+        <div class="slide layout-grid">
+            <div class="text-col">
+                <h2 class="slide-title">Financial Health</h2>
+                <p class="description">Pembukuan otomatis. Tidak perlu lagi lembur malam-malam untuk rekap nota manual.</p>
+                
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-title">Automated P&L</div>
+                        <div class="feature-desc">Laporan Laba Rugi instan. Ketahui keuntungan bersih harian, mingguan, atau bulanan dalam satu klik.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Digital Audit Trail</div>
+                        <div class="feature-desc">Setiap transaksi tercatat permanen dan tidak bisa dihapus, mengamankan aset bisnis Anda.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="screenshot-container">
+                <img src="./transactions_1766398006513.png" class="screenshot" alt="Transactions">
+            </div>
+        </div>
+        
+         <!-- SLIDE 9: Payroll -->
+        <div class="slide layout-grid">
+             <div class="screenshot-container">
+                <img src="./payroll_1766398040896.png" class="screenshot"  style="transform: rotateY(5deg) rotateX(2deg);" alt="Payroll">
+            </div>
+            <div class="text-col">
+                <h2 class="slide-title">Workforce Management</h2>
+                <p class="description">Barber senang, bisnis tenang. Penggajian transparan dan otomatis.</p>
+                
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-title">Auto-Commission</div>
+                        <div class="feature-desc">Sistem menghitung bagi hasil (komisi) secara otomatis. Nol kesalahan hitung manual.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Professional Slips</div>
+                        <div class="feature-desc">Generate slip gaji digital yang detail dan profesional. Membangun kepercayaan dengan tim Anda.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: Closing -->
+        <div class="slide layout-cover">
+            <p style="text-transform: uppercase; color: var(--text-secondary); letter-spacing: 2px; margin-bottom: 2rem;">Siap untuk naik level?</p>
+            <h1 class="text-accent" style="margin-bottom: 2rem;">Mari Transformasi Bisnis Anda.</h1>
+            <p class="subtitle" style="margin-bottom: 4rem;">
+                Waktu Implementasi: <strong style="color: white;">1 Minggu</strong><br>
+                Expected ROI: <strong style="color: white;">Instan</strong> setelah deployment.
+            </p>
+            
+            <div style="opacity: 0.5; font-size: 0.9rem;">
+                &copy; 2025 nicola.ID | StayCool Management System
+            </div>
+             <p style="margin-top: 2rem; font-size: 0.8rem; color: #444;">Akhir Presentasi</p>
+        </div>
+
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button class="btn-nav" id="prevBtn" title="Previous Slide">&#8592;</button>
+        <button class="btn-nav" id="nextBtn" title="Next Slide">&#8594;</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slides = document.querySelectorAll('.slide');
+            let currentSlide = 0;
+            const totalSlides = slides.length;
+
+            const updateSlides = () => {
+                slides.forEach((slide, index) => {
+                    slide.classList.remove('active');
+                    if (index === currentSlide) {
+                        slide.classList.add('active');
+                    }
+                });
+            };
+
+            const nextSlide = () => {
+                if (currentSlide < totalSlides - 1) {
+                    currentSlide++;
+                    updateSlides();
+                }
+            };
+
+            const prevSlide = () => {
+                if (currentSlide > 0) {
+                    currentSlide--;
+                    updateSlides();
+                }
+            };
+
+            // Event Listeners
+            document.getElementById('nextBtn').addEventListener('click', nextSlide);
+            document.getElementById('prevBtn').addEventListener('click', prevSlide);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight' || e.key === 'Space') {
+                    nextSlide();
+                } else if (e.key === 'ArrowLeft') {
+                    prevSlide();
+                }
+            });
+
+            // Touch Swipe Support
+            let touchStartX = 0;
+            let touchEndX = 0;
+
+            document.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+
+            document.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            });
+
+            function handleSwipe() {
+                const SWIPE_THRESHOLD = 50;
+                if (touchEndX < touchStartX - SWIPE_THRESHOLD) {
+                    // Swipe Left -> Next Slide
+                    nextSlide();
+                }
+                if (touchEndX > touchStartX + SWIPE_THRESHOLD) {
+                    // Swipe Right -> Prev Slide
+                    prevSlide();
+                }
+            }
+
+            // Initial state
+            updateSlides();
+        });
+    </script>
+</body>
+</html>
