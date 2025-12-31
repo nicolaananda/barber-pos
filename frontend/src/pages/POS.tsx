@@ -103,26 +103,26 @@ export default function PosPage() {
     if (loading) return <div className="p-8 text-center">Loading...</div>;
 
     return (
-        <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-background text-foreground font-sans selection:bg-primary/30">
+        <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-zinc-50 text-zinc-900 font-sans selection:bg-zinc-200">
             {/* Main Interactive Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 {/* Header */}
-                <header className="flex-none p-4 md:px-8 md:py-5 bg-card/80 backdrop-blur-md border-b border-border flex justify-between items-center shadow-sm z-10 sticky top-0">
-                    <div className="flex items-center gap-3 md:gap-4">
+                <header className="flex-none p-4 md:px-6 md:py-4 bg-white border-b border-zinc-200 flex justify-between items-center shadow-sm z-10 sticky top-0">
+                    <div className="flex items-center gap-3">
                         <img
                             src="/logo.jpg"
                             alt="Logo"
-                            className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover shadow-lg border-2 border-primary"
+                            className="w-10 h-10 rounded-full object-cover border border-zinc-200 grayscale"
                         />
                         <div>
-                            <h1 className="text-lg md:text-2xl font-bold tracking-widest uppercase text-foreground leading-none md:leading-normal">
-                                Staycool <span className="text-primary">POS</span>
+                            <h1 className="text-lg font-bold tracking-widest uppercase text-zinc-900 leading-none">
+                                Staycool <span className="font-light">POS</span>
                             </h1>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground tracking-wider hidden md:flex">
-                                <span className="uppercase font-medium text-primary/80">
+                            <div className="flex items-center gap-2 text-xs text-zinc-500 tracking-wider hidden md:flex">
+                                <span className="uppercase font-medium">
                                     Operator
                                 </span>
-                                <span className="truncate max-w-[100px] md:max-w-none text-foreground">
+                                <span className="truncate max-w-[100px] md:max-w-none text-zinc-900 font-bold">
                                     {user?.name || 'Unknown'}
                                 </span>
                             </div>
@@ -130,13 +130,13 @@ export default function PosPage() {
                     </div>
                     <div className="flex gap-2">
                         <Button
-                            variant={user?.availability === 'busy' ? "destructive" : "outline"}
+                            variant="outline"
                             size="sm"
                             className={cn(
-                                "h-9 font-bold transition-all",
+                                "h-9 font-bold transition-all border-zinc-200",
                                 user?.availability === 'busy'
-                                    ? "bg-amber-500 hover:bg-amber-600 border-none text-black"
-                                    : "border-emerald-500 text-emerald-500 hover:bg-emerald-500/10"
+                                    ? "bg-zinc-900 text-white hover:bg-zinc-800 border-zinc-900"
+                                    : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
                             )}
                             onClick={handleToggleAvailability}
                             disabled={isTogglingStatus}
@@ -147,7 +147,7 @@ export default function PosPage() {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-9 hidden md:inline-flex"
+                                className="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 h-9 hidden md:inline-flex"
                                 onClick={() => navigate('/dashboard')}
                             >
                                 Dashboard
@@ -156,7 +156,7 @@ export default function PosPage() {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-9 px-2 md:px-4"
+                                className="text-zinc-500 hover:text-red-600 hover:bg-red-50 h-9 px-2 md:px-4"
                                 onClick={() => {
                                     logout();
                                     navigate('/login');
@@ -170,7 +170,7 @@ export default function PosPage() {
                 </header>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 pb-32 md:pb-8 scroll-smooth">
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 md:space-y-8 pb-32 md:pb-8 scroll-smooth">
                     {user?.role !== 'staff' && (
                         <div className="animate-in fade-in slide-in-from-top-4 duration-500">
                             <BarberSelector />
@@ -182,25 +182,25 @@ export default function PosPage() {
                 </div>
 
                 {/* Mobile Fixed Bottom Bar */}
-                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.5)] z-30">
+                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 p-4 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-30">
                     <div className="flex justify-between items-center mb-3">
-                        <div className="text-sm font-medium text-muted-foreground">
+                        <div className="text-sm font-medium text-zinc-500">
                             {cartCount} Items
                         </div>
-                        <div className="text-xl font-bold text-primary">
+                        <div className="text-xl font-bold text-zinc-900">
                             IDR {cartTotal.toLocaleString('id-ID')}
                         </div>
                     </div>
                     <div className="flex gap-3">
                         <Button
                             variant="outline"
-                            className="flex-1 border-primary/50 text-primary hover:bg-primary/10"
+                            className="flex-1 border-zinc-200 text-zinc-900 hover:bg-zinc-50"
                             onClick={() => setIsCartOpen(true)}
                         >
                             View Cart
                         </Button>
                         <Button
-                            className="flex-1 font-bold shadow-lg bg-primary text-primary-foreground hover:bg-amber-600"
+                            className="flex-1 font-bold shadow-lg bg-zinc-900 text-white hover:bg-zinc-800"
                             onClick={() => setIsCheckoutOpen(true)}
                             disabled={cart.length === 0}
                         >
@@ -210,41 +210,39 @@ export default function PosPage() {
                 </div>
             </div>
 
-            {/* Desktop Sidebar (Hidden on Mobile) */}
-            <div className="hidden md:flex w-[420px] flex-none bg-card border-l border-border shadow-2xl flex-col h-full z-20">
-                <div className="p-6 border-b border-border bg-card/50 backdrop-blur-sm">
-                    <h2 className="font-bold text-xl tracking-wide text-foreground uppercase flex items-center gap-2">
-                        <span>Current Order</span>
+            {/* Desktop Sidebar (Responsive for Tablet) */}
+            <div className="hidden md:flex w-[340px] lg:w-[33%] flex-none bg-white border-l border-zinc-200 shadow-xl shadow-zinc-200/50 flex-col h-full z-20">
+                <div className="p-6 border-b border-zinc-100 bg-white">
+                    <h2 className="font-bold text-lg tracking-wide text-zinc-900 uppercase flex items-center gap-2">
+                        Currently Serving
                     </h2>
                     {selectedBarber ? (
-                        <div className="text-sm font-medium mt-2 text-primary flex items-center gap-2">
-                            <span className="text-muted-foreground">Barber:</span>
-                            <span className="bg-primary/10 px-2 py-0.5 rounded text-primary border border-primary/20">
-                                {selectedBarber.name}
-                            </span>
+                        <div className="text-sm font-medium mt-1 text-zinc-600 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-zinc-900"></span>
+                            {selectedBarber.name}
                         </div>
                     ) : (
-                        <div className="text-sm text-destructive mt-2 italic flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4" /> Please select a barber
+                        <div className="text-sm text-red-500 mt-1 italic flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4" /> Select a barber
                         </div>
                     )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto bg-background/50 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto bg-zinc-50/50 custom-scrollbar">
                     <Cart />
                 </div>
 
-                <div className="p-6 border-t border-border bg-card space-y-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)]">
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                        <span>Items Count</span>
-                        <span>{cartCount}</span>
+                <div className="p-6 border-t border-zinc-100 bg-white space-y-4 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.05)]">
+                    <div className="flex justify-between items-center text-sm text-zinc-500">
+                        <span>Items</span>
+                        <span className="font-mono">{cartCount}</span>
                     </div>
-                    <div className="flex justify-between items-center text-3xl font-bold text-primary tracking-tight">
+                    <div className="flex justify-between items-center text-3xl font-bold text-zinc-900 tracking-tight">
                         <span>Total</span>
-                        <span>IDR {cartTotal.toLocaleString('id-ID')}</span>
+                        <span>{cartTotal.toLocaleString('id-ID')}</span>
                     </div>
                     <Button
-                        className="w-full h-16 text-xl font-bold uppercase tracking-widest shadow-xl shadow-primary/20 bg-primary text-primary-foreground hover:bg-amber-600 transition-all active:scale-[0.98]"
+                        className="w-full h-14 text-lg font-bold uppercase tracking-widest shadow-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-[0.98]"
                         onClick={() => setIsCheckoutOpen(true)}
                         disabled={cart.length === 0}
                     >
@@ -255,25 +253,25 @@ export default function PosPage() {
 
             {/* Mobile Bottom Sheet for Cart */}
             <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
-                <SheetContent side="bottom" className="h-[80vh] flex flex-col p-0">
-                    <SheetHeader className="p-4 border-b">
-                        <SheetTitle>Current Order</SheetTitle>
+                <SheetContent side="bottom" className="h-[80vh] flex flex-col p-0 bg-white">
+                    <SheetHeader className="p-4 border-b border-zinc-100">
+                        <SheetTitle className="text-zinc-900">Current Order</SheetTitle>
                         <SheetDescription>
                             {selectedBarber
                                 ? `Barber: ${selectedBarber.name}`
                                 : 'No barber selected'}
                         </SheetDescription>
                     </SheetHeader>
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto bg-zinc-50">
                         <Cart />
                     </div>
-                    <div className="p-4 border-t bg-slate-50 space-y-3">
-                        <div className="flex justify-between items-center text-xl font-bold">
+                    <div className="p-4 border-t border-zinc-100 bg-white space-y-3">
+                        <div className="flex justify-between items-center text-xl font-bold text-zinc-900">
                             <span>Total</span>
                             <span>IDR {cartTotal.toLocaleString('id-ID')}</span>
                         </div>
                         <Button
-                            className="w-full h-12 text-lg font-bold"
+                            className="w-full h-12 text-lg font-bold bg-zinc-900 text-white hover:bg-zinc-800"
                             onClick={() => {
                                 setIsCartOpen(false);
                                 setIsCheckoutOpen(true);

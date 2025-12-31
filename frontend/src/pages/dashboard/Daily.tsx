@@ -120,76 +120,76 @@ export default function DailyPage() {
                         </span>
                     </p>
                 </div>
-                <Button variant="outline" onClick={fetchData} className="gap-2">
+                <Button variant="outline" onClick={fetchData} className="gap-2 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900">
                     <RefreshCcw className="w-4 h-4" /> Refresh Data
                 </Button>
             </div>
 
             {/* Premium Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="border-l-4 border-l-indigo-500 shadow-md bg-gradient-to-br from-card to-indigo-500/5">
+                <Card className="border shadow-sm border-zinc-200 bg-white">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
-                        <DollarSign className="h-4 w-4 text-indigo-500" />
+                        <CardTitle className="text-sm font-bold text-zinc-500 uppercase tracking-wide">Total Revenue</CardTitle>
+                        <DollarSign className="h-4 w-4 text-zinc-900" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">IDR {data.totalRevenue.toLocaleString('id-ID')}</div>
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3 text-emerald-500" /> +100% from yesterday (Mock)
+                        <div className="text-2xl font-black text-zinc-900">IDR {data.totalRevenue.toLocaleString('id-ID')}</div>
+                        <p className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-zinc-900" /> +100% from yesterday
                         </p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-emerald-500 shadow-md bg-gradient-to-br from-card to-emerald-500/5">
+                <Card className="border shadow-sm border-zinc-200 bg-white">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Transactions</CardTitle>
-                        <Receipt className="h-4 w-4 text-emerald-500" />
+                        <CardTitle className="text-sm font-bold text-zinc-500 uppercase tracking-wide">Transactions</CardTitle>
+                        <Receipt className="h-4 w-4 text-zinc-900" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-foreground">{data.transactionCount}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Invoices generated today</p>
+                        <div className="text-2xl font-black text-zinc-900">{data.transactionCount}</div>
+                        <p className="text-xs text-zinc-500 mt-1">Invoices generated today</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-blue-500 shadow-md bg-gradient-to-br from-card to-blue-500/5">
+                <Card className="border shadow-sm border-zinc-200 bg-white">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Payment Methods</CardTitle>
-                        <CreditCard className="h-4 w-4 text-blue-500" />
+                        <CardTitle className="text-sm font-bold text-zinc-500 uppercase tracking-wide">Payment Methods</CardTitle>
+                        <CreditCard className="h-4 w-4 text-zinc-900" />
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1 mt-1">
-                            <div className="flex justify-between text-xs items-center">
-                                <span className="flex items-center gap-1 text-muted-foreground"><Banknote className="w-3 h-3" /> Cash</span>
-                                <span className="font-mono font-medium">IDR {data.cashTotal.toLocaleString('id-ID')}</span>
+                            <div className="flex justify-between text-xs items-center border-b border-zinc-100 pb-1">
+                                <span className="flex items-center gap-1 text-zinc-500"><Banknote className="w-3 h-3" /> Cash</span>
+                                <span className="font-mono font-bold text-zinc-900">IDR {data.cashTotal.toLocaleString('id-ID')}</span>
                             </div>
-                            <div className="flex justify-between text-xs items-center">
-                                <span className="flex items-center gap-1 text-muted-foreground"><CreditCard className="w-3 h-3" /> QRIS</span>
-                                <span className="font-mono font-medium">IDR {data.qrisTotal.toLocaleString('id-ID')}</span>
+                            <div className="flex justify-between text-xs items-center pt-1">
+                                <span className="flex items-center gap-1 text-zinc-500"><CreditCard className="w-3 h-3" /> QRIS</span>
+                                <span className="font-mono font-bold text-zinc-900">IDR {data.qrisTotal.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className={data.topBarber ? "border-l-4 border-l-amber-500 shadow-md bg-gradient-to-br from-card to-amber-500/5" : ""}>
+                <Card className="border shadow-sm border-zinc-900 bg-zinc-900 text-white">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Top Performer</CardTitle>
-                        <User className="h-4 w-4 text-amber-500" />
+                        <CardTitle className="text-sm font-bold text-zinc-400 uppercase tracking-wide">Top Performer</CardTitle>
+                        <User className="h-4 w-4 text-white" />
                     </CardHeader>
                     <CardContent>
                         {data.topBarber ? (
                             <>
-                                <div className="text-2xl font-bold text-amber-600 dark:text-amber-500">{data.topBarber.name}</div>
+                                <div className="text-2xl font-black text-white">{data.topBarber.name}</div>
                                 <div className="flex justify-between items-center mt-1">
-                                    <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600 bg-amber-500/10">
+                                    <Badge variant="outline" className="text-[10px] border-zinc-700 text-zinc-300 bg-zinc-800">
                                         {data.topBarber.count} Cuts
                                     </Badge>
-                                    <span className="text-xs font-mono font-bold text-muted-foreground">
+                                    <span className="text-xs font-mono font-bold text-zinc-300">
                                         IDR {data.topBarber.revenue.toLocaleString('id-ID')}
                                     </span>
                                 </div>
                             </>
                         ) : (
-                            <div className="text-sm text-muted-foreground italic">No data available</div>
+                            <div className="text-sm text-zinc-500 italic">No data available</div>
                         )}
                     </CardContent>
                 </Card>
@@ -197,10 +197,10 @@ export default function DailyPage() {
 
             {/* Charts Section */}
             <div className="grid gap-4 md:grid-cols-7">
-                <Card className="col-span-4 border-border/50 shadow-md">
+                <Card className="col-span-4 border-zinc-200 shadow-sm bg-white">
                     <CardHeader>
-                        <CardTitle className="text-base">Hourly Revenue Trend</CardTitle>
-                        <CardDescription>Revenue breakdown by hour for today</CardDescription>
+                        <CardTitle className="text-base font-bold text-zinc-900">Hourly Revenue Trend</CardTitle>
+                        <CardDescription className="text-zinc-500">Revenue breakdown by hour for today</CardDescription>
                     </CardHeader>
                     <CardContent className="pl-2">
                         <div className="h-[250px] w-full">
@@ -208,33 +208,34 @@ export default function DailyPage() {
                                 <AreaChart data={chartData}>
                                     <defs>
                                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8} />
-                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#18181b" stopOpacity={0.8} />
+                                            <stop offset="95%" stopColor="#18181b" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <XAxis
                                         dataKey="hour"
-                                        stroke="#888888"
+                                        stroke="#a1a1aa"
                                         fontSize={12}
                                         tickLine={false}
                                         axisLine={false}
                                     />
                                     <YAxis
-                                        stroke="#888888"
+                                        stroke="#a1a1aa"
                                         fontSize={12}
                                         tickLine={false}
                                         axisLine={false}
                                         tickFormatter={(value) => `${value / 1000}k`}
                                     />
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" opacity={0.1} />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" opacity={1} />
                                     <Tooltip
-                                        contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                                        contentStyle={{ backgroundColor: '#fff', borderColor: '#e4e4e7', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                         formatter={(value: number) => [`IDR ${value.toLocaleString('id-ID')}`, 'Revenue']}
                                     />
                                     <Area
                                         type="monotone"
                                         dataKey="revenue"
-                                        stroke="#6366f1"
+                                        stroke="#18181b"
+                                        strokeWidth={2}
                                         fillOpacity={1}
                                         fill="url(#colorRevenue)"
                                     />
@@ -244,10 +245,10 @@ export default function DailyPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="col-span-3 border-border/50 shadow-md">
+                <Card className="col-span-3 border-zinc-200 shadow-sm bg-white">
                     <CardHeader>
-                        <CardTitle className="text-base">Customers Activity</CardTitle>
-                        <CardDescription>Visits distribution by hour</CardDescription>
+                        <CardTitle className="text-base font-bold text-zinc-900">Customers Activity</CardTitle>
+                        <CardDescription className="text-zinc-500">Visits distribution by hour</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="h-[250px] w-full">
@@ -255,16 +256,16 @@ export default function DailyPage() {
                                 <BarChart data={chartData}>
                                     <XAxis
                                         dataKey="hour"
-                                        stroke="#888888"
+                                        stroke="#a1a1aa"
                                         fontSize={12}
                                         tickLine={false}
                                         axisLine={false}
                                     />
                                     <Tooltip
-                                        cursor={{ fill: 'var(--muted)' }}
-                                        contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                                        cursor={{ fill: '#f4f4f5' }}
+                                        contentStyle={{ backgroundColor: '#fff', borderColor: '#e4e4e7', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                     />
-                                    <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="count" fill="#18181b" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -273,18 +274,18 @@ export default function DailyPage() {
             </div>
 
             {/* Recent Transactions Table */}
-            <Card className="border-border/50 shadow-lg">
+            <Card className="border-zinc-200 shadow-sm bg-white">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                        <CardTitle>Recent Transactions</CardTitle>
-                        <CardDescription>Latest invoices generated today</CardDescription>
+                        <CardTitle className="font-bold text-zinc-900">Recent Transactions</CardTitle>
+                        <CardDescription className="text-zinc-500">Latest invoices generated today</CardDescription>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-xs">View All</Button>
+                    <Button variant="ghost" size="sm" className="text-xs text-zinc-500 hover:text-zinc-900">View All</Button>
                 </CardHeader>
                 <CardContent>
-                    <div className="rounded-md border border-border overflow-hidden">
+                    <div className="rounded-md border border-zinc-200 overflow-hidden">
                         <table className="w-full text-sm text-left">
-                            <thead className="bg-muted/50 uppercase tracking-wider text-xs font-semibold text-muted-foreground">
+                            <thead className="bg-zinc-50 uppercase tracking-wider text-xs font-semibold text-zinc-500 border-b border-zinc-200">
                                 <tr>
                                     <th className="p-4">Time</th>
                                     <th className="p-4">Invoice</th>
@@ -294,41 +295,41 @@ export default function DailyPage() {
                                     <th className="p-4 text-center">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-border">
+                            <tbody className="divide-y divide-zinc-100">
                                 {data.recentTransactions.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                                        <td colSpan={6} className="p-8 text-center text-zinc-400 font-medium">
                                             No transactions found for today.
                                         </td>
                                     </tr>
                                 ) : (
                                     data.recentTransactions.map((tx) => (
-                                        <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
-                                            <td className="p-4 font-mono text-muted-foreground w-[100px]">
+                                        <tr key={tx.id} className="hover:bg-zinc-50 transition-colors">
+                                            <td className="p-4 font-mono text-zinc-500 w-[100px]">
                                                 {format(new Date(tx.time), 'HH:mm')}
                                             </td>
-                                            <td className="p-4 font-medium">{tx.invoiceCode}</td>
+                                            <td className="p-4 font-bold text-zinc-900 font-mono tracking-tight">{tx.invoiceCode}</td>
                                             <td className="p-4 flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                                                <div className="w-6 h-6 rounded-full bg-zinc-900 flex items-center justify-center text-[10px] font-bold text-white">
                                                     {tx.barberName.charAt(0)}
                                                 </div>
-                                                {tx.barberName}
+                                                <span className="font-medium text-zinc-700">{tx.barberName}</span>
                                             </td>
                                             <td className="p-4 hidden md:table-cell">
-                                                <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                                <div className="text-xs text-zinc-500 truncate max-w-[200px]">
                                                     {tx.items.map((i: any) => i.name).join(', ')}
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-right font-bold font-mono">
+                                            <td className="p-4 text-right font-bold font-mono text-zinc-900">
                                                 IDR {tx.totalAmount.toLocaleString('id-ID')}
                                             </td>
                                             <td className="p-4 text-center">
                                                 <Badge
-                                                    variant="secondary"
+                                                    variant="outline"
                                                     className={
                                                         tx.paymentMethod === 'cash'
-                                                            ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'
-                                                            : 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20'
+                                                            ? 'border-zinc-300 text-zinc-600 bg-zinc-100'
+                                                            : 'border-zinc-900 text-white bg-zinc-900'
                                                     }
                                                 >
                                                     {tx.paymentMethod.toUpperCase()}

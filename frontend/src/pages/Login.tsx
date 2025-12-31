@@ -48,50 +48,54 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-neutral-950">
-            <Card className="w-full max-w-md">
+        <div className="flex items-center justify-center min-h-screen bg-zinc-50 selection:bg-zinc-200">
+            <Card className="w-full max-w-md border-zinc-200 shadow-xl shadow-zinc-200/50 bg-white">
                 <CardHeader>
-                    <div className="flex justify-center mb-4">
+                    <div className="flex justify-center mb-6">
                         <img
                             src="/logo.jpg"
                             alt="Staycool Logo"
-                            className="w-24 h-24 rounded-full object-cover shadow-md"
+                            className="w-24 h-24 rounded-full object-cover shadow-sm border border-zinc-200 grayscale hover:grayscale-0 transition-all duration-500"
                         />
                     </div>
-                    <CardTitle className="text-2xl text-center">Staycool Hairlab POS</CardTitle>
+                    <CardTitle className="text-2xl text-center text-zinc-900 tracking-tight uppercase font-black">
+                        Staycool <span className="font-light">Hairlab</span>
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="username">Username</Label>
+                            <Label htmlFor="username" className="text-zinc-700 font-bold uppercase text-xs tracking-wider">Username</Label>
                             <Input
                                 id="username"
                                 type="text"
                                 value={username}
                                 onChange={(e: any) => setUsername(e.target.value)}
                                 placeholder="Enter your username"
+                                className="bg-zinc-50 border-zinc-200 focus:ring-zinc-900 focus:border-zinc-900"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password" className="text-zinc-700 font-bold uppercase text-xs tracking-wider">Password</Label>
                             <Input
                                 id="password"
                                 type="password"
                                 value={password}
                                 onChange={(e: any) => setPassword(e.target.value)}
                                 placeholder="Enter your password"
+                                className="bg-zinc-50 border-zinc-200 focus:ring-zinc-900 focus:border-zinc-900"
                                 required
                             />
                         </div>
-                        {error && <p className="text-red-500 text-sm">{error}</p>}
-                        <Button type="submit" className="w-full">
+                        {error && <p className="text-red-600 text-sm font-medium bg-red-50 p-2 rounded border border-red-100">{error}</p>}
+                        <Button type="submit" className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold tracking-wide h-11">
                             Sign In
                         </Button>
                     </form>
                 </CardContent>
-                <CardFooter className="justify-center text-sm text-gray-500">
-                    Staycool Hairlab Management System
+                <CardFooter className="justify-center text-xs text-zinc-400 uppercase tracking-widest">
+                    Management System
                 </CardFooter>
             </Card>
         </div>

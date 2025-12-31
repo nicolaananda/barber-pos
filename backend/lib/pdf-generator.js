@@ -17,7 +17,7 @@ async function generateInvoicePDF(transaction, barberName, cashReceived = 0) {
             // Let's estimate height or use auto-pagination.
 
             const doc = new PDFDocument({
-                size: [227, 800], // 80mm width, arbitrary long height
+                size: [227, 300], // 80mm width, arbitrary long height
                 margin: 10,
                 autoFirstPage: false
             });
@@ -30,7 +30,7 @@ async function generateInvoicePDF(transaction, barberName, cashReceived = 0) {
             });
 
             // Start page
-            doc.addPage({ margin: 10, size: [227, 800] });
+            doc.addPage({ margin: 10, size: [227, 300] });
 
             // Font settings
             doc.font('Courier');
@@ -40,17 +40,26 @@ async function generateInvoicePDF(transaction, barberName, cashReceived = 0) {
             const logoPath = path.join(__dirname, '../../logo.jpg');
             if (fs.existsSync(logoPath)) {
                 // Center logo: (227 - 50) / 2 = 88.5
-                doc.image(logoPath, 88, 15, { width: 50 });
-                doc.moveDown(4.5); // Move past logo (50px / ~12 font-height)
+                const logoX = 88.5;
+                const logoY = 15;
+                const logoSize = 50;
+
+                doc.save();
+                doc.circle(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2).clip();
+                doc.image(logoPath, logoX, logoY, { width: logoSize });
+                doc.restore();
+
+                doc.moveDown(6.5); // Move past logo (50px / ~12 font-height)
             } else {
-                doc.moveDown(1);
+                doc.moveDown(5);
             }
 
             // HEADER
-            doc.fontSize(11).font('Courier-Bold').text('STAYCOOL HAIRLAB', { align: 'center' });
-            doc.fontSize(8).font('Courier').text('Jl. Imam Bonjol Pertigaan No.370', { align: 'center' });
-            doc.text('Ngadirejo, Kota Kediri', { align: 'center' });
-            doc.text('0877-7099-5270', { align: 'center' });
+            // Width 207 (227 - 20) ensures center is relative to printable area
+            doc.fontSize(11).font('Courier-Bold').text('STAYCOOL HAIRLAB', 10, doc.y, { width: 207, align: 'center' });
+            doc.fontSize(8).font('Courier').text('Jl. Imam Bonjol Pertigaan No.370', 10, doc.y, { width: 207, align: 'center' });
+            doc.text('Ngadirejo, Kota Kediri', 10, doc.y, { width: 207, align: 'center' });
+            doc.text('0877-7099-5270', 10, doc.y, { width: 207, align: 'center' });
             doc.moveDown(0.5);
 
             // DIVIDER
@@ -60,11 +69,11 @@ async function generateInvoicePDF(transaction, barberName, cashReceived = 0) {
             // INFO
             const dateStr = format(new Date(transaction.date || new Date()), 'dd/MM/yyyy HH:mm');
 
-            drawRow(doc, 'Invoice', transaction.invoiceCode, true);
-            drawRow(doc, 'Date', dateStr);
-            drawRow(doc, 'Barber', barberName);
+            drawMetadataRow(doc, 'Invoice', transaction.invoiceCode, true);
+            drawMetadataRow(doc, 'Date', dateStr);
+            drawMetadataRow(doc, 'Barber', barberName);
             if (transaction.customerName) {
-                drawRow(doc, 'Cust', transaction.customerName);
+                drawMetadataRow(doc, 'Cust', transaction.customerName);
             }
             doc.moveDown(0.5);
 
@@ -78,7 +87,7 @@ async function generateInvoicePDF(transaction, barberName, cashReceived = 0) {
                 // Left: "1x Item Name"
                 // Right: "20.000"
                 const itemText = item.qty + 'x ' + item.name;
-                drawRow(doc, itemText, total.toLocaleString('id-ID'));
+                drawItemRow(doc, itemText, total.toLocaleString('id-ID'));
             });
             doc.moveDown(0.5);
 
@@ -88,23 +97,23 @@ async function generateInvoicePDF(transaction, barberName, cashReceived = 0) {
 
             // TOTALS
             doc.fontSize(11).font('Courier-Bold');
-            drawRow(doc, 'TOTAL', 'IDR ' + transaction.totalAmount.toLocaleString('id-ID'));
+            drawTotalRow(doc, 'TOTAL', 'IDR ' + transaction.totalAmount.toLocaleString('id-ID'));
 
             doc.fontSize(9).font('Courier');
-            drawRow(doc, 'Payment', transaction.paymentMethod.toUpperCase());
+            drawTotalRow(doc, 'Payment', transaction.paymentMethod.toUpperCase());
 
             const changeAmount = cashReceived > 0 ? cashReceived - transaction.totalAmount : 0;
             if (transaction.paymentMethod === 'cash' && cashReceived > 0) {
-                drawRow(doc, 'Cash', 'IDR ' + cashReceived.toLocaleString('id-ID'));
-                drawRow(doc, 'Change', 'IDR ' + changeAmount.toLocaleString('id-ID'));
+                drawTotalRow(doc, 'Cash', 'IDR ' + cashReceived.toLocaleString('id-ID'));
+                drawTotalRow(doc, 'Change', 'IDR ' + changeAmount.toLocaleString('id-ID'));
             }
 
             doc.moveDown(2);
 
             // FOOTER
-            doc.fontSize(8).text('Thank you for coming!', { align: 'center' });
-            doc.text('Follow us on Instagram', { align: 'center' });
-            doc.text('@staycool_hairlab', { align: 'center' });
+            doc.fontSize(8).text('Thank you for coming!', 10, doc.y, { width: 207, align: 'center' });
+            doc.text('Follow us on Instagram', 10, doc.y, { width: 207, align: 'center' });
+            doc.text('@staycool_hairlab', 10, doc.y, { width: 207, align: 'center' });
 
             // Finalize PDF
             doc.end();
@@ -164,6 +173,69 @@ const savePDFToPublic = async (pdfBuffer, invoiceCode) => {
 const deleteTempFile = async (filePath) => {
     // No-op
 };
+
+
+// Draw Metadata (Left narrow, Right wide)
+// Left: 80pt, Right: 127pt
+// Draw Metadata (Left narrow, Right wide)
+// Left: 80pt, Right: 127pt
+function drawMetadataRow(doc, key, value, boldValue = false) {
+    const startY = doc.y;
+
+    // Draw Left
+    doc.text(key, 10, startY, { width: 80, align: 'left' });
+    const yAfterLeft = doc.y;
+
+    // Reset Y for Right column
+    doc.y = startY;
+
+    // Draw Right
+    if (boldValue) doc.font('Courier-Bold');
+    doc.text(value, 90, startY, { width: 127, align: 'right' });
+    const yAfterRight = doc.y;
+    if (boldValue) doc.font('Courier');
+
+    // Move to max Y
+    doc.y = Math.max(yAfterLeft, yAfterRight);
+}
+
+// Draw Item (Left wide, Right narrow)
+// Left: 140pt, Right: 67pt
+function drawItemRow(doc, key, value) {
+    const startY = doc.y;
+
+    // Draw Left
+    doc.text(key, 10, startY, { width: 140, align: 'left' });
+    const yAfterLeft = doc.y;
+
+    // Reset Y for Right column
+    doc.y = startY;
+
+    // Draw Right
+    doc.text(value, 150, startY, { width: 67, align: 'right' });
+    const yAfterRight = doc.y;
+
+    doc.y = Math.max(yAfterLeft, yAfterRight);
+}
+
+// Draw Total (Balanced)
+// Left: 100pt, Right: 107pt
+function drawTotalRow(doc, key, value) {
+    const startY = doc.y;
+
+    // Draw Left
+    doc.text(key, 10, startY, { width: 100, align: 'left' });
+    const yAfterLeft = doc.y;
+
+    // Reset Y for Right column
+    doc.y = startY;
+
+    // Draw Right
+    doc.text(value, 110, startY, { width: 107, align: 'right' });
+    const yAfterRight = doc.y;
+
+    doc.y = Math.max(yAfterLeft, yAfterRight);
+}
 
 module.exports = {
     generateInvoicePDF,

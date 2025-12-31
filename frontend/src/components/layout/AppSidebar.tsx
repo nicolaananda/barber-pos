@@ -32,27 +32,27 @@ export function AppSidebar() {
     ];
 
     return (
-        <div className="flex flex-col h-full bg-card border-r border-border w-64">
-            <div className="p-6 border-b border-border space-y-4">
+        <div className="flex flex-col h-full bg-white border-r border-zinc-200 w-64">
+            <div className="p-6 border-b border-zinc-100 space-y-4">
                 <div className="flex items-center gap-3">
                     <img
                         src="/logo.jpg"
                         alt="Logo"
-                        className="w-10 h-10 rounded-full object-cover border border-primary/50"
+                        className="w-10 h-10 rounded-full object-cover border border-zinc-200 grayscale"
                     />
                     <div>
-                        <h1 className="font-bold tracking-widest uppercase">Staycool</h1>
-                        <p className="text-xs text-muted-foreground tracking-wider">Management</p>
+                        <h1 className="font-bold tracking-widest uppercase text-zinc-900">Staycool</h1>
+                        <p className="text-xs text-zinc-500 tracking-wider">Management</p>
                     </div>
                 </div>
                 <Link to="/pos">
-                    <Button className="w-full font-bold shadow-lg shadow-primary/20 bg-primary text-primary-foreground hover:bg-amber-600 transition-all active:scale-[0.98]">
+                    <Button className="w-full font-bold shadow-md bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-[0.98]">
                         Launch POS Station
                     </Button>
                 </Link>
             </div>
 
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                 {navigation.map((item) => {
                     const isActive = location.pathname === item.href;
                     return (
@@ -60,10 +60,10 @@ export function AppSidebar() {
                             <div className={cn(
                                 "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
                                 isActive
-                                    ? "bg-primary/10 text-primary font-bold shadow-sm border border-primary/20"
-                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    ? "bg-zinc-100 text-zinc-900 font-bold shadow-sm"
+                                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
                             )}>
-                                <item.icon className={cn("w-5 h-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                                <item.icon className={cn("w-5 h-5", isActive ? "text-zinc-900" : "text-zinc-400")} />
                                 <span>{item.name}</span>
                             </div>
                         </Link>
@@ -71,19 +71,19 @@ export function AppSidebar() {
                 })}
             </nav>
 
-            <div className="p-4 border-t border-border bg-card/50">
+            <div className="p-4 border-t border-zinc-100 bg-white">
                 <div className="flex items-center gap-3 mb-4 px-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                    <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-900 font-bold border border-zinc-200">
                         {user?.name?.charAt(0) || 'U'}
                     </div>
                     <div className="overflow-hidden">
-                        <p className="text-sm font-bold truncate">{user?.name || 'User'}</p>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">{user?.role || 'Staff'}</p>
+                        <p className="text-sm font-bold truncate text-zinc-900">{user?.name || 'User'}</p>
+                        <p className="text-xs text-zinc-500 uppercase tracking-wider">{user?.role || 'Staff'}</p>
                     </div>
                 </div>
                 <Button
-                    variant="outline"
-                    className="w-full justify-start gap-3 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    variant="ghost"
+                    className="w-full justify-start gap-3 text-zinc-500 hover:text-red-600 hover:bg-red-50"
                     onClick={logout}
                 >
                     <LogOut className="w-4 h-4" />
