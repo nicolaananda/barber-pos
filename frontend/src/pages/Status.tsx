@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Coffee, Scissors } from 'lucide-react';
+import { Coffee, Scissors, Sparkles, BookOpen } from 'lucide-react';
 import BookingModal from '@/components/booking/BookingModal';
+import ServicesModal from '@/components/pos/ServicesModal';
 
 interface Barber {
     id: number;
@@ -16,6 +17,7 @@ interface BookingData {
 export default function StatusPage() {
     const [barbers, setBarbers] = useState<Barber[]>([]);
     const [bookingModalOpen, setBookingModalOpen] = useState(false);
+    const [servicesModalOpen, setServicesModalOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
     const [existingBookings, setExistingBookings] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -86,7 +88,16 @@ export default function StatusPage() {
             <div className="absolute top-0 left-0 w-96 h-96 bg-zinc-200/50 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 right-0 w-96 h-96 bg-zinc-200/50 rounded-full blur-3xl"></div>
 
-            <div className="max-w-6xl mx-auto relative z-10">
+            {/* PROMO BANNER */}
+            <div className="bg-zinc-900 text-white py-2 px-4 text-center relative z-20">
+                <p className="text-xs md:text-sm font-medium tracking-wide flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4 text-yellow-500" />
+                    <span>PROMO: Get 10% OFF on your 5th visit! Join Member now.</span>
+                    <Sparkles className="w-4 h-4 text-yellow-500" />
+                </p>
+            </div>
+
+            <div className="max-w-6xl mx-auto relative z-10 pt-8">
                 {/* Header with Logo */}
                 <div className="flex flex-col items-center mb-8 md:mb-12">
                     <div className="mb-4 md:mb-6 relative">
@@ -106,6 +117,15 @@ export default function StatusPage() {
                         <Scissors className="w-3 h-3 md:w-4 md:h-4" />
                         <div className="w-8 md:w-12 h-px bg-zinc-200"></div>
                     </div>
+
+                    {/* View Services Button */}
+                    <button
+                        onClick={() => setServicesModalOpen(true)}
+                        className="mt-6 px-6 py-2 bg-white border border-zinc-200 rounded-full shadow-sm text-zinc-900 text-sm font-semibold hover:bg-zinc-50 transition-all flex items-center gap-2"
+                    >
+                        <BookOpen className="w-4 h-4" />
+                        View Services & Price List
+                    </button>
                 </div>
 
                 {isLoading ? (
@@ -238,6 +258,32 @@ export default function StatusPage() {
                     }}
                 />
             )}
+            {/* Footer Info - Acts as Mini Landing Page */}
+            <div className="max-w-4xl mx-auto mt-16 text-center space-y-4 relative z-10 pb-8">
+                <div className="border-t border-zinc-200 w-24 mx-auto mb-8"></div>
+
+                <div className="grid md:grid-cols-2 gap-8 text-sm text-zinc-500">
+                    <div className="space-y-2">
+                        {/* Removed duplicate title as requested */}
+                        <p>Jl. Imam Bonjol Pertigaan No.370</p>
+                        <p>Imam Bonjol, Kota Kediri</p>
+                    </div>
+                    <div className="space-y-2">
+                        <h3 className="font-bold text-zinc-900 tracking-wider uppercase">Contact & Open Hours</h3>
+                        <p>WA: +62 812-3490-6750</p>
+                        <p>Daily: 10:00 - 21:00</p>
+                    </div>
+                </div>
+
+                <p className="text-xs text-zinc-300 pt-8 uppercase tracking-widest">
+                    &copy; {new Date().getFullYear()} Staycool Management System
+                </p>
+            </div>
+            {/* Services Modal */}
+            <ServicesModal
+                open={servicesModalOpen}
+                onOpenChange={setServicesModalOpen}
+            />
         </div>
     );
 }

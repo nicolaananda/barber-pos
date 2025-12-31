@@ -4,7 +4,8 @@ const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 
 // GET /api/services
-router.get('/', authenticateToken, async (req, res) => {
+// GET /api/services - Public
+router.get('/', async (req, res) => {
     try {
         const services = await prisma.service.findMany({
             where: { isActive: true },
