@@ -1,189 +1,182 @@
-const puppeteer = require('puppeteer');
+const PDFDocument = require('pdfkit');
 const { format } = require('date-fns');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
 
 /**
- * Load and convert logo to base64
- */
-async function getLogoBase64() {
-    try {
-        const logoPath = path.join(__dirname, '../../logo.jpg');
-        const logoBuffer = await fs.readFile(logoPath);
-        return `data:image/jpeg;base64,${logoBuffer.toString('base64')}`;
-    } catch (error) {
-        console.error('Failed to load logo:', error.message);
-        return null;
-    }
-}
-
-/**
- * Generate invoice HTML (same as print invoice)
- */
-function generateInvoiceHTML(transaction, barberName, cashReceived = 0, logoBase64 = null) {
-    const changeAmount = cashReceived > 0 ? cashReceived - transaction.totalAmount : 0;
-
-    return `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>Receipt ${transaction.invoiceCode}</title>
-            <style>
-              @page { margin: 0; size: 80mm auto; }
-              body { margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #000; background: white; }
-              .container { width: 100%; max-width: 80mm; margin: 0 auto; padding: 10px; box-sizing: border-box; }
-              .text-center { text-align: center; }
-              .text-right { text-align: right; }
-              .bold { font-weight: bold; }
-              .mb-1 { margin-bottom: 5px; }
-              .mb-2 { margin-bottom: 10px; }
-              .border-b { border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px; }
-              .border-t { border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px; }
-              .row { display: flex; justify-content: space-between; width: 100%; }
-              .col { display: flex; flex-direction: column; }
-              .logo { width: 50px; height: 50px; border-radius: 50%; display: block; margin: 0 auto 5px; object-fit: cover; filter: grayscale(100%); }
-              
-              .item-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-              .item-name { flex: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-              .item-qty { margin-right: 5px; font-size: 10px; }
-              .item-price { flex: 1; text-align: right; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-                <div class="text-center mb-2">
-                    ${logoBase64 ? `<img src="${logoBase64}" class="logo" />` : ''}
-                    <h2 style="margin:0; font-size: 16px; text-transform: uppercase;">Staycool Hairlab</h2>
-                    <p style="margin:2px 0; font-size: 10px;">Jl. Imam Bonjol Pertigaan No.370</p>
-                    <p style="margin:0; font-size: 10px;">Ngadirejo, Kota Kediri</p>
-                    <p style="margin:2px 0; font-size: 10px;">0877-7099-5270</p>
-                </div>
-
-                <div class="border-b"></div>
-
-                <div class="mb-2" style="font-size: 11px;">
-                    <div class="row"><span>Invoice</span> <span class="bold">${transaction.invoiceCode}</span></div>
-                    <div class="row"><span>Date</span> <span>${format(new Date(transaction.date || new Date()), 'dd/MM/yyyy HH:mm')}</span></div>
-                    <div class="row"><span>Barber</span> <span>${barberName}</span></div>
-                    ${transaction.customerName ? `<div class="row"><span>Cust</span> <span>${transaction.customerName}</span></div>` : ''}
-                </div>
-
-                <div class="border-b"></div>
-
-                <div class="mb-2">
-                    ${transaction.items.map(item => `
-                    <div class="item-row">
-                        <span class="item-name"><span class="item-qty">${item.qty}x</span> ${item.name}</span>
-                        <span class="item-price">${(item.price * item.qty).toLocaleString('id-ID')}</span>
-                    </div>
-                    `).join('')}
-                </div>
-
-                <div class="border-t">
-                    <div class="row bold" style="font-size: 14px; margin-top: 5px;">
-                        <span>TOTAL</span>
-                        <span>IDR ${transaction.totalAmount.toLocaleString('id-ID')}</span>
-                    </div>
-                    <div class="row" style="margin-top: 5px; font-size: 11px;">
-                        <span>Payment</span>
-                        <span style="text-transform: uppercase;">${transaction.paymentMethod}</span>
-                    </div>
-                    ${transaction.paymentMethod === 'cash' && cashReceived > 0 ? `
-                    <div class="row" style="font-size: 11px;">
-                       <span>Cash</span>
-                       <span>IDR ${cashReceived.toLocaleString('id-ID')}</span>
-                    </div>
-                    <div class="row" style="font-size: 11px;">
-                       <span>Change</span>
-                       <span>IDR ${changeAmount.toLocaleString('id-ID')}</span>
-                    </div>
-                    ` : ''}
-                </div>
-
-                <div class="text-center" style="margin-top: 20px; font-size: 10px;">
-                    <p style="margin-bottom: 5px;">Thank you for coming!</p>
-                    <p>Follow us on Instagram<br>@staycool_hairlab</p>
-                </div>
-            </div>
-          </body>
-        </html>
-    `;
-}
-
-/**
- * Generate PDF from transaction data
+ * Generate PDF from transaction data using PDFKit
+ * (Pure Node.js solution, no external dependencies like Chrome)
  */
 async function generateInvoicePDF(transaction, barberName, cashReceived = 0) {
-    try {
-        // Load logo
-        const logoBase64 = await getLogoBase64();
+    return new Promise((resolve, reject) => {
+        try {
+            // Receipt width: 80mm approx 227 points
+            // Manage height dynamically? PDFKit adds pages automatically.
+            // We'll use a continuous roll-like size or just standard page. 
+            // For simple PDF viewing, a single long page is often preferred for receipts.
+            // Let's estimate height or use auto-pagination.
 
-        // Generate HTML
-        const html = generateInvoiceHTML(transaction, barberName, cashReceived, logoBase64);
+            const doc = new PDFDocument({
+                size: [227, 800], // 80mm width, arbitrary long height
+                margin: 10,
+                autoFirstPage: false
+            });
 
-        // Use html-pdf-node (lighter, no Chrome needed)
-        const htmlPdf = require('html-pdf-node');
+            const buffers = [];
+            doc.on('data', buffers.push.bind(buffers));
+            doc.on('end', () => {
+                const pdfData = Buffer.concat(buffers);
+                resolve(pdfData);
+            });
 
-        const options = {
-            format: 'A4',
-            width: '80mm',
-            printBackground: true,
-            margin: {
-                top: '0mm',
-                right: '0mm',
-                bottom: '0mm',
-                left: '0mm'
+            // Start page
+            doc.addPage({ margin: 10, size: [227, 800] });
+
+            // Font settings
+            doc.font('Courier');
+            doc.fontSize(9);
+
+            // LOGO
+            const logoPath = path.join(__dirname, '../../logo.jpg');
+            if (fs.existsSync(logoPath)) {
+                // Center logo: (227 - 50) / 2 = 88.5
+                doc.image(logoPath, 88, 15, { width: 50 });
+                doc.moveDown(4.5); // Move past logo (50px / ~12 font-height)
+            } else {
+                doc.moveDown(1);
             }
-        };
 
-        const file = { content: html };
+            // HEADER
+            doc.fontSize(11).font('Courier-Bold').text('STAYCOOL HAIRLAB', { align: 'center' });
+            doc.fontSize(8).font('Courier').text('Jl. Imam Bonjol Pertigaan No.370', { align: 'center' });
+            doc.text('Ngadirejo, Kota Kediri', { align: 'center' });
+            doc.text('0877-7099-5270', { align: 'center' });
+            doc.moveDown(0.5);
 
-        // Generate PDF
-        const pdfBuffer = await htmlPdf.generatePdf(file, options);
+            // DIVIDER
+            drawDivider(doc);
+            doc.moveDown(0.5);
 
-        return pdfBuffer;
-    } catch (error) {
-        console.error('PDF Generation Error:', error);
-        throw error;
-    }
+            // INFO
+            const dateStr = format(new Date(transaction.date || new Date()), 'dd/MM/yyyy HH:mm');
+
+            drawRow(doc, 'Invoice', transaction.invoiceCode, true);
+            drawRow(doc, 'Date', dateStr);
+            drawRow(doc, 'Barber', barberName);
+            if (transaction.customerName) {
+                drawRow(doc, 'Cust', transaction.customerName);
+            }
+            doc.moveDown(0.5);
+
+            // DIVIDER
+            drawDivider(doc);
+            doc.moveDown(0.5);
+
+            // ITEMS
+            transaction.items.forEach(item => {
+                const total = item.price * item.qty;
+                // Left: "1x Item Name"
+                // Right: "20.000"
+                const itemText = item.qty + 'x ' + item.name;
+                drawRow(doc, itemText, total.toLocaleString('id-ID'));
+            });
+            doc.moveDown(0.5);
+
+            // DIVIDER
+            drawDivider(doc);
+            doc.moveDown(0.5);
+
+            // TOTALS
+            doc.fontSize(11).font('Courier-Bold');
+            drawRow(doc, 'TOTAL', 'IDR ' + transaction.totalAmount.toLocaleString('id-ID'));
+
+            doc.fontSize(9).font('Courier');
+            drawRow(doc, 'Payment', transaction.paymentMethod.toUpperCase());
+
+            const changeAmount = cashReceived > 0 ? cashReceived - transaction.totalAmount : 0;
+            if (transaction.paymentMethod === 'cash' && cashReceived > 0) {
+                drawRow(doc, 'Cash', 'IDR ' + cashReceived.toLocaleString('id-ID'));
+                drawRow(doc, 'Change', 'IDR ' + changeAmount.toLocaleString('id-ID'));
+            }
+
+            doc.moveDown(2);
+
+            // FOOTER
+            doc.fontSize(8).text('Thank you for coming!', { align: 'center' });
+            doc.text('Follow us on Instagram', { align: 'center' });
+            doc.text('@staycool_hairlab', { align: 'center' });
+
+            // Finalize PDF
+            doc.end();
+
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+// Helper to draw dashed divider
+function drawDivider(doc) {
+    const y = doc.y;
+    doc.dash(3, { space: 2 })
+        .moveTo(10, y)
+        .lineTo(217, y)
+        .stroke()
+        .undash(); // Reset dash
+}
+
+// Helper to draw a key-value row
+function drawRow(doc, key, value, boldValue = false) {
+    const startX = 10;
+    const endX = 217; // 227 (page width) - 10 (right margin)
+    const keyWidth = doc.widthOfString(key);
+    const valueWidth = doc.widthOfString(value);
+    const availableSpace = endX - startX;
+
+    // Calculate position for value to be right-aligned
+    const valueX = endX - valueWidth;
+
+    // Ensure key and value don't overlap too much, simple check
+    // If key and value are too long, they might overlap.
+    // For receipt, usually key is short, value is short.
+    // If key + value width > availableSpace, they will overlap.
+    // For now, we'll just place them.
+
+    doc.text(key, startX, doc.y, { continued: true });
+
+    if (boldValue) doc.font('Courier-Bold');
+    doc.text(value, valueX, doc.y); // Place value at calculated X, current Y
+    if (boldValue) doc.font('Courier'); // Reset font
+
+    doc.moveDown(0.5); // Move to next line after drawing both
 }
 
 /**
- * Save PDF to public invoices directory
+ * Save PDF buffer to public directory
  */
-async function savePDFToPublic(pdfBuffer, invoiceCode) {
-    const publicDir = path.join(__dirname, '../../frontend/public/invoices');
-
-    // Create directory if it doesn't exist
+const savePDFToPublic = async (pdfBuffer, invoiceCode) => {
     try {
-        await fs.mkdir(publicDir, { recursive: true });
+        const publicDir = path.join(__dirname, '../../frontend/public/invoices');
+        // Ensure directory exists
+        await fs.promises.mkdir(publicDir, { recursive: true });
+
+        const filePath = path.join(publicDir, invoiceCode + '.pdf');
+        await fs.promises.writeFile(filePath, pdfBuffer);
+
+        return filePath;
     } catch (error) {
-        // Directory might already exist
+        throw new Error('Failed to save PDF: ' + error.message);
     }
-
-    const filename = `${invoiceCode}.pdf`;
-    const filepath = path.join(publicDir, filename);
-
-    await fs.writeFile(filepath, pdfBuffer);
-
-    return { filepath, filename };
-}
+};
 
 /**
- * Delete temporary file
+ * Delete temp file (not used anymore but kept for compatibility)
  */
-async function deleteTempFile(filepath) {
-    try {
-        await fs.unlink(filepath);
-    } catch (error) {
-        console.error('Failed to delete temp file:', error.message);
-    }
-}
+const deleteTempFile = async (filePath) => {
+    // No-op
+};
 
 module.exports = {
-    getLogoBase64,
-    generateInvoiceHTML,
     generateInvoicePDF,
     savePDFToPublic,
     deleteTempFile
