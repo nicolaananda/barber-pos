@@ -102,7 +102,7 @@ async function sendWhatsAppMessage(phoneNumber, message) {
             {
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(WAHA_API_KEY && { 'X-Api-Key': WAHA_API_KEY })
+                    'X-Api-Key': process.env.WAHA_API_KEY
                 },
                 timeout: 10000 // 10 second timeout
             }

@@ -1,0 +1,15 @@
+
+> backend@1.0.0 start
+> node server.js
+
+[dotenv@17.2.3] injecting env (7) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+Server running on port 3001
+Generating PDF for invoice: INV-251231-046
+PDF saved to public/invoices: INV-251231-046.pdf
+Sending WhatsApp message: {
+  wahaUrl: 'https://waha.nicola.id',
+  session: 'default',
+  chatId: '6281389592985@c.us',
+  phoneNumber: '081389592985',
+  formattedPhone: '6281389592985'
+}

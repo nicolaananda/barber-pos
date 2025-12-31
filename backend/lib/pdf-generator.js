@@ -126,29 +126,18 @@ function drawDivider(doc) {
 }
 
 // Helper to draw a key-value row
+// Helper to draw a key-value row
 function drawRow(doc, key, value, boldValue = false) {
-    const startX = 10;
-    const endX = 217; // 227 (page width) - 10 (right margin)
-    const keyWidth = doc.widthOfString(key);
-    const valueWidth = doc.widthOfString(value);
-    const availableSpace = endX - startX;
-
-    // Calculate position for value to be right-aligned
-    const valueX = endX - valueWidth;
-
-    // Ensure key and value don't overlap too much, simple check
-    // If key and value are too long, they might overlap.
-    // For receipt, usually key is short, value is short.
-    // If key + value width > availableSpace, they will overlap.
-    // For now, we'll just place them.
-
-    doc.text(key, startX, doc.y, { continued: true });
+    const y = doc.y;
+    // Left col: x=10, width=120
+    doc.text(key, 10, y, { width: 120, continued: true });
 
     if (boldValue) doc.font('Courier-Bold');
-    doc.text(value, valueX, doc.y); // Place value at calculated X, current Y
-    if (boldValue) doc.font('Courier'); // Reset font
 
-    doc.moveDown(0.5); // Move to next line after drawing both
+    // Right col: x=130, width=87 (Right aligned within this box ending at 217)
+    doc.text(value, 130, y, { width: 87, align: 'right' });
+
+    if (boldValue) doc.font('Courier');
 }
 
 /**
