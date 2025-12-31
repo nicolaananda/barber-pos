@@ -127,12 +127,12 @@ export default function ExpensesPage() {
         <div className="p-6 md:p-8 space-y-8 animate-in fade-in duration-500 pb-20">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">Expenses Management</h1>
-                    <p className="text-muted-foreground">Track outflow and manage operational budget.</p>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2 text-zinc-900">Expenses Management</h1>
+                    <p className="text-zinc-500">Track outflow and manage operational budget.</p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="font-bold shadow-lg shadow-destructive/20 bg-destructive text-destructive-foreground hover:bg-red-600 transition-all">
+                        <Button className="font-bold shadow-sm bg-zinc-900 text-white hover:bg-zinc-800 transition-all border border-zinc-900">
                             <Plus className="mr-2 h-4 w-4" /> Record Expense
                         </Button>
                     </DialogTrigger>
@@ -159,7 +159,7 @@ export default function ExpensesPage() {
                                 </div>
                             </div>
                             <DialogFooter className="pt-4">
-                                <Button type="submit" variant="destructive" disabled={isSubmitting}>
+                                <Button type="submit" className="bg-zinc-900 text-white hover:bg-zinc-800" disabled={isSubmitting}>
                                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Record Expense
                                 </Button>
@@ -170,53 +170,53 @@ export default function ExpensesPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-                <Card className="bg-destructive/5 border-destructive/20 col-span-1 shadow-md">
+                <Card className="bg-zinc-900 text-white shadow-sm border-zinc-900 col-span-1">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-destructive uppercase tracking-widest flex items-center justify-between">
+                        <CardTitle className="text-sm font-medium text-zinc-300 uppercase tracking-widest flex items-center justify-between">
                             <span>Total Spend</span>
                             <Wallet className="w-4 h-4" />
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-destructive font-mono">
+                        <div className="text-3xl font-bold text-white font-mono">
                             IDR {totalExpenses.toLocaleString('id-ID')}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                            <TrendingDown className="w-3 h-3 text-red-500" />
+                        <p className="text-xs text-zinc-400 mt-2 flex items-center gap-1">
+                            <TrendingDown className="w-3 h-3 text-zinc-300" />
                             Recorded this month
                         </p>
                     </CardContent>
                 </Card>
 
-                <Card className="col-span-1 md:col-span-2 shadow-md">
+                <Card className="col-span-1 md:col-span-2 shadow-sm bg-white border-zinc-200">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium uppercase tracking-widest flex items-center justify-between">
+                        <CardTitle className="text-sm font-medium uppercase tracking-widest flex items-center justify-between text-zinc-500">
                             <span>Monthly Budget Control</span>
-                            <Target className="w-4 h-4 text-muted-foreground" />
+                            <Target className="w-4 h-4 text-zinc-400" />
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex justify-between items-end mb-2">
-                            <div className="text-2xl font-bold font-mono">
+                            <div className="text-2xl font-bold font-mono text-zinc-900">
                                 {budgetUsage.toFixed(1)}%
                             </div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm text-zinc-500">
                                 Cap: IDR {monthlyBudget.toLocaleString('id-ID')}
                             </div>
                         </div>
-                        <Progress value={budgetUsage} className="h-4 bg-muted" indicatorClassName={budgetUsage > 90 ? "bg-red-500" : "bg-emerald-500"} />
-                        <p className="text-xs text-muted-foreground mt-4">
-                            You have spent <strong>IDR {totalExpenses.toLocaleString('id-ID')}</strong> out of your set budget.
+                        <Progress value={budgetUsage} className="h-4 bg-zinc-100 border border-zinc-100" indicatorClassName="bg-zinc-900" />
+                        <p className="text-xs text-zinc-500 mt-4">
+                            You have spent <strong className="text-zinc-900">IDR {totalExpenses.toLocaleString('id-ID')}</strong> out of your set budget.
                         </p>
                     </CardContent>
                 </Card>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-                <Card>
+                <Card className="border-zinc-200 shadow-sm bg-white">
                     <CardHeader>
-                        <CardTitle className="text-base">Distribution</CardTitle>
-                        <CardDescription>All time expense breakdown</CardDescription>
+                        <CardTitle className="text-base text-zinc-900 font-bold">Distribution</CardTitle>
+                        <CardDescription className="text-zinc-500">All time expense breakdown</CardDescription>
                     </CardHeader>
                     <CardContent className="h-[250px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -231,46 +231,53 @@ export default function ExpensesPage() {
                                     dataKey="value"
                                 >
                                     {pieData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        <Cell key={`cell-${index}`} fill={['#18181b', '#3f3f46', '#52525b', '#71717a', '#a1a1aa', '#d4d4d8'][index % 6]} />
                                     ))}
                                 </Pie>
-                                <Tooltip formatter={(value: number) => `IDR ${value.toLocaleString('id-ID')}`} />
+                                <Tooltip
+                                    formatter={(value: number) => `IDR ${value.toLocaleString('id-ID')}`}
+                                    contentStyle={{ backgroundColor: '#fff', borderColor: '#e4e4e7', borderRadius: '0.5rem', color: '#18181b', boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)' }}
+                                />
                                 <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" />
                             </PieChart>
                         </ResponsiveContainer>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="border-zinc-200 shadow-sm bg-white">
                     <CardHeader>
-                        <CardTitle className="text-base">Top Categories</CardTitle>
-                        <CardDescription>Highest spending areas</CardDescription>
+                        <CardTitle className="text-base text-zinc-900 font-bold">Top Categories</CardTitle>
+                        <CardDescription className="text-zinc-500">Highest spending areas</CardDescription>
                     </CardHeader>
                     <CardContent className="h-[250px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={barData} layout="vertical">
                                 <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
-                                <Tooltip cursor={{ fill: 'transparent' }} formatter={(value: number) => `IDR ${value.toLocaleString('id-ID')}`} />
-                                <Bar dataKey="value" fill="#f87171" radius={[0, 4, 4, 0]} barSize={20} />
+                                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12, fill: '#71717a' }} axisLine={false} tickLine={false} />
+                                <Tooltip
+                                    cursor={{ fill: '#f4f4f5' }}
+                                    formatter={(value: number) => `IDR ${value.toLocaleString('id-ID')}`}
+                                    contentStyle={{ backgroundColor: '#fff', borderColor: '#e4e4e7', borderRadius: '0.5rem', color: '#18181b', boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)' }}
+                                />
+                                <Bar dataKey="value" fill="#18181b" radius={[0, 4, 4, 0]} barSize={20} />
                             </BarChart>
                         </ResponsiveContainer>
                     </CardContent>
                 </Card>
             </div>
 
-            <Card className="border-border/50 shadow-lg">
+            <Card className="border-zinc-200 shadow-sm bg-white">
                 <CardHeader>
-                    <CardTitle>Expense Log</CardTitle>
-                    <CardDescription>Detailed transaction history</CardDescription>
+                    <CardTitle className="text-zinc-900 font-bold">Expense Log</CardTitle>
+                    <CardDescription className="text-zinc-500">Detailed transaction history</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>
+                        <div className="flex justify-center p-12"><Loader2 className="animate-spin text-zinc-900" /></div>
                     ) : (
-                        <div className="rounded-xl border border-border overflow-x-auto bg-card/50">
+                        <div className="rounded-xl border border-zinc-200 overflow-x-auto bg-white">
                             <table className="w-full text-sm text-left min-w-[600px]">
-                                <thead className="bg-muted/50 uppercase tracking-wider text-xs font-semibold text-muted-foreground">
+                                <thead className="bg-zinc-50 uppercase tracking-wider text-xs font-semibold text-zinc-500 border-b border-zinc-200">
                                     <tr>
                                         <th className="p-4 pl-6">Date</th>
                                         <th className="p-4">Description</th>
@@ -279,24 +286,24 @@ export default function ExpensesPage() {
                                         <th className="p-4 w-[50px]"></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border bg-card">
+                                <tbody className="divide-y divide-zinc-100 bg-white">
                                     {expenses.map((expense) => (
-                                        <tr key={expense.id} className="hover:bg-destructive/5 transition-colors group">
-                                            <td className="p-4 pl-6 text-muted-foreground font-mono text-xs">
+                                        <tr key={expense.id} className="hover:bg-zinc-50 transition-colors group">
+                                            <td className="p-4 pl-6 text-zinc-500 font-mono text-xs">
                                                 {format(new Date(expense.date), 'dd MMM yyyy')}
                                             </td>
-                                            <td className="p-4 font-medium">{expense.description}</td>
+                                            <td className="p-4 font-medium text-zinc-900">{expense.description}</td>
                                             <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <Tag className="w-3 h-3 text-muted-foreground" />
+                                                <div className="flex items-center gap-2 text-zinc-600">
+                                                    <Tag className="w-3 h-3 text-zinc-400" />
                                                     {expense.category}
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-right font-bold text-destructive font-mono">
+                                            <td className="p-4 text-right font-bold text-zinc-900 font-mono">
                                                 IDR {expense.amount.toLocaleString('id-ID')}
                                             </td>
                                             <td className="p-4 text-center">
-                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-all" onClick={() => handleDelete(expense.id)}>
+                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-300 opacity-0 group-hover:opacity-100 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => handleDelete(expense.id)}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </td>

@@ -277,31 +277,31 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
     if (success) {
         return (
             <Dialog open={open} onOpenChange={handleClose}>
-                <DialogContent className="sm:max-w-[425px] bg-card border-primary/20 text-foreground shadow-2xl shadow-primary/10">
+                <DialogContent className="sm:max-w-[425px] bg-white border-zinc-200 text-zinc-900 shadow-2xl shadow-zinc-200/50">
                     <div className="flex flex-col items-center justify-center p-6 space-y-4">
-                        <CheckCircle2 className="h-16 w-16 text-primary animate-in zoom-in spin-in-180 duration-500" />
-                        <h2 className="text-xl font-bold tracking-wide uppercase">Payment Successful!</h2>
+                        <CheckCircle2 className="h-16 w-16 text-zinc-900 animate-in zoom-in spin-in-180 duration-500" />
+                        <h2 className="text-xl font-bold tracking-wide uppercase text-zinc-900">Payment Successful!</h2>
                         {paymentMethod === 'cash' && Number(cashReceived) > 0 && (
-                            <div className="text-center bg-background/50 p-4 rounded-lg w-full border border-border">
-                                <p className="text-sm text-muted-foreground uppercase tracking-widest mb-1">Change (Kembalian)</p>
-                                <p className="text-3xl font-bold text-primary font-mono">IDR {change.toLocaleString('id-ID')}</p>
+                            <div className="text-center bg-zinc-50 p-4 rounded-lg w-full border border-zinc-200">
+                                <p className="text-sm text-zinc-500 uppercase tracking-widest mb-1">Change (Kembalian)</p>
+                                <p className="text-3xl font-bold text-zinc-900 font-mono">IDR {change.toLocaleString('id-ID')}</p>
                             </div>
                         )}
 
                         {/* WhatsApp Status Messages */}
                         {whatsappSent && (
-                            <div className="bg-green-950/30 border border-green-900/50 p-3 rounded-lg w-full animate-in slide-in-from-top-2">
-                                <p className="text-green-400 text-sm text-center font-medium">✓ Invoice PDF sent via WhatsApp!</p>
+                            <div className="bg-zinc-100 border border-zinc-200 p-3 rounded-lg w-full animate-in slide-in-from-top-2">
+                                <p className="text-zinc-700 text-sm text-center font-medium">✓ Invoice PDF sent via WhatsApp!</p>
                             </div>
                         )}
                         {whatsappError && (
-                            <div className="bg-red-950/30 border border-red-900/50 p-3 rounded-lg w-full animate-in slide-in-from-top-2">
-                                <p className="text-red-400 text-sm text-center">{whatsappError}</p>
+                            <div className="bg-red-50 border border-red-200 p-3 rounded-lg w-full animate-in slide-in-from-top-2">
+                                <p className="text-red-900 text-sm text-center">{whatsappError}</p>
                             </div>
                         )}
 
                         <div className="flex gap-2 w-full pt-4">
-                            <Button onClick={handlePrint} variant="outline" className="flex-1 border-primary/50 text-primary hover:bg-primary/10">Print Invoice</Button>
+                            <Button onClick={handlePrint} variant="outline" className="flex-1 border-zinc-200 text-zinc-900 hover:bg-zinc-50">Print</Button>
 
                             {/* WhatsApp Button */}
                             {lastTx?.customerPhone && (
@@ -310,21 +310,21 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
                                     disabled={whatsappLoading || whatsappSent}
                                     variant="outline"
                                     className={cn(
-                                        "flex-1 border-green-600/50 hover:bg-green-600/10 transition-all",
-                                        whatsappSent ? "bg-green-950/30 text-green-400" : "text-green-500"
+                                        "flex-1 border-zinc-200 hover:bg-zinc-50 transition-all text-zinc-900",
+                                        whatsappSent ? "bg-zinc-100 text-zinc-500 hover:bg-zinc-100" : ""
                                     )}
                                 >
                                     {whatsappLoading ? (
-                                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending PDF...</>
+                                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending...</>
                                     ) : whatsappSent ? (
-                                        <><CheckCircle2 className="h-4 w-4 mr-2" /> PDF Sent</>
+                                        <><CheckCircle2 className="h-4 w-4 mr-2" /> Sent</>
                                     ) : (
-                                        <><MessageCircle className="h-4 w-4 mr-2" /> Send PDF via WA</>
+                                        <><MessageCircle className="h-4 w-4 mr-2" /> Send WA</>
                                     )}
                                 </Button>
                             )}
 
-                            <Button onClick={handleClose} className="flex-1 bg-primary text-primary-foreground hover:bg-amber-600 font-bold">New Transaction</Button>
+                            <Button onClick={handleClose} className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800 font-bold">New</Button>
                         </div>
                     </div>
                 </DialogContent>
@@ -425,34 +425,34 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
 
                     {/* Cash Calculator */}
                     {paymentMethod === 'cash' && (
-                        <div className="bg-emerald-950/30 p-4 rounded-xl border border-emerald-900/50 mt-2 space-y-3 animate-in slide-in-from-top-2">
+                        <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 mt-2 space-y-3 animate-in slide-in-from-top-2">
                             <div className="grid gap-2">
-                                <Label className="text-emerald-400 font-bold uppercase text-xs tracking-wider">Cash Received</Label>
+                                <Label className="text-zinc-500 font-bold uppercase text-xs tracking-wider">Cash Received</Label>
                                 <Input
                                     type="number"
                                     placeholder="Enter Amount..."
-                                    className="text-lg font-mono bg-emerald-950/50 border-emerald-900 text-emerald-100 placeholder:text-emerald-800 focus:ring-emerald-500"
+                                    className="text-lg font-mono bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:ring-zinc-900"
                                     value={cashReceived}
                                     onChange={(e) => setCashReceived(e.target.value)}
                                 />
                                 <div className="grid grid-cols-4 gap-2">
-                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived(totalAmount.toString())} className="text-xs bg-emerald-950/30 border-emerald-900/50 text-emerald-100 hover:bg-emerald-900/50">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived(totalAmount.toString())} className="text-xs bg-white border-zinc-200 text-zinc-900 hover:bg-zinc-100">
                                         Pas
                                     </Button>
-                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived('20000')} className="text-xs bg-emerald-950/30 border-emerald-900/50 text-emerald-100 hover:bg-emerald-900/50">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived('20000')} className="text-xs bg-white border-zinc-200 text-zinc-900 hover:bg-zinc-100">
                                         20k
                                     </Button>
-                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived('50000')} className="text-xs bg-emerald-950/30 border-emerald-900/50 text-emerald-100 hover:bg-emerald-900/50">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived('50000')} className="text-xs bg-white border-zinc-200 text-zinc-900 hover:bg-zinc-100">
                                         50k
                                     </Button>
-                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived('100000')} className="text-xs bg-emerald-950/30 border-emerald-900/50 text-emerald-100 hover:bg-emerald-900/50">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived('100000')} className="text-xs bg-white border-zinc-200 text-zinc-900 hover:bg-zinc-100">
                                         100k
                                     </Button>
                                 </div>
                             </div>
-                            <div className="flex justify-between items-center pt-2 border-t border-emerald-900/50">
-                                <span className="text-sm text-emerald-600 font-medium">Change:</span>
-                                <span className={`text-xl font-bold font-mono ${change < 0 ? 'text-rose-500' : 'text-emerald-400'}`}>
+                            <div className="flex justify-between items-center pt-2 border-t border-zinc-200">
+                                <span className="text-sm text-zinc-500 font-medium">Change:</span>
+                                <span className={`text-xl font-bold font-mono ${change < 0 ? 'text-red-600' : 'text-zinc-900'}`}>
                                     IDR {change.toLocaleString('id-ID')}
                                 </span>
                             </div>

@@ -84,14 +84,14 @@ export default function BookingsPage() {
 
     const getStatusBadge = (status: string) => {
         const styles = {
-            pending: 'bg-amber-500/20 text-amber-500 border-amber-500/30',
-            confirmed: 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30',
-            cancelled: 'bg-red-500/20 text-red-500 border-red-500/30',
-            completed: 'bg-blue-500/20 text-blue-500 border-blue-500/30'
+            pending: 'bg-zinc-100 text-zinc-500 border-zinc-200',
+            confirmed: 'bg-zinc-900 text-white border-zinc-900',
+            cancelled: 'bg-white text-zinc-400 line-through border-zinc-100',
+            completed: 'bg-white text-zinc-900 border-zinc-900'
         };
 
         return (
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase border ${styles[status as keyof typeof styles] || ''}`}>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${styles[status as keyof typeof styles] || ''}`}>
                 {status}
             </span>
         );
@@ -110,7 +110,7 @@ export default function BookingsPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-96">
-                <div className="text-muted-foreground">Loading bookings...</div>
+                <div className="text-zinc-500">Loading bookings...</div>
             </div>
         );
     }
@@ -120,26 +120,26 @@ export default function BookingsPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-foreground">Bookings</h1>
-                    <p className="text-muted-foreground">Manage customer appointments</p>
+                    <h1 className="text-3xl font-bold text-zinc-900">Bookings</h1>
+                    <p className="text-zinc-500">Manage customer appointments</p>
                 </div>
             </div>
 
             {/* Filters */}
             <div className="flex gap-4 items-end">
                 <div className="flex-1">
-                    <label className="text-sm text-muted-foreground mb-2 block">Filter by Date</label>
+                    <label className="text-sm text-zinc-500 mb-2 block font-medium">Filter by Date</label>
                     <Input
                         type="date"
                         value={filterDate}
                         onChange={(e) => setFilterDate(e.target.value)}
-                        className="bg-background border-border"
+                        className="bg-white border-zinc-200 focus-visible:ring-zinc-900"
                     />
                 </div>
                 <div className="flex-1">
-                    <label className="text-sm text-muted-foreground mb-2 block">Filter by Status</label>
+                    <label className="text-sm text-zinc-500 mb-2 block font-medium">Filter by Status</label>
                     <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="bg-background border-border">
+                        <SelectTrigger className="bg-white border-zinc-200 focus:ring-zinc-900">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -157,6 +157,7 @@ export default function BookingsPage() {
                         setFilterDate('');
                         setFilterStatus('all');
                     }}
+                    className="border-zinc-200 hover:bg-zinc-50 text-zinc-900"
                 >
                     <Filter className="w-4 h-4 mr-2" />
                     Reset
@@ -166,49 +167,49 @@ export default function BookingsPage() {
             {/* Bookings List */}
             <div className="space-y-4">
                 {bookings.length === 0 ? (
-                    <div className="text-center py-12 bg-card rounded-lg border border-border">
-                        <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                        <p className="text-muted-foreground">No bookings found</p>
+                    <div className="text-center py-12 bg-white rounded-lg border border-zinc-100 shadow-sm">
+                        <Calendar className="w-12 h-12 mx-auto text-zinc-300 mb-4" />
+                        <p className="text-zinc-500">No bookings found</p>
                     </div>
                 ) : (
                     bookings.map((booking) => (
                         <div
                             key={booking.id}
-                            className="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-colors"
+                            className="bg-white border border-zinc-200 rounded-lg p-6 hover:shadow-md transition-all duration-200"
                         >
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1 space-y-3">
                                     <div className="flex items-center gap-4 flex-wrap">
                                         <div className="flex items-center gap-2">
-                                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                                            <span className="font-semibold text-foreground">
+                                            <Calendar className="w-4 h-4 text-zinc-500" />
+                                            <span className="font-bold text-zinc-900">
                                                 {formatDate(booking.bookingDate)}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Clock className="w-4 h-4 text-muted-foreground" />
-                                            <span className="text-foreground">{booking.timeSlot}</span>
+                                            <Clock className="w-4 h-4 text-zinc-500" />
+                                            <span className="text-zinc-900 font-mono">{booking.timeSlot}</span>
                                         </div>
                                         {getStatusBadge(booking.status)}
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>
-                                            <p className="text-xs text-muted-foreground mb-1">Barber</p>
-                                            <p className="font-medium text-foreground">{booking.barber.name}</p>
+                                            <p className="text-xs text-zinc-500 mb-1 uppercase tracking-wider">Barber</p>
+                                            <p className="font-bold text-zinc-900">{booking.barber.name}</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs text-muted-foreground mb-1">Customer</p>
+                                            <p className="text-xs text-zinc-500 mb-1 uppercase tracking-wider">Customer</p>
                                             <div className="flex items-center gap-2">
-                                                <User className="w-4 h-4 text-muted-foreground" />
-                                                <p className="font-medium text-foreground">{booking.customerName}</p>
+                                                <User className="w-4 h-4 text-zinc-400" />
+                                                <p className="font-medium text-zinc-900">{booking.customerName}</p>
                                             </div>
                                         </div>
                                         <div>
-                                            <p className="text-xs text-muted-foreground mb-1">Phone</p>
+                                            <p className="text-xs text-zinc-500 mb-1 uppercase tracking-wider">Phone</p>
                                             <div className="flex items-center gap-2">
-                                                <Phone className="w-4 h-4 text-muted-foreground" />
-                                                <p className="font-medium text-foreground">{booking.customerPhone}</p>
+                                                <Phone className="w-4 h-4 text-zinc-400" />
+                                                <p className="font-mono text-zinc-900">{booking.customerPhone}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -219,16 +220,15 @@ export default function BookingsPage() {
                                     <div className="flex gap-2">
                                         <Button
                                             size="sm"
-                                            variant="outline"
-                                            className="border-emerald-500 text-emerald-500 hover:bg-emerald-500/10"
+                                            className="bg-zinc-900 text-white hover:bg-zinc-800 font-bold shadow-sm"
                                             onClick={() => updateBookingStatus(booking.id, 'confirmed')}
                                         >
                                             Confirm
                                         </Button>
                                         <Button
                                             size="sm"
-                                            variant="outline"
-                                            className="border-red-500 text-red-500 hover:bg-red-500/10"
+                                            variant="ghost"
+                                            className="text-zinc-400 hover:text-red-500 hover:bg-red-50"
                                             onClick={() => updateBookingStatus(booking.id, 'cancelled')}
                                         >
                                             Cancel
@@ -239,7 +239,7 @@ export default function BookingsPage() {
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        className="border-blue-500 text-blue-500 hover:bg-blue-500/10"
+                                        className="border-zinc-900 text-zinc-900 hover:bg-zinc-50 font-medium"
                                         onClick={() => updateBookingStatus(booking.id, 'completed')}
                                     >
                                         Mark Complete

@@ -349,22 +349,22 @@ export default function BarbersPage() {
                 </div>
             </div>
 
-            <Card className="border-border/50 shadow-lg">
+            <Card className="border-zinc-200 shadow-sm bg-white">
                 <CardHeader>
-                    <CardTitle>Barbers</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-zinc-900 font-bold">Barbers</CardTitle>
+                    <CardDescription className="text-zinc-500">
                         Manage your barber team and their commission settings
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loading ? (
                         <div className="flex justify-center p-12">
-                            <Loader2 className="animate-spin" />
+                            <Loader2 className="animate-spin text-zinc-900" />
                         </div>
                     ) : barbers.length === 0 ? (
-                        <div className="text-center p-12 text-muted-foreground">
+                        <div className="text-center p-12 text-zinc-400">
                             <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p className="text-lg font-semibold mb-2">No barbers found</p>
+                            <p className="text-lg font-semibold mb-2 text-zinc-900">No barbers found</p>
                             <p className="text-sm">
                                 {searchTerm
                                     ? 'No barbers match your search criteria'
@@ -372,15 +372,15 @@ export default function BarbersPage() {
                             </p>
                         </div>
                     ) : filteredBarbers.length === 0 ? (
-                        <div className="text-center p-12 text-muted-foreground">
+                        <div className="text-center p-12 text-zinc-400">
                             <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p className="text-lg font-semibold mb-2">No matching results</p>
+                            <p className="text-lg font-semibold mb-2 text-zinc-900">No matching results</p>
                             <p className="text-sm">No barbers found matching "{searchTerm}"</p>
                         </div>
                     ) : (
-                        <div className="rounded-xl border border-border overflow-x-auto bg-card/50">
+                        <div className="rounded-xl border border-zinc-200 overflow-x-auto bg-white">
                             <table className="w-full text-sm text-left min-w-[800px]">
-                                <thead className="bg-muted/50 uppercase tracking-wider text-xs font-semibold text-muted-foreground">
+                                <thead className="bg-zinc-50 uppercase tracking-wider text-xs font-semibold text-zinc-500 border-b border-zinc-200">
                                     <tr>
                                         <th className="p-4 pl-6">Name</th>
                                         <th className="p-4">Username</th>
@@ -390,18 +390,18 @@ export default function BarbersPage() {
                                         <th className="p-4 text-center">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border bg-card">
+                                <tbody className="divide-y divide-zinc-100 bg-white">
                                     {filteredBarbers.map((barber) => (
-                                        <tr key={barber.id} className="hover:bg-primary/5 transition-colors group">
-                                            <td className="p-4 pl-6 font-bold">{barber.name}</td>
-                                            <td className="p-4 text-muted-foreground">{barber.username}</td>
+                                        <tr key={barber.id} className="hover:bg-zinc-50 transition-colors group">
+                                            <td className="p-4 pl-6 font-bold text-zinc-900">{barber.name}</td>
+                                            <td className="p-4 text-zinc-500">{barber.username}</td>
                                             <td className="p-4 text-center">
                                                 <Badge
-                                                    variant={barber.status === 'active' ? 'default' : 'secondary'}
+                                                    variant="outline"
                                                     className={
                                                         barber.status === 'active'
-                                                            ? 'bg-green-500/10 text-green-500'
-                                                            : 'bg-gray-500/10 text-gray-500'
+                                                            ? 'bg-zinc-900 text-white border-zinc-900'
+                                                            : 'bg-zinc-100 text-zinc-500 border-zinc-200'
                                                     }
                                                 >
                                                     {barber.status}
@@ -410,16 +410,12 @@ export default function BarbersPage() {
                                             <td className="p-4 text-center">
                                                 <Badge
                                                     variant="outline"
-                                                    className={
-                                                        barber.commissionType === 'percentage'
-                                                            ? 'bg-blue-500/10 text-blue-500'
-                                                            : 'bg-emerald-500/10 text-emerald-500'
-                                                    }
+                                                    className="border-zinc-300 text-zinc-700 bg-white"
                                                 >
                                                     {barber.commissionType === 'percentage' ? 'Percentage' : 'Flat Rate'}
                                                 </Badge>
                                             </td>
-                                            <td className="p-4 text-right font-mono font-semibold">
+                                            <td className="p-4 text-right font-mono font-bold text-zinc-900">
                                                 {barber.commissionType === 'percentage'
                                                     ? `${barber.commissionValue}%`
                                                     : `IDR ${barber.commissionValue.toLocaleString('id-ID')}`
@@ -431,7 +427,7 @@ export default function BarbersPage() {
                                                         size="sm"
                                                         variant="outline"
                                                         onClick={() => handleEdit(barber)}
-                                                        className="h-8"
+                                                        className="h-8 border-zinc-200 hover:bg-zinc-100 text-zinc-900"
                                                     >
                                                         <Pencil className="w-3 h-3 mr-1" />
                                                         Edit
@@ -440,7 +436,7 @@ export default function BarbersPage() {
                                                         size="sm"
                                                         variant="outline"
                                                         onClick={() => handleDelete(barber.id)}
-                                                        className="h-8 text-destructive hover:text-destructive"
+                                                        className="h-8 text-zinc-400 hover:text-red-600 hover:bg-red-50 border-zinc-200"
                                                     >
                                                         <Trash2 className="w-3 h-3 mr-1" />
                                                         Delete

@@ -156,7 +156,7 @@ export default function PosPage() {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-zinc-500 hover:text-red-600 hover:bg-red-50 h-9 px-2 md:px-4"
+                                className="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 h-9 px-2 md:px-4"
                                 onClick={() => {
                                     logout();
                                     navigate('/login');

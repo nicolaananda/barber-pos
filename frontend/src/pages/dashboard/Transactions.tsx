@@ -91,24 +91,24 @@ export default function TransactionsPage() {
             </div>
 
             {/* Filter Bar */}
-            <div className="bg-card p-4 rounded-lg border border-border shadow-sm flex flex-col md:flex-row gap-4 items-center">
+            <div className="bg-white p-4 rounded-lg border border-zinc-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">
                 <div className="flex items-center gap-2 w-full md:w-auto">
-                    <Filter className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Filters:</span>
+                    <Filter className="w-4 h-4 text-zinc-500" />
+                    <span className="text-sm font-medium text-zinc-700">Filters:</span>
                 </div>
 
-                <div className="flex gap-2 bg-background border border-border rounded-md px-2 items-center flex-1 w-full md:w-auto">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                <div className="flex gap-2 bg-zinc-50 border border-zinc-200 rounded-md px-2 items-center flex-1 w-full md:w-auto">
+                    <Calendar className="w-4 h-4 text-zinc-400" />
                     <Input
                         type="date"
-                        className="border-0 bg-transparent focus-visible:ring-0 w-full"
+                        className="border-0 bg-transparent focus-visible:ring-0 w-full text-zinc-900"
                         value={dateFilter}
                         onChange={(e) => setDateFilter(e.target.value)}
                     />
                 </div>
 
                 <Select value={methodFilter} onValueChange={setMethodFilter}>
-                    <SelectTrigger className="w-full md:w-[150px]">
+                    <SelectTrigger className="w-full md:w-[150px] bg-white border-zinc-200 text-zinc-900">
                         <SelectValue placeholder="Payment Method" />
                     </SelectTrigger>
                     <SelectContent>
@@ -119,22 +119,22 @@ export default function TransactionsPage() {
                 </Select>
             </div>
 
-            <Card className="border-border/50 shadow-lg">
+            <Card className="border-zinc-200 shadow-sm bg-white">
                 <CardHeader>
-                    <CardTitle className="flex justify-between items-center">
+                    <CardTitle className="flex justify-between items-center font-bold text-zinc-900">
                         <span>Invoice Log</span>
-                        <span className="text-sm font-normal text-muted-foreground">Showing {filteredTransactions.length} records</span>
+                        <span className="text-sm font-normal text-zinc-500">Showing {filteredTransactions.length} records</span>
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     {loading ? (
                         <div className="flex justify-center p-12">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <Loader2 className="h-8 w-8 animate-spin text-zinc-900" />
                         </div>
                     ) : (
-                        <div className="rounded-xl border border-border overflow-hidden">
+                        <div className="rounded-xl border border-zinc-200 overflow-hidden">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-muted/50 uppercase tracking-wider text-xs font-semibold text-muted-foreground">
+                                <thead className="bg-zinc-50 uppercase tracking-wider text-xs font-semibold text-zinc-500 border-b border-zinc-200">
                                     <tr>
                                         <th className="p-4 pl-6">Date & Time</th>
                                         <th className="p-4">Invoice</th>
@@ -144,43 +144,43 @@ export default function TransactionsPage() {
                                         <th className="p-4 text-center">Status</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border bg-card">
+                                <tbody className="divide-y divide-zinc-100 bg-white">
                                     {filteredTransactions.length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} className="p-12 text-center text-muted-foreground">
+                                            <td colSpan={6} className="p-12 text-center text-zinc-400 font-medium">
                                                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
                                                 No transactions found for current filter.
                                             </td>
                                         </tr>
                                     ) : (
                                         filteredTransactions.map((tx) => (
-                                            <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
-                                                <td className="p-4 pl-6 text-muted-foreground font-mono text-xs">
+                                            <tr key={tx.id} className="hover:bg-zinc-50 transition-colors">
+                                                <td className="p-4 pl-6 text-zinc-500 font-mono text-xs">
                                                     {format(new Date(tx.date), 'dd MMM yyyy HH:mm')}
                                                 </td>
-                                                <td className="p-4 font-bold text-foreground font-mono">
+                                                <td className="p-4 font-bold text-zinc-900 font-mono tracking-tight">
                                                     {tx.invoiceCode}
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                                                        <div className="w-6 h-6 rounded-full bg-zinc-900 flex items-center justify-center text-[10px] font-bold text-white">
                                                             {tx.barberId?.name?.charAt(0) || 'S'}
                                                         </div>
-                                                        {tx.barberId?.name}
+                                                        <span className="font-medium text-zinc-700">{tx.barberId?.name}</span>
                                                     </div>
                                                 </td>
-                                                <td className="p-4 text-muted-foreground">
+                                                <td className="p-4 text-zinc-500">
                                                     {tx.customerName || <span className="italic text-xs opacity-50">Walk-in</span>}
                                                 </td>
-                                                <td className="p-4 text-right font-bold text-foreground font-mono">
+                                                <td className="p-4 text-right font-bold text-zinc-900 font-mono">
                                                     IDR {tx.totalAmount.toLocaleString('id-ID')}
                                                 </td>
                                                 <td className="p-4 text-center">
                                                     <Badge
                                                         variant="outline"
                                                         className={tx.paymentMethod === 'cash'
-                                                            ? 'border-emerald-500/30 text-emerald-600 bg-emerald-500/5'
-                                                            : 'border-blue-500/30 text-blue-600 bg-blue-500/5'}
+                                                            ? 'border-zinc-300 text-zinc-600 bg-zinc-100'
+                                                            : 'border-zinc-900 text-white bg-zinc-900'}
                                                     >
                                                         {tx.paymentMethod.toUpperCase()}
                                                     </Badge>

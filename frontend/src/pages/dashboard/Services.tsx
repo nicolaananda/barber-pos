@@ -194,13 +194,13 @@ export default function ServicesPage() {
 
             {/* Grid */}
             {loading ? (
-                <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>
+                <div className="flex justify-center p-12"><Loader2 className="animate-spin text-zinc-900" /></div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredServices.map((service) => (
-                        <Card key={service.id} className="group hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 cursor-default relative overflow-hidden">
+                        <Card key={service.id} className="group hover:border-zinc-900 transition-all duration-300 hover:shadow-lg hover:shadow-zinc-200/50 cursor-default relative overflow-hidden bg-white border-zinc-200">
                             <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                <Button size="icon" variant="secondary" className="h-8 w-8 hover:bg-background" onClick={() => handleEdit(service)}>
+                                <Button size="icon" variant="secondary" className="h-8 w-8 bg-zinc-100 hover:bg-zinc-200 text-zinc-900" onClick={() => handleEdit(service)}>
                                     <Pencil className="h-4 w-4" />
                                 </Button>
                                 <Button size="icon" variant="destructive" className="h-8 w-8" onClick={() => handleDelete(service.id)}>
@@ -209,19 +209,19 @@ export default function ServicesPage() {
                             </div>
 
                             <CardContent className="p-6 flex flex-col h-full gap-4 pt-8">
-                                <div className="p-3 w-12 h-12 bg-primary/10 rounded-xl text-primary flex items-center justify-center">
+                                <div className="p-3 w-12 h-12 bg-zinc-100 rounded-xl text-zinc-900 flex items-center justify-center border border-zinc-200">
                                     <Scissors className="h-6 w-6" />
                                 </div>
                                 <div className="space-y-1">
-                                    <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">{service.name}</h3>
+                                    <h3 className="font-bold text-lg leading-tight text-zinc-900 group-hover:underline decoration-2 underline-offset-4">{service.name}</h3>
                                     <div className="flex items-center gap-2">
-                                        <Badge variant="secondary" className="text-[10px] font-normal">Service</Badge>
-                                        <Badge variant="outline" className="text-[10px] font-mono">ID: {service.id}</Badge>
+                                        <Badge variant="secondary" className="text-[10px] font-bold bg-zinc-100 text-zinc-600">Service</Badge>
+                                        <Badge variant="outline" className="text-[10px] font-mono text-zinc-400 border-zinc-200">ID: {service.id}</Badge>
                                     </div>
                                 </div>
-                                <div className="mt-auto pt-4 border-t border-border flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">Price</span>
-                                    <span className="text-xl font-bold font-mono text-primary">IDR {service.price.toLocaleString('id-ID')}</span>
+                                <div className="mt-auto pt-4 border-t border-zinc-100 flex items-center justify-between">
+                                    <span className="text-sm text-zinc-500 font-medium">Price</span>
+                                    <span className="text-xl font-black font-mono text-zinc-900">IDR {service.price.toLocaleString('id-ID')}</span>
                                 </div>
                             </CardContent>
                         </Card>

@@ -68,7 +68,7 @@ export function DashboardHome() {
                 <div className="flex items-center space-x-2">
                     <Button
                         variant="default"
-                        className="bg-primary text-primary-foreground hover:bg-amber-600 shadow-lg shadow-primary/20 transition-all hover:scale-105"
+                        className="bg-zinc-900 text-white hover:bg-zinc-800 shadow-lg shadow-zinc-200/50 transition-all hover:scale-105"
                         onClick={() => navigate('/pos')}
                     >
                         Launch POS Station
@@ -92,8 +92,8 @@ export function DashboardHome() {
                             <span
                                 className={
                                     Number(stats.revenueGrowth) > 0
-                                        ? 'text-green-500 font-bold'
-                                        : 'text-destructive'
+                                        ? 'text-zinc-900 font-bold'
+                                        : 'text-zinc-500'
                                 }
                             >
                                 {Number(stats.revenueGrowth) > 0 ? '+' : ''}
@@ -148,18 +148,18 @@ export function DashboardHome() {
                                 />
                                 <Tooltip
                                     contentStyle={{
-                                        backgroundColor: '#18181b',
-                                        border: '1px solid #27272a',
+                                        backgroundColor: '#fff',
+                                        border: '1px solid #e4e4e7',
                                         borderRadius: '8px',
-                                        color: '#f59e0b',
+                                        color: '#18181b',
                                     }}
                                     formatter={(value: number) => [
                                         `IDR ${value.toLocaleString('id-ID')}`,
                                         'Revenue',
                                     ]}
-                                    cursor={{ fill: '#27272a' }}
+                                    cursor={{ fill: '#f4f4f5' }}
                                 />
-                                <Bar dataKey="total" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="total" fill="#18181b" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </CardContent>
@@ -191,7 +191,7 @@ export function DashboardHome() {
                                                 {tx.serviceName}
                                             </p>
                                         </div>
-                                        <div className="ml-auto font-mono font-medium text-emerald-500 bg-emerald-950/30 px-2 py-0.5 rounded text-xs border border-emerald-900/50">
+                                        <div className="ml-auto font-mono font-medium text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded text-xs border border-zinc-200">
                                             +IDR {tx.amount.toLocaleString('id-ID')}
                                         </div>
                                     </div>
