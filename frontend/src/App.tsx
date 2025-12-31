@@ -38,6 +38,13 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
 }
 
 export default function App() {
+  // Domain-based routing
+  // staycoolhairlab.id -> Status Page ONLY (Customer Facing)
+  // pos.staycoolhairlab.id (or localhost) -> Full App
+  if (window.location.hostname === 'staycoolhairlab.id') {
+    return <StatusPage />;
+  }
+
   return (
     <AuthProvider>
       <Router>
