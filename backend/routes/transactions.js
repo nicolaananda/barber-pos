@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const { format } = require('date-fns');
+const whatsappService = require('../lib/whatsapp');
 
 // POST /api/transactions
 router.post('/', authenticateToken, async (req, res) => {
@@ -109,6 +110,54 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch transactions' });
+    }
+});
+
+// POST /api/transactions/:id/send-whatsapp
+router.post('/:id/send-whatsapp', authenticateToken, async (req, res) => {
+    try {
+        const transactionId = parseInt(req.params.id);
+
+        if (isNaN(transactionId)) {
+            return res.status(400).json({ error: 'Invalid transaction ID' });
+        }
+
+        // Fetch transaction with barber info
+        const transaction = await prisma.transaction.findUnique({
+            where: { id: transactionId },
+            include: {
+                barber: {
+                    select: { name: true }
+                }
+            }
+        });
+
+        if (!transaction) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+
+        if (!transaction.customerPhone) {
+            return res.status(400).json({ error: 'Customer phone number not available' });
+        }
+
+        // Send invoice via WhatsApp
+        const result = await whatsappService.sendInvoice(transaction, transaction.barber.name);
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: 'Invoice sent successfully via WhatsApp',
+                data: result.data
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: result.error
+            });
+        }
+    } catch (error) {
+        console.error('Send WhatsApp Error:', error);
+        res.status(500).json({ error: 'Failed to send invoice via WhatsApp' });
     }
 });
 

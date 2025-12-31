@@ -16,6 +16,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 
 export default function PosPage() {
     const { user, logout, refreshUser } = useAuth();
@@ -107,17 +108,17 @@ export default function PosPage() {
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 {/* Header */}
                 <header className="flex-none p-4 md:px-8 md:py-5 bg-card/80 backdrop-blur-md border-b border-border flex justify-between items-center shadow-sm z-10 sticky top-0">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 md:gap-4">
                         <img
                             src="/logo.jpg"
                             alt="Logo"
-                            className="w-12 h-12 rounded-full object-cover shadow-lg border-2 border-primary"
+                            className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover shadow-lg border-2 border-primary"
                         />
                         <div>
-                            <h1 className="text-xl md:text-2xl font-bold tracking-widest uppercase text-foreground">
+                            <h1 className="text-lg md:text-2xl font-bold tracking-widest uppercase text-foreground leading-none md:leading-normal">
                                 Staycool <span className="text-primary">POS</span>
                             </h1>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground tracking-wider">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground tracking-wider hidden md:flex">
                                 <span className="uppercase font-medium text-primary/80">
                                     Operator
                                 </span>
@@ -130,16 +131,23 @@ export default function PosPage() {
                     <div className="flex gap-2">
                         <Button
                             variant={user?.availability === 'busy' ? "destructive" : "outline"}
-                            className={user?.availability === 'busy' ? "bg-amber-500 hover:bg-amber-600 border-none text-black font-bold" : "border-emerald-500 text-emerald-500 hover:bg-emerald-500/10"}
+                            size="sm"
+                            className={cn(
+                                "h-9 font-bold transition-all",
+                                user?.availability === 'busy'
+                                    ? "bg-amber-500 hover:bg-amber-600 border-none text-black"
+                                    : "border-emerald-500 text-emerald-500 hover:bg-emerald-500/10"
+                            )}
                             onClick={handleToggleAvailability}
                             disabled={isTogglingStatus}
                         >
-                            {isTogglingStatus ? 'Updating...' : (user?.availability === 'busy' ? 'Mark as Idle' : 'Mark as Busy')}
+                            {isTogglingStatus ? '...' : (user?.availability === 'busy' ? 'BUSY' : 'IDLE')}
                         </Button>
                         {user?.role === 'owner' ? (
                             <Button
                                 variant="ghost"
-                                className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                size="sm"
+                                className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-9 hidden md:inline-flex"
                                 onClick={() => navigate('/dashboard')}
                             >
                                 Dashboard
@@ -147,20 +155,22 @@ export default function PosPage() {
                         ) : (
                             <Button
                                 variant="ghost"
-                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                size="sm"
+                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-9 px-2 md:px-4"
                                 onClick={() => {
                                     logout();
                                     navigate('/login');
                                 }}
                             >
-                                Logout
+                                <span className="hidden md:inline">Logout</span>
+                                <span className="md:hidden">Exit</span>
                             </Button>
                         )}
                     </div>
                 </header>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 pb-32 md:pb-8">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 pb-32 md:pb-8 scroll-smooth">
                     {user?.role !== 'staff' && (
                         <div className="animate-in fade-in slide-in-from-top-4 duration-500">
                             <BarberSelector />

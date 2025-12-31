@@ -49,6 +49,35 @@ app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+// Graceful shutdown
+const gracefulShutdown = async (signal) => {
+    console.log(`\n${signal} received. Starting graceful shutdown...`);
+    
+    server.close(async () => {
+        console.log('HTTP server closed.');
+        
+        try {
+            // Disconnect Prisma
+            const prisma = require('./lib/prisma');
+            await prisma.$disconnect();
+            console.log('Database connections closed.');
+        } catch (error) {
+            console.error('Error closing database connections:', error);
+        }
+        
+        process.exit(0);
+    });
+    
+    // Force shutdown after 10 seconds
+    setTimeout(() => {
+        console.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+    }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

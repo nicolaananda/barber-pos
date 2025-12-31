@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CheckCircle2, Search } from 'lucide-react';
+import { CheckCircle2, Search, MessageCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -20,6 +20,11 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
     const [success, setSuccess] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [lastTx, setLastTx] = useState<any>(null);
+
+    // WhatsApp sending state
+    const [whatsappLoading, setWhatsappLoading] = useState(false);
+    const [whatsappSent, setWhatsappSent] = useState(false);
+    const [whatsappError, setWhatsappError] = useState('');
 
     // Customer Autocomplete State
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,6 +41,8 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
             setCashReceived('');
             setShowSuggestions(false);
             setSearchQuery('');
+            setWhatsappSent(false);
+            setWhatsappError('');
         }
     }, [open]);
 
@@ -129,8 +136,41 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
             setPaymentMethod('cash');
             setLastTx(null);
             setCustomerInfo('', ''); // Clear customer info after success
+            setWhatsappSent(false);
+            setWhatsappError('');
         }
         onOpenChange(false);
+    };
+
+    const handleSendWhatsApp = async () => {
+        if (!lastTx || !lastTx.id) return;
+
+        setWhatsappLoading(true);
+        setWhatsappError('');
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/transactions/${lastTx.id}/send-whatsapp`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to send WhatsApp');
+            }
+
+            setWhatsappSent(true);
+        } catch (error) {
+            console.error('WhatsApp Send Error:', error);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            setWhatsappError((error as any).message || 'Failed to send WhatsApp');
+        } finally {
+            setWhatsappLoading(false);
+        }
     };
 
     const handlePrint = () => {
@@ -247,8 +287,43 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
                                 <p className="text-3xl font-bold text-primary font-mono">IDR {change.toLocaleString('id-ID')}</p>
                             </div>
                         )}
+
+                        {/* WhatsApp Status Messages */}
+                        {whatsappSent && (
+                            <div className="bg-green-950/30 border border-green-900/50 p-3 rounded-lg w-full animate-in slide-in-from-top-2">
+                                <p className="text-green-400 text-sm text-center font-medium">✓ Invoice PDF sent via WhatsApp!</p>
+                            </div>
+                        )}
+                        {whatsappError && (
+                            <div className="bg-red-950/30 border border-red-900/50 p-3 rounded-lg w-full animate-in slide-in-from-top-2">
+                                <p className="text-red-400 text-sm text-center">{whatsappError}</p>
+                            </div>
+                        )}
+
                         <div className="flex gap-2 w-full pt-4">
                             <Button onClick={handlePrint} variant="outline" className="flex-1 border-primary/50 text-primary hover:bg-primary/10">Print Invoice</Button>
+
+                            {/* WhatsApp Button */}
+                            {lastTx?.customerPhone && (
+                                <Button
+                                    onClick={handleSendWhatsApp}
+                                    disabled={whatsappLoading || whatsappSent}
+                                    variant="outline"
+                                    className={cn(
+                                        "flex-1 border-green-600/50 hover:bg-green-600/10 transition-all",
+                                        whatsappSent ? "bg-green-950/30 text-green-400" : "text-green-500"
+                                    )}
+                                >
+                                    {whatsappLoading ? (
+                                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending PDF...</>
+                                    ) : whatsappSent ? (
+                                        <><CheckCircle2 className="h-4 w-4 mr-2" /> PDF Sent</>
+                                    ) : (
+                                        <><MessageCircle className="h-4 w-4 mr-2" /> Send PDF via WA</>
+                                    )}
+                                </Button>
+                            )}
+
                             <Button onClick={handleClose} className="flex-1 bg-primary text-primary-foreground hover:bg-amber-600 font-bold">New Transaction</Button>
                         </div>
                     </div>
@@ -259,10 +334,10 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-card border-border text-foreground">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold tracking-widest uppercase flex items-center gap-2">
-                        Checkout <span className="text-primary text-sm font-light normal-case tracking-normal">Complete Payment</span>
+            <DialogContent className="w-full max-w-[95vw] md:max-w-[500px] max-h-[90vh] overflow-y-auto bg-card border-border text-foreground p-4 md:p-6 rounded-t-xl md:rounded-xl">
+                <DialogHeader className="pb-2 md:pb-4">
+                    <DialogTitle className="text-lg md:text-xl font-bold tracking-widest uppercase flex items-center gap-2">
+                        Checkout <span className="text-primary text-xs md:text-sm font-light normal-case tracking-normal ml-auto md:ml-2">Complete Payment</span>
                     </DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-6 py-4">
@@ -360,6 +435,20 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
                                     value={cashReceived}
                                     onChange={(e) => setCashReceived(e.target.value)}
                                 />
+                                <div className="grid grid-cols-4 gap-2">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived(totalAmount.toString())} className="text-xs bg-emerald-950/30 border-emerald-900/50 text-emerald-100 hover:bg-emerald-900/50">
+                                        Pas
+                                    </Button>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived('20000')} className="text-xs bg-emerald-950/30 border-emerald-900/50 text-emerald-100 hover:bg-emerald-900/50">
+                                        20k
+                                    </Button>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived('50000')} className="text-xs bg-emerald-950/30 border-emerald-900/50 text-emerald-100 hover:bg-emerald-900/50">
+                                        50k
+                                    </Button>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setCashReceived('100000')} className="text-xs bg-emerald-950/30 border-emerald-900/50 text-emerald-100 hover:bg-emerald-900/50">
+                                        100k
+                                    </Button>
+                                </div>
                             </div>
                             <div className="flex justify-between items-center pt-2 border-t border-emerald-900/50">
                                 <span className="text-sm text-emerald-600 font-medium">Change:</span>

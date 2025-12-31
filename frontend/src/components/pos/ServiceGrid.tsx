@@ -60,13 +60,13 @@ export default function ServiceGrid() {
                 />
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredServices.map((service) => (
-                    <Card key={service.id} className="cursor-pointer group hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 bg-card/60 backdrop-blur-sm border-border selection:none">
+                    <Card key={service.id} className="cursor-pointer group hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 bg-card/60 backdrop-blur-sm border-border selection:none active:scale-[0.98]">
                         <CardContent className="p-0">
                             <Button
                                 variant="ghost"
-                                className="w-full h-full p-6 flex flex-col items-center justify-center gap-4 h-auto hover:bg-primary/5 rounded-xl"
+                                className="w-full h-auto p-4 md:p-6 flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 hover:bg-primary/5 rounded-xl border border-transparent whitespace-normal"
                                 disabled={!selectedBarber}
                                 onClick={() =>
                                     addToCart({
@@ -77,14 +77,16 @@ export default function ServiceGrid() {
                                     })
                                 }
                             >
-                                <div className="p-4 bg-background rounded-full border border-border group-hover:border-primary/30 group-hover:text-primary transition-colors text-muted-foreground shadow-inner">
-                                    <Scissors className="h-7 w-7" />
-                                </div>
-                                <div className="text-center space-y-1">
-                                    <div className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">{service.name}</div>
-                                    <div className="font-mono text-primary/90 font-bold bg-primary/5 px-2 py-0.5 rounded text-sm border border-primary/10">
-                                        IDR {service.price.toLocaleString('id-ID')}
+                                <div className="flex items-center gap-4 text-left">
+                                    <div className="p-3 bg-background rounded-full border border-border group-hover:border-primary/30 group-hover:text-primary transition-colors text-muted-foreground shadow-sm flex-shrink-0">
+                                        <Scissors className="h-5 w-5 md:h-7 md:w-7" />
                                     </div>
+                                    <div className="font-bold text-foreground text-base md:text-lg group-hover:text-primary transition-colors line-clamp-2">
+                                        {service.name}
+                                    </div>
+                                </div>
+                                <div className="font-mono text-primary font-bold bg-primary/10 px-3 py-1 rounded-full text-sm border border-primary/20 whitespace-nowrap">
+                                    IDR {service.price.toLocaleString('id-ID')}
                                 </div>
                             </Button>
                         </CardContent>

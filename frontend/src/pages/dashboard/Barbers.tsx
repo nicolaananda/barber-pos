@@ -70,6 +70,7 @@ export default function BarbersPage() {
             });
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({ error: 'Failed to fetch barbers' }));
+                console.error('Fetch barbers error:', res.status, errorData);
                 throw new Error(errorData.error || 'Failed to fetch barbers');
             }
             const data = await res.json();
@@ -107,7 +108,7 @@ export default function BarbersPage() {
 
             // Ensure commissionType is valid
             const validCommissionType = commissionType === 'flat' ? 'flat' : 'percentage';
-            
+
             // Parse commissionValue
             const parsedCommissionValue = parseFloat(commissionValue);
             if (isNaN(parsedCommissionValue) || parsedCommissionValue < 0) {
@@ -365,8 +366,8 @@ export default function BarbersPage() {
                             <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
                             <p className="text-lg font-semibold mb-2">No barbers found</p>
                             <p className="text-sm">
-                                {searchTerm 
-                                    ? 'No barbers match your search criteria' 
+                                {searchTerm
+                                    ? 'No barbers match your search criteria'
                                     : 'You don\'t have any barbers yet. Click "Add Barber" to create your first barber.'}
                             </p>
                         </div>

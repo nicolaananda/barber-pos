@@ -50,11 +50,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (storedToken) {
                 setToken(storedToken);
                 await fetchUserFromAPI(storedToken);
-
-                // Request notification permission
-                if ('Notification' in window && Notification.permission === 'default') {
-                    Notification.requestPermission();
-                }
             }
             setIsLoading(false);
         };

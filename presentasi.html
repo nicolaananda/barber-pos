@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StayCool Management System - Strategic Proposal</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-card: #171717;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --accent: #f59e0b;
+            /* Amber-500 */
+            --accent-glow: rgba(245, 158, 11, 0.15);
+            --border: #333;
+            --slide-width: 420mm;
+            /* A3 Landscape */
+            --slide-height: 297mm;
+            /* A3 Landscape */
+        }
+
+        @page {
+            size: A3 landscape;
+            margin: 0;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: var(--text-primary);
+            margin: 0;
+            padding: 40px 0;
+            /* display: flex; REMOVED to fix print pagination */
+            /* flex-direction: column; REMOVED */
+            /* align-items: center; REMOVED */
+        }
+
+        .slide {
+            width: var(--slide-width);
+            height: var(--slide-height);
+            /* Fixed A3 height for "Pas" fit */
+            min-height: var(--slide-height);
+            background: var(--bg-dark);
+            position: relative;
+            overflow: hidden;
+            /* Keep neat */
+            border: 1px solid var(--border);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+            margin: 0 auto 40px auto;
+            /* Center on screen + gap */
+            page-break-after: always;
+            /* Legacy */
+            break-after: page;
+            /* Modern */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Ambient Background Effect */
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0) 60%);
+            z-index: 0;
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 50px 60px;
+            /* Reduced from 80px */
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            /* Reduced from 50px */
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 20px;
+            /* Reduced from 24px */
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-primary);
+        }
+
+        .header-logo img {
+            width: 40px;
+            /* Reduced from 48px */
+            height: 40px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .header-meta {
+            color: var(--text-secondary);
+            font-size: 16px;
+            /* Reduced from 18px */
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* LAYOUTS */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 60px;
+            /* Reduced from 80px */
+            height: 100%;
+            align-items: center;
+        }
+
+        .text-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .image-panel {
+            position: relative;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* TYPOGRAPHY */
+        h1.main-title {
+            font-size: 80px;
+            /* Reduced from 96px */
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #fff 0%, #999 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2.slide-title {
+            font-size: 48px;
+            /* Reduced from 56px */
+            font-weight: 700;
+            margin: 0 0 20px 0;
+            color: var(--accent);
+        }
+
+        p.description {
+            font-size: 22px;
+            /* Reduced from 26px */
+            line-height: 1.5;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+
+        /* FEATURE LIST */
+        .feature-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            /* Reduced from 32px */
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+
+        .feature-title {
+            font-size: 20px;
+            /* Reduced from 24px */
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .feature-title::before {
+            content: '';
+            display: block;
+            width: 12px;
+            height: 12px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        .feature-desc {
+            font-size: 18px;
+            /* Reduced from 20px */
+            color: var(--text-secondary);
+            margin: 0;
+            padding-left: 24px;
+            line-height: 1.4;
+        }
+
+        /* SCREENSHOTS */
+        .screenshot-frame {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px #333;
+            transform: perspective(1000px) rotateY(-5deg) rotateX(2deg);
+            transition: transform 0.3s;
+            max-height: 600px;
+            /* Limit height */
+        }
+
+        .screenshot-image {
+            width: 100%;
+            height: auto;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* PROBLEM SLIDE */
+        .problem-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .problem-card {
+            background: #221212;
+            /* Slight red tint for danger/problem */
+            border: 1px solid #442222;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: left;
+        }
+
+        .problem-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #ef4444;
+            /* Red */
+        }
+
+        .problem-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        /* TIMELINE/ROADMAP */
+        .timeline {
+            position: relative;
+            max-width: 1200px;
+            /* Scaled */
+            margin: 20px auto;
+            padding: 10px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            width: 6px;
+            background: var(--border);
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            border-radius: 3px;
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            padding: 20px 60px;
+            /* Reduced vertical padding */
+            position: relative;
+            background: inherit;
+            width: 50%;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            right: -16px;
+            background: var(--bg-dark);
+            border: 6px solid var(--accent);
+            top: 30px;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .timeline-item.left {
+            left: 0;
+            text-align: right;
+        }
+
+        .timeline-item.right {
+            left: 50%;
+            text-align: left;
+        }
+
+        .timeline-item.right::after {
+            left: -16px;
+        }
+
+        .timeline-content {
+            padding: 20px;
+        }
+
+        .timeline-content h3 {
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 20px;
+            color: var(--accent);
+        }
+
+        .timeline-content p {
+            margin: 0;
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        /* COVER OVERRIDES */
+        .cover-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .cover-logo img {
+            width: 160px;
+            /* Scaled */
+            height: 160px;
+            border-radius: 30px;
+            margin-bottom: 60px;
+            box-shadow: 0 0 60px var(--accent-glow);
+        }
+
+        .prepared-for {
+            margin-top: 100px;
+            padding-top: 40px;
+            border-top: 2px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .prepared-for p {
+            font-size: 18px;
+        }
+
+        .prepared-for h3 {
+            font-size: 32px;
+        }
+
+        /* PRINT STYLES */
+        @media print {
+            @page {
+                size: A3 landscape;
+                margin: 0;
+            }
+
+            html,
+            body {
+                width: 100%;
+                height: 100%;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: none;
+                display: block;
+                /* Ensure block layout for pagination */
+            }
+
+            .slide {
+                width: 100% !important;
+                /* Fill A3 paper width */
+                height: 100% !important;
+                /* Fill A3 paper height */
+                max-height: 100vh !important;
+                margin: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                border-radius: 0 !important;
+                /* Sharp corners for print */
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SLIDE 1: COVER -->
+    <div class="slide">
+        <div class="content-layer cover-content">
+            <div class="cover-logo">
+                <img src="./logo.jpg" alt="StayCool Logo">
+            </div>
+            <div
+                style="font-size: 24px; color: var(--accent); text-transform: uppercase; letter-spacing: 4px; margin-bottom: 20px; font-weight: 600;">
+                Strategic Proposal
+            </div>
+            <h1 class="main-title">StayCool Digital<br>Ecosystem</h1>
+            <p class="description" style="max-width: 700px;">
+                Cetak biru transformasi digital untuk meningkatkan efisiensi operasional,<br>akuntabilitas finansial,
+                dan retensi pelanggan.
+            </p>
+
+            <div class="prepared-for">
+                <p>PREPARED FOR</p>
+                <h3 style="color: white; margin: 10px 0;">StayCool Hair Lab</h3>
+                <p style="font-size: 14px; margin-top: 5px; color: var(--text-secondary);">Presented by <span
+                        style="color: var(--accent);">nicola.ID</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 2: THE PROBLEM -->
+    <div class="slide">
+        <div class="content-layer">
+            <div class="header">
+                <div class="header-logo"><img src="./logo.jpg" alt="Logo"> StayCool Management</div>
+                <div class="header-meta">01 // Current Challenges</div>
+            </div>
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h2 class="slide-title" style="color: #fff;">Operational Bottlenecks</h2>
+                <p class="description" style="max-width: 800px; margin: 0 auto;">
+                    Mengelola barbershop yang berkembang dengan sistem manual atau terfragmentasi menimbulkan risiko
+                    bisnis yang signifikan.
+                </p>
+            </div>
+
+            <div class="problem-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">âš </div>
+                    <div class="problem-title">Revenue Leakage</div>
+                    <p class="feature-desc" style="color: #d1d5db; padding: 0;">
+                        Tanpa sistem kasir yang terintegrasi ketat, risiko "uang hantu" atau selisih setoran kasir
+                        sangat tinggi dan sulit dilacak.
+                    </p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">⚡</div>
+                    <div class="problem-title">Operational Friction</div>
+                    <p class="feature-desc" style="color: #d1d5db; padding: 0;">
+                        Proses manual memperlambat layanan saat jam sibuk, mengurangi jumlah pelanggan yang bisa
+                        dilayani per hari.
+                    </p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">📉</div>
+                    <div class="problem-title">Data Blindspots</div>
+                    <p class="feature-desc" style="color: #d1d5db; padding: 0;">
+                        Sulit menentukan strategi promosi atau bonus karyawan karena tidak ada data akurat tentang
+                        performa historis.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 3: DASHBOARD -->
+    <div class="slide">
+        <div class="content-layer">
+            <div class="header">
+                <div class="header-logo"><img src="./logo.jpg" alt="Logo"> StayCool Management</div>
+                <div class="header-meta">02 // Executive Control</div>
+            </div>
+            <div class="grid-layout">
+                <div class="text-panel">
+                    <h2 class="slide-title">Executive Dashboard</h2>
+                    <p class="description">
+                        Pusat kendali bisnis Anda. Hilangkan kecemasan operasional dengan visibilitas total terhadap
+                        setiap aspek bisnis, real-time.
+                    </p>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Live Revenue Monitoring</div>
+                        <p class="feature-desc">Akses data omset dari mana saja (Cloud-based). Pantau performa bisnis
+                            bahkan saat Anda sedang berlibur.</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Fraud Detection Feed</div>
+                        <p class="feature-desc">Setiap aktivitas transaksional tercatat di "Activity Log". Transparansi
+                            total meminimalisir kecurangan internal.</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Strategic Insights</div>
+                        <p class="feature-desc">Grafik visual memudahkan Anda melihat tren mingguan dan membuat
+                            keputusan bisnis berbasis data.</p>
+                    </div>
+                </div>
+                <div class="image-panel">
+                    <div class="screenshot-frame">
+                        <img src="./dashboard_1766397974797.png" class="screenshot-image" alt="Dashboard">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 4: POS -->
+    <div class="slide">
+        <div class="content-layer">
+            <div class="header">
+                <div class="header-logo"><img src="./logo.jpg" alt="Logo"> StayCool Management</div>
+                <div class="header-meta">03 // High-Performance Operations</div>
+            </div>
+            <div class="grid-layout">
+                <div class="image-panel">
+                    <div class="screenshot-frame" style="transform: perspective(1000px) rotateY(5deg) rotateX(2deg);">
+                        <img src="./pos_1766398085835.png" class="screenshot-image" alt="POS">
+                    </div>
+                </div>
+                <div class="text-panel">
+                    <h2 class="slide-title">Smart Point of Sale</h2>
+                    <p class="description">
+                        Direkayasa untuk kecepatan dan akurasi. Sistem ini memastikan setiap transaksi diproses dalam
+                        hitungan detik untuk memaksimalkan <i>turnover</i> kursi.
+                    </p>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Streamlined Workflow</div>
+                        <p class="feature-desc">Alur kerja 3-langkah yang intuitif mengurangi waktu tunggu pelanggan di
+                            meja kasir secara drastis.</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Precise Barber Attribution</div>
+                        <p class="feature-desc">Sistem penguncian ID Barber memastikan komisi selalu jatuh ke tangan
+                            yang benar, menghilangkan konflik antar staf.</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Touch-Optimized Interface</div>
+                        <p class="feature-desc">Antarmuka modern yang minim kesalahan input, mudah dipelajari oleh
+                            karyawan baru dalam 10 menit.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 5: BOOKING SYSTEM -->
+    <div class="slide">
+        <div class="content-layer">
+            <div class="header">
+                <div class="header-logo"><img src="./logo.jpg" alt="Logo"> StayCool Management</div>
+                <div class="header-meta">04 // Customer Experience</div>
+            </div>
+            <div class="grid-layout">
+                <div class="text-panel">
+                    <h2 class="slide-title">Smart Booking System</h2>
+                    <p class="description">
+                        Sistem reservasi pusat yang mencegah bentrok jadwal. Kelola janji temu pelanggan dengan presisi
+                        untuk memaksimalkan okupansi kursi.
+                    </p>
+
+                    <div class="feature-box" style="border-left: 4px solid var(--accent);">
+                        <div class="feature-title">Conflict-Free Scheduling</div>
+                        <p class="feature-desc">Algoritma pintar yang otomatis mendeteksi bentrok jadwal. Tidak ada lagi
+                            drama "double-booking" yang mengecewakan pelanggan.</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Customer Database (CRM)</div>
+                        <p class="feature-desc">Simpan riwayat cukur dan preferensi setiap pelanggan. Berikan layanan
+                            personal yang membuat mereka kembali lagi.</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Appointment Reminders</div>
+                        <p class="feature-desc">Kurangi angka "No-Show" dengan sistem manajemen jadwal yang rapi dan
+                            terorganisir.</p>
+                    </div>
+                </div>
+                <div class="image-panel">
+                    <div class="screenshot-frame">
+                        <img src="./bookings_1766398062491.png" class="screenshot-image" alt="Bookings CRM">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 5B: QUEUE DISPLAY -->
+    <div class="slide">
+        <div class="content-layer">
+            <div class="header">
+                <div class="header-logo"><img src="./logo.jpg" alt="Logo"> StayCool Management</div>
+                <div class="header-meta">05 // Customer Experience</div>
+            </div>
+            <div class="grid-layout">
+                <div class="image-panel">
+                    <div class="screenshot-frame" style="transform: perspective(1000px) rotateY(5deg) rotateX(2deg);">
+                        <img src="./status_page.png" class="screenshot-image" alt="Live Status Board">
+                    </div>
+                </div>
+                <div class="text-panel">
+                    <h2 class="slide-title">Live Queue Display</h2>
+                    <p class="description">
+                        Berikan pengalaman menunggu yang premium. Tampilkan status antrian dan
+                        ketersediaan barber secara <i>real-time</i> di layar TV ruang tunggu.
+                    </p>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Transparent Waiting Times</div>
+                        <p class="feature-desc">Pelanggan tahu persis siapa barber yang <i>available</i>
+                            dan status kursi saat ini (Waiting/Cutting/Finish).</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Professional Atmosphere</div>
+                        <p class="feature-desc">Tampilan modern yang memberikan kesan "High-Tech" pada
+                            barbershop Anda, meningkatkan kepercayaan pelanggan.</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Reduced Anxiety</div>
+                        <p class="feature-desc">Menghilangkan pertanyaan berulang "masih lama nggak
+                            mas?" karena semua informasi tersaji jelas di layar.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 6: FINANCIALS -->
+    <div class="slide">
+        <div class="content-layer">
+            <div class="header">
+                <div class="header-logo"><img src="./logo.jpg" alt="Logo"> StayCool Management</div>
+                <div class="header-meta">05 // Financial Health</div>
+            </div>
+            <div class="grid-layout">
+                <div class="image-panel">
+                    <div class="screenshot-frame" style="transform: perspective(1000px) rotateY(5deg) rotateX(2deg);">
+                        <img src="./transactions_1766398006513.png" class="screenshot-image" alt="Transactions">
+                    </div>
+                </div>
+                <div class="text-panel">
+                    <h2 class="slide-title">Financial Intelligence</h2>
+                    <p class="description">
+                        Transparansi finansial total. Sistem ini bertindak sebagai auditor digital otomatis yang
+                        mencatat setiap sen pergerakan uang.
+                    </p>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Digital Audit Trail</div>
+                        <p class="feature-desc">Rekaman permanen dari setiap transaksi yang tidak bisa dimanipulasi,
+                            menjamin keamanan aset bisnis.</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Automated P&L</div>
+                        <p class="feature-desc">Perhitungan Laba & Rugi (Profit & Loss) otomatis. Ketahui profitabilitas
+                            toko Anda setiap saat tanpa menunggu laporan bulanan akuntan.</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Expense Control</div>
+                        <p class="feature-desc">Tracking pengeluaran operasional (listrik, stok, maintenance) yang
+                            terintegrasi langsung dengan laporan pendapatan.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 7: PAYROLL -->
+    <div class="slide">
+        <div class="content-layer">
+            <div class="header">
+                <div class="header-logo"><img src="./logo.jpg" alt="Logo"> StayCool Management</div>
+                <div class="header-meta">06 // Workforce Management</div>
+            </div>
+            <div class="grid-layout">
+                <div class="text-panel">
+                    <h2 class="slide-title">Automated Payroll</h2>
+                    <p class="description">
+                        Sistem penggajian cerdas yang meningkatkan kepuasan karyawan dan retensi staf dengan
+                        transparansi perhitungan komisi.
+                    </p>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Algorithmic Commission</div>
+                        <p class="feature-desc">Perhitungan komisi kompleks (persentase, layanan spesifik) dilakukan
+                            otomatis oleh sistem, 100% akurat.</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Professional Salary Slips</div>
+                        <p class="feature-desc">Generate slip gaji digital yang detail dan profesional. Membangun
+                            kepercayaan dan profesionalisme dengan barber.</p>
+                    </div>
+
+                    <div class="feature-box">
+                        <div class="feature-title">Performance Incentives</div>
+                        <p class="feature-desc">Data performa yang objektif memudahkan Anda memberikan reward kepada
+                            karyawan berprestasi tinggi.</p>
+                    </div>
+                </div>
+                <div class="image-panel">
+                    <div class="screenshot-frame">
+                        <img src="./payroll_1766398040896.png" class="screenshot-image" alt="Payroll">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- SLIDE 9: CLOSING -->
+    <div class="slide">
+        <div class="content-layer cover-content">
+            <div class="tagline" style="color: #fff;">Why Partner With Us?</div>
+            <h1 class="main-title" style="font-size: 56px;">Investment for Scale</h1>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; width: 100%;">
+                <div class="feature-box" style="text-align: left;">
+                    <div class="feature-title">Operational Excellence</div>
+                    <p class="feature-desc">Sistem yang merapikan manajemen toko, meminimalisir <i>human-error</i> dan
+                        menjamin integritas data bisnis.</p>
+                </div>
+                <div class="feature-box" style="text-align: left;">
+                    <div class="feature-title">Scalability Ready</div>
+                    <p class="feature-desc">Didesain untuk bertumbuh. Siap mendukung ekspansi bisnis ke cabang-cabang
+                        berikutnya dengan manajemen terpusat.</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 60px;">
+                <p style="font-size: 24px; color: var(--accent); font-weight: bold;">Let's Transform Your Business
+                    Today.</p>
+                <div style="margin-top: 20px; font-size: 16px; color: #666;">
+                    © 2025 nicola.ID. All Rights Reserved.
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

@@ -62,30 +62,32 @@ export default function BarberSelector() {
                 <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">1</span>
                 Select Barber
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex md:grid md:grid-cols-4 gap-4 overflow-x-auto pb-4 md:pb-0 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
                 {barbers.map((barber) => (
                     <Card
                         key={barber.id}
                         className={cn(
-                            'cursor-pointer transition-all duration-300 border-2',
-                            'hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10',
+                            'cursor-pointer transition-all duration-300 border-2 min-w-[140px] md:min-w-0 snap-center',
+                            'hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 flex-shrink-0',
                             // eslint-disable-next-line eqeqeq
                             selectedBarber?.id == (barber.id as unknown as string)
-                                ? 'border-primary bg-primary/10 ring-2 ring-primary/20 shadow-primary/20'
-                                : 'bg-card border-border hover:border-primary/50'
+                                ? 'border-primary bg-primary/10 ring-2 ring-primary/20 shadow-xl shadow-primary/20 scale-[1.02]'
+                                : 'bg-card border-border hover:border-primary/50 opacity-90 hover:opacity-100'
                         )}
                         onClick={() => setBarber({ id: barber.id.toString(), name: barber.name })}
                     >
-                        <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
+                        <CardContent className="flex flex-col items-center justify-center p-4 md:p-6 gap-3">
                             <div className={cn(
-                                "p-3 rounded-full transition-colors",
+                                "p-3 rounded-full transition-colors shadow-inner",
                                 // eslint-disable-next-line eqeqeq
-                                selectedBarber?.id == (barber.id as unknown as string) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                                selectedBarber?.id == (barber.id as unknown as string)
+                                    ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-primary/30"
+                                    : "bg-muted text-muted-foreground"
                             )}>
-                                <User className="h-8 w-8" />
+                                <User className="h-6 w-6 md:h-8 md:w-8" />
                             </div>
                             <span className={cn(
-                                "font-bold text-center tracking-wide",
+                                "font-bold text-center tracking-wide text-sm md:text-base line-clamp-1",
                                 // eslint-disable-next-line eqeqeq
                                 selectedBarber?.id == (barber.id as unknown as string) ? "text-primary" : "text-foreground"
                             )}>{barber.name}</span>
