@@ -115,8 +115,6 @@ function generateInvoiceHTML(transaction, barberName, cashReceived = 0, logoBase
  * Generate PDF from transaction data
  */
 async function generateInvoicePDF(transaction, barberName, cashReceived = 0) {
-    let browser = null;
-
     try {
         // Load logo
         const logoBase64 = await getLogoBase64();
@@ -124,26 +122,12 @@ async function generateInvoicePDF(transaction, barberName, cashReceived = 0) {
         // Generate HTML
         const html = generateInvoiceHTML(transaction, barberName, cashReceived, logoBase64);
 
-        // Launch browser
-        browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
+        // Use html-pdf-node (lighter, no Chrome needed)
+        const htmlPdf = require('html-pdf-node');
 
-        const page = await browser.newPage();
-
-        // Set content
-        await page.setContent(html, { waitUntil: 'networkidle0' });
-
-        // Get actual content height
-        const contentHeight = await page.evaluate(() => {
-            return document.body.scrollHeight;
-        });
-
-        // Generate PDF with calculated height
-        const pdfBuffer = await page.pdf({
+        const options = {
+            format: 'A4',
             width: '80mm',
-            height: `${contentHeight}px`,
             printBackground: true,
             margin: {
                 top: '0mm',
@@ -151,16 +135,16 @@ async function generateInvoicePDF(transaction, barberName, cashReceived = 0) {
                 bottom: '0mm',
                 left: '0mm'
             }
-        });
+        };
 
-        await browser.close();
-        browser = null;
+        const file = { content: html };
+
+        // Generate PDF
+        const pdfBuffer = await htmlPdf.generatePdf(file, options);
 
         return pdfBuffer;
     } catch (error) {
-        if (browser) {
-            await browser.close();
-        }
+        console.error('PDF Generation Error:', error);
         throw error;
     }
 }
