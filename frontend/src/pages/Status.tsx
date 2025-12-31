@@ -38,7 +38,13 @@ export default function StatusPage() {
             const res = await fetch('/api/users/barbers');
             if (res.ok) {
                 const data = await res.json();
-                setBarbers(data);
+                // Sort: Staycool Owner first, then others alphabetically
+                const sortedData = data.sort((a: Barber, b: Barber) => {
+                    if (a.name === 'Staycool Owner') return -1;
+                    if (b.name === 'Staycool Owner') return 1;
+                    return a.name.localeCompare(b.name);
+                });
+                setBarbers(sortedData);
             }
         } catch (error) {
             console.error('Error fetching barbers:', error);
