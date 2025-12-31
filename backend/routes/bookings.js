@@ -4,10 +4,26 @@ const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 
 const upload = require('../middleware/upload');
+const whatsappService = require('../lib/whatsapp');
+const { format } = require('date-fns');
+const { id: idLocale } = require('date-fns/locale');
+const path = require('path');
+const { uploadFile } = require('../lib/r2');
 
 // POST /api/bookings - Create new booking
-router.post('/', upload.single('proof'), async (req, res) => {
+router.post('/', (req, res, next) => {
+    // Debug Logging
+    console.log('Incoming Booking Request:');
+    console.log('Content-Type:', req.headers['content-type']);
+    next();
+}, upload.single('proof'), async (req, res) => {
     try {
+        console.log('Req Body after Multer:', req.body);
+        console.log('Req File after Multer:', req.file);
+
+        // Safety check for req.body
+        req.body = req.body || {};
+
         const { barberId, customerName, customerPhone, bookingDate, timeSlot } = req.body;
         // Handle R2 Upload
         let paymentProof = null;
@@ -200,6 +216,46 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
                 }
             }
         });
+
+        // AUTOMATION: If status is CONFIRMED
+        if (status === 'confirmed') {
+            try {
+                // 1. Save Customer if not exists
+                const existingCustomer = await prisma.customer.findUnique({
+                    where: { phone: booking.customerPhone }
+                });
+
+                if (!existingCustomer) {
+                    await prisma.customer.create({
+                        data: {
+                            name: booking.customerName,
+                            phone: booking.customerPhone,
+                            totalVisits: 0, // Will act as new customer
+                            lastVisit: new Date()
+                        }
+                    });
+                    console.log(`[Auto] New Customer saved: ${booking.customerName}`);
+                }
+
+                // 2. Send WhatsApp Notification
+                const dateStr = format(new Date(booking.bookingDate), 'dd MMMM yyyy', { locale: idLocale });
+                const message = `✅ *BOOKING KONFIRMASI*\n\n` +
+                    `Halo Kak *${booking.customerName}*, booking Anda telah kami terima!\n\n` +
+                    `✂️ Layanan: Potong Rambut\n` +
+                    `📅 Tanggal: ${dateStr}\n` +
+                    `⏰ Jam: ${booking.timeSlot}\n` +
+                    `💈 Barber: ${booking.barber.name}\n\n` +
+                    `Mohon datang 10 menit sebelum jam booking ya. Terima kasih! 🙏\n` +
+                    `\n📍 *Staycool Hairlab*\nJl. Imam Bonjol Pertigaan No.370`;
+
+                await whatsappService.sendWhatsAppMessage(booking.customerPhone, message);
+                console.log(`[Auto] WA sent to ${booking.customerPhone}`);
+
+            } catch (autoError) {
+                console.error("Error in Booking Automation (Customer/WA):", autoError);
+                // Don't fail the request, just log error
+            }
+        }
 
         res.json(booking);
     } catch (error) {

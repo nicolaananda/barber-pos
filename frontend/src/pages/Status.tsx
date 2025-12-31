@@ -141,7 +141,15 @@ export default function StatusPage() {
                                             border-4 relative flex-shrink-0
                                             ${isAvailable ? 'bg-zinc-900 text-white border-white shadow-lg' : 'bg-zinc-200 text-zinc-500 border-zinc-100'}
                                         `}>
-                                                <span className="relative z-10">{barber.name.charAt(0).toUpperCase()}</span>
+                                                {barber.name === 'Staycool Owner' ? (
+                                                    <img
+                                                        src="/bagus.jpg"
+                                                        alt="Owner"
+                                                        className="w-full h-full object-cover rounded-full"
+                                                    />
+                                                ) : (
+                                                    <span className="relative z-10">{barber.name.charAt(0).toUpperCase()}</span>
+                                                )}
                                             </div>
                                             <div className="flex-1">
                                                 <h2 className={`text-2xl md:text-3xl font-bold mb-2 ${isAvailable ? 'text-zinc-900' : 'text-zinc-500'}`}>{barber.name}</h2>

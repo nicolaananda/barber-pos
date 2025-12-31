@@ -14,7 +14,7 @@ import BarbersPage from './pages/dashboard/Barbers';
 import PosPage from './pages/POS';
 import StatusPage from './pages/Status';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -23,6 +23,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    // If user is staff/barber and tries to access restricted page, redirect to POS
+    if (user.role === 'staff') {
+      return <Navigate to="/pos" replace />;
+    }
+    // Default fallback
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -38,7 +47,7 @@ export default function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['owner']}>
                 <DashboardPage />
               </ProtectedRoute>
             }

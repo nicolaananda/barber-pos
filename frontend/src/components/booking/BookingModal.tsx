@@ -7,7 +7,7 @@ import { Loader2, ArrowRight, ArrowLeft, UploadCloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Dummy QRIS - In production, this should be real
-const QRIS_IMAGE = "/logo.jpg";
+const QRIS_IMAGE = "/qris.jpg";
 
 interface BookingModalProps {
     open: boolean;
@@ -149,7 +149,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                     className="w-48 h-48 object-cover rounded-lg border border-zinc-200 shadow-sm"
                                 />
                                 <p className="text-xs text-zinc-500 mt-2 text-center">
-                                    Silakan transfer sesuai nominal layanan.<br />Upload bukti transfer di bawah ini.
+                                    Silakan transfer DP minimal Rp 20.000 (atau lunas).<br />Upload bukti transfer di bawah ini.
                                 </p>
                             </div>
 

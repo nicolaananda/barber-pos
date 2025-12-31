@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Calendar, User, Phone, Clock, Filter } from 'lucide-react';
+import { Calendar, User, Phone, Clock, Filter, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,6 +9,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Booking {
     id: number;
@@ -20,6 +21,7 @@ interface Booking {
     timeSlot: string;
     status: string;
     createdAt: string;
+    paymentProof: string | null;
 }
 
 export default function BookingsPage() {
@@ -27,6 +29,7 @@ export default function BookingsPage() {
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterDate, setFilterDate] = useState<string>('');
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     useEffect(() => {
         fetchBookings();
@@ -52,8 +55,19 @@ export default function BookingsPage() {
             });
 
             if (res.ok) {
-                const data = await res.json();
-                setBookings(data);
+                const data: Booking[] = await res.json();
+
+                // Sort: Pending first, then by Creation Date Descending (Newest First)
+                const sorted = data.sort((a, b) => {
+                    // Prioritize Pending
+                    if (a.status === 'pending' && b.status !== 'pending') return -1;
+                    if (a.status !== 'pending' && b.status === 'pending') return 1;
+
+                    // Then by CreatedAt Descending
+                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                });
+
+                setBookings(sorted);
             }
         } catch (error) {
             console.error('Failed to fetch bookings:', error);
@@ -213,43 +227,76 @@ export default function BookingsPage() {
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Actions */}
-                                {booking.status === 'pending' && (
-                                    <div className="flex gap-2">
-                                        <Button
-                                            size="sm"
-                                            className="bg-zinc-900 text-white hover:bg-zinc-800 font-bold shadow-sm"
-                                            onClick={() => updateBookingStatus(booking.id, 'confirmed')}
-                                        >
-                                            Confirm
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-zinc-400 hover:text-red-500 hover:bg-red-50"
-                                            onClick={() => updateBookingStatus(booking.id, 'cancelled')}
-                                        >
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                )}
-                                {booking.status === 'confirmed' && (
+                                    {/* Additional Info Row: Proof & Notes */}
+                                    {booking.paymentProof && (
+                                        <div className="mt-2 pt-2 border-t border-zinc-50 flex items-center gap-2">
+                                            <p className="text-xs text-zinc-500">Bukti Transfer:</p>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setSelectedImage(booking.paymentProof)}
+                                                className="text-xs bg-zinc-100 hover:bg-zinc-200 text-zinc-700 px-2 py-1 rounded flex items-center gap-1 transition-colors h-auto"
+                                            >
+                                                <ExternalLink className="w-3 h-3" />
+                                                Lihat Gambar
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            {booking.status === 'pending' && (
+                                <div className="flex gap-2">
                                     <Button
                                         size="sm"
-                                        variant="outline"
-                                        className="border-zinc-900 text-zinc-900 hover:bg-zinc-50 font-medium"
-                                        onClick={() => updateBookingStatus(booking.id, 'completed')}
+                                        className="bg-zinc-900 text-white hover:bg-zinc-800 font-bold shadow-sm"
+                                        onClick={() => updateBookingStatus(booking.id, 'confirmed')}
                                     >
-                                        Mark Complete
+                                        Confirm
                                     </Button>
-                                )}
-                            </div>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="text-zinc-400 hover:text-red-500 hover:bg-red-50"
+                                        onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            )}
+                            {booking.status === 'confirmed' && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-zinc-900 text-zinc-900 hover:bg-zinc-50 font-medium"
+                                    onClick={() => updateBookingStatus(booking.id, 'completed')}
+                                >
+                                    Mark Complete
+                                </Button>
+                            )}
                         </div>
                     ))
                 )}
             </div>
+            {/* Image Preview Modal */}
+            <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
+                <DialogContent className="max-w-3xl bg-white border-zinc-200 p-0 overflow-hidden">
+                    <DialogHeader className="p-4 border-b border-zinc-100">
+                        <DialogTitle>Bukti Transfer</DialogTitle>
+                    </DialogHeader>
+                    {selectedImage && (
+                        <div className="flex items-center justify-center bg-zinc-900/5 p-4">
+                            <img
+                                src={selectedImage}
+                                alt="Payment Proof"
+                                className="max-h-[80vh] w-auto object-contain rounded-md shadow-lg"
+                            />
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

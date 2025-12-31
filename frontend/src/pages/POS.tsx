@@ -9,6 +9,7 @@ import BarberSelector from '@/components/pos/BarberSelector';
 import ServiceGrid from '@/components/pos/ServiceGrid';
 import Cart from '@/components/pos/Cart';
 import CheckoutModal from '@/components/pos/CheckoutModal';
+import PendingBookingAlert from '@/components/pos/PendingBookingAlert';
 import {
     Sheet,
     SheetContent,
@@ -288,6 +289,7 @@ export default function PosPage() {
                 open={isCheckoutOpen}
                 onOpenChange={setIsCheckoutOpen}
             />
+            <PendingBookingAlert />
         </div>
     );
 }

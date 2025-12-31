@@ -61,9 +61,10 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 7781,
     allowedHosts: [
-      'cukur.nicola.id',
+      'pos.staycoolhairlab.id',
       'localhost',
-      '.nicola.id'
+      '.nicola.id',
+      'staycoolhairlab.id'
     ],
     proxy: {
       '/api': {
