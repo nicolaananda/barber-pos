@@ -23,10 +23,9 @@ module.exports = {
       name: 'staycool-frontend',
       cwd: './frontend',
       script: 'npm',
-      args: 'run dev',
+      args: 'run preview -- --port 7781 --host',
       env: {
-        NODE_ENV: 'development',
-        PORT: 7781
+        NODE_ENV: 'production'
       },
       error_file: './logs/frontend-error.log',
       out_file: './logs/frontend-out.log',
