@@ -240,7 +240,8 @@ async function sendInvoice(transaction, barberName, cashReceived = 0) {
         const pdfBuffer = await pdfGenerator.generateInvoicePDF(transaction, barberName, cashReceived);
 
         // Save to public directory
-        const { filename } = await pdfGenerator.savePDFToPublic(pdfBuffer, transaction.invoiceCode);
+        const filePath = await pdfGenerator.savePDFToPublic(pdfBuffer, transaction.invoiceCode);
+        const filename = `${transaction.invoiceCode}.pdf`; // or path.basename(filePath)
         console.log('PDF saved to public/invoices:', filename);
 
         // Generate link (assuming frontend is served from same domain)
