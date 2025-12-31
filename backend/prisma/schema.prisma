@@ -110,6 +110,7 @@ model Booking {
   bookingDate   DateTime
   timeSlot      String   // e.g., "14:00 - 15:00"
   status        String   @default("pending") // pending, confirmed, cancelled, completed
+  paymentProof  String?  // URL/Path to uploaded evidence
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

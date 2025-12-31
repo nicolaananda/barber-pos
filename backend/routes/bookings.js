@@ -3,12 +3,35 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 
+const upload = require('../middleware/upload');
+
 // POST /api/bookings - Create new booking
-router.post('/', async (req, res) => {
+router.post('/', upload.single('proof'), async (req, res) => {
     try {
         const { barberId, customerName, customerPhone, bookingDate, timeSlot } = req.body;
+        // Handle R2 Upload
+        let paymentProof = null;
+        if (req.file) {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const ext = path.extname(req.file.originalname);
+            const filename = 'proofs/proof-' + uniqueSuffix + ext;
 
-        // Validation
+            try {
+                paymentProof = await uploadFile(req.file.buffer, filename, req.file.mimetype);
+            } catch (err) {
+                console.error("Upload R2 Failed:", err);
+                return res.status(500).json({ error: 'Gagal upload bukti transfer ke R2' });
+            }
+        } else {
+            // Handle case where file is missing but required, handled by validation below
+            paymentProof = null;
+        }
+
+        // Validation - Payment Proof is MANDATORY
+        if (!paymentProof) {
+            return res.status(400).json({ error: 'Bukti transfer wajib diupload!' });
+        }
+
         if (!barberId || !customerName || !customerPhone || !bookingDate || !timeSlot) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
@@ -47,7 +70,8 @@ router.post('/', async (req, res) => {
                 customerPhone,
                 bookingDate: new Date(bookingDate),
                 timeSlot,
-                status: 'pending'
+                status: 'pending',
+                paymentProof: paymentProof
             },
             include: {
                 barber: {

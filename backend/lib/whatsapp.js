@@ -235,23 +235,16 @@ async function sendInvoice(transaction, barberName, cashReceived = 0) {
     }
 
     try {
-        // Generate PDF
+        // Generate PDF and Upload to R2
         console.log('Generating PDF for invoice:', transaction.invoiceCode);
-        const pdfBuffer = await pdfGenerator.generateInvoicePDF(transaction, barberName, cashReceived);
-
-        // Save to public directory
-        const filePath = await pdfGenerator.savePDFToPublic(pdfBuffer, transaction.invoiceCode);
-        const filename = `${transaction.invoiceCode}.pdf`; // or path.basename(filePath)
-        console.log('PDF saved to public/invoices:', filename);
-
-        // Generate link (assuming frontend is served from same domain)
-        const pdfLink = `${process.env.FRONTEND_URL || 'http://localhost:7763'}/invoices/${filename}`;
+        const pdfUrl = await pdfGenerator.generateInvoicePDF(transaction, barberName, cashReceived);
+        console.log('PDF available at:', pdfUrl);
 
         // Create message with link
         const message = `🧾 *INVOICE STAYCOOL HAIRLAB*\n\n` +
             `📋 Invoice: *${transaction.invoiceCode}*\n` +
             `💰 Total: *Rp ${transaction.totalAmount.toLocaleString('id-ID')}*\n\n` +
-            `📄 Lihat invoice lengkap di:\n${pdfLink}\n\n` +
+            `📄 Lihat invoice lengkap di:\n${pdfUrl}\n\n` +
             `Terima kasih atas kunjungan Anda! 🙏`;
 
         // Send via WhatsApp
