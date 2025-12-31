@@ -1,10 +1,12 @@
 import { ReactNode } from 'react';
 import { AppSidebar } from './AppSidebar';
 import { MobileNav } from './MobileNav';
+import { BookingNotifier } from '../BookingNotifier';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
     return (
         <div className="flex h-screen bg-background overflow-hidden flex-col md:flex-row">
+            <BookingNotifier />
             {/* Desktop Sidebar */}
             <aside className="hidden md:block flex-shrink-0">
                 <AppSidebar />
