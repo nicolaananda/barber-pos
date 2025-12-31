@@ -81,42 +81,40 @@ export default function StatusPage() {
     const timeSlots = generateTimeSlots();
 
     return (
-        <div className="min-h-screen bg-black text-white p-4 md:p-8 relative overflow-hidden">
-            {/* Decorative Background Elements - Black & White */}
-            <div className="absolute top-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/3 rounded-full blur-3xl"></div>
+        <div className="min-h-screen bg-zinc-50 text-zinc-900 p-4 md:p-8 relative overflow-hidden">
+            {/* Decorative Background Elements - Subtle Zinc */}
+            <div className="absolute top-0 left-0 w-96 h-96 bg-zinc-200/50 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-zinc-200/50 rounded-full blur-3xl"></div>
 
             <div className="max-w-6xl mx-auto relative z-10">
                 {/* Header with Logo */}
                 <div className="flex flex-col items-center mb-8 md:mb-12">
                     <div className="mb-4 md:mb-6 relative">
-                        <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
                         <img
                             src="/logo.jpg"
                             alt="Staycool Logo"
-                            className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover shadow-2xl border-4 border-white relative z-10"
+                            className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover shadow-2xl shadow-zinc-200 border-4 border-white relative z-10"
                         />
                     </div>
-                    <h1 className="text-4xl md:text-6xl font-black tracking-wider text-center text-white uppercase mb-2">
+                    <h1 className="text-4xl md:text-6xl font-black tracking-wider text-center text-zinc-900 uppercase mb-2">
                         Staycool Barbershop
                     </h1>
-                    <div className="flex items-center gap-2 md:gap-3 text-white/40 text-xs md:text-sm uppercase tracking-widest">
-                        <div className="w-8 md:w-12 h-px bg-gradient-to-r from-transparent to-white/30"></div>
+                    <div className="flex items-center gap-2 md:gap-3 text-zinc-400 text-xs md:text-sm uppercase tracking-widest">
+                        <div className="w-8 md:w-12 h-px bg-zinc-200"></div>
                         <Scissors className="w-3 h-3 md:w-4 md:h-4" />
                         <span>Live Status Board</span>
                         <Scissors className="w-3 h-3 md:w-4 md:h-4" />
-                        <div className="w-8 md:w-12 h-px bg-gradient-to-l from-transparent to-white/30"></div>
+                        <div className="w-8 md:w-12 h-px bg-zinc-200"></div>
                     </div>
                 </div>
 
                 {isLoading ? (
                     <div className="flex items-center justify-center py-20">
-                        <div className="text-white/60 text-lg">Loading barbers...</div>
+                        <div className="text-zinc-500 text-lg">Loading barbers...</div>
                     </div>
                 ) : barbers.length === 0 ? (
                     <div className="flex items-center justify-center py-20">
-                        <div className="text-white/60 text-lg">No barbers available</div>
+                        <div className="text-zinc-500 text-lg">No barbers available</div>
                     </div>
                 ) : (
                     <div className="space-y-6">
@@ -128,35 +126,30 @@ export default function StatusPage() {
                                     key={barber.id}
                                     className={`
                                     relative overflow-hidden rounded-2xl p-4 md:p-6
-                                    border-4 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl
+                                    border-2 transition-all duration-300 hover:shadow-xl
                                     ${isAvailable
-                                            ? 'bg-white/5 border-white shadow-white/10'
-                                            : 'bg-amber-500/10 border-amber-500 shadow-amber-500/20'
+                                            ? 'bg-white border-zinc-200 shadow-sm'
+                                            : 'bg-zinc-50 border-zinc-100 opacity-90'
                                         }
                                 `}
                                 >
-                                    {/* Shine Effect */}
-                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-
                                     <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-4 md:gap-6">
                                         {/* Barber Info */}
                                         <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
                                             <div className={`
                                             w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center text-2xl md:text-3xl font-bold
-                                            shadow-2xl relative flex-shrink-0
-                                            ${isAvailable ? 'bg-white text-black shadow-white/50' : 'bg-amber-500 text-black shadow-amber-500/50'}
+                                            border-4 relative flex-shrink-0
+                                            ${isAvailable ? 'bg-zinc-900 text-white border-white shadow-lg' : 'bg-zinc-200 text-zinc-500 border-zinc-100'}
                                         `}>
-                                                {/* Glow effect */}
-                                                <div className={`absolute inset-0 rounded-full blur-xl ${isAvailable ? 'bg-white/30' : 'bg-amber-500/30'}`}></div>
                                                 <span className="relative z-10">{barber.name.charAt(0).toUpperCase()}</span>
                                             </div>
                                             <div className="flex-1">
-                                                <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white">{barber.name}</h2>
+                                                <h2 className={`text-2xl md:text-3xl font-bold mb-2 ${isAvailable ? 'text-zinc-900' : 'text-zinc-500'}`}>{barber.name}</h2>
                                                 <div className={`
                                                 inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full font-bold text-xs md:text-sm uppercase tracking-wider
                                                 ${isAvailable
-                                                        ? 'bg-white/10 text-white border border-white/20'
-                                                        : 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
+                                                        ? 'bg-zinc-900 text-white'
+                                                        : 'bg-zinc-200 text-zinc-500'
                                                     }
                                             `}>
                                                     {isAvailable ? (
@@ -176,7 +169,7 @@ export default function StatusPage() {
 
                                         {/* Time Slots - Show for ALL barbers */}
                                         <div className="flex-1 w-full md:max-w-md">
-                                            <p className="text-xs text-amber-400 font-semibold mb-3 uppercase tracking-wider">
+                                            <p className="text-xs text-zinc-400 font-semibold mb-3 uppercase tracking-wider">
                                                 {isAvailable ? 'Book Ahead' : 'Available Slots'}
                                             </p>
                                             <div className="grid grid-cols-2 gap-2">
@@ -194,8 +187,8 @@ export default function StatusPage() {
                                                             className={`
                                                             px-2 md:px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all
                                                             ${isBooked
-                                                                    ? 'bg-red-500/10 border border-red-500/30 text-red-400 cursor-not-allowed opacity-50'
-                                                                    : 'bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500 text-white hover:scale-105'
+                                                                    ? 'bg-zinc-100 text-zinc-300 cursor-not-allowed decoration-zinc-300'
+                                                                    : 'bg-white border border-zinc-200 text-zinc-900 hover:bg-zinc-900 hover:text-white shadow-sm'
                                                                 }
                                                         `}
                                                             onClick={() => {
@@ -208,7 +201,7 @@ export default function StatusPage() {
                                                                 }
                                                             }}
                                                         >
-                                                            {isBooked ? '🔒 ' : ''}{slot.label}
+                                                            {isBooked ? '' : ''}{slot.label}
                                                         </button>
                                                     );
                                                 })}
