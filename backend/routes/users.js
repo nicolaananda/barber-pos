@@ -51,8 +51,8 @@ router.patch('/:id/availability', authenticateToken, async (req, res) => {
 
         console.log('Updating availability for user:', id, 'to:', status);
 
-        if (!status || (status !== 'idle' && status !== 'busy')) {
-            return res.status(400).json({ error: 'Invalid status. Must be "idle" or "busy"' });
+        if (!status || !['available', 'working', 'offday'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status. Must be "available", "working", or "offday"' });
         }
 
         const user = await prisma.user.update({

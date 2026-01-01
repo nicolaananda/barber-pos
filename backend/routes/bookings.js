@@ -161,6 +161,44 @@ router.get('/today', async (req, res) => {
     }
 });
 
+// GET /api/bookings/date/:date - Get bookings for specific date (PUBLIC - for Status page)
+router.get('/date/:date', async (req, res) => {
+    try {
+        const { date } = req.params;
+        const targetDate = new Date(date);
+        const startOfDay = new Date(targetDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(targetDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const bookings = await prisma.booking.findMany({
+            where: {
+                bookingDate: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                },
+                status: { in: ['pending', 'confirmed'] }
+            },
+            include: {
+                barber: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                }
+            },
+            orderBy: [
+                { timeSlot: 'asc' }
+            ]
+        });
+
+        res.json(bookings);
+    } catch (error) {
+        console.error('Error fetching bookings for date:', error);
+        res.status(500).json({ error: 'Failed to fetch bookings' });
+    }
+});
+
 // GET /api/bookings - Get all bookings (with filters)
 router.get('/', authenticateToken, async (req, res) => {
     try {

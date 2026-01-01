@@ -32,7 +32,7 @@ async function resetDatabase() {
                     password: hashedPassword,
                     role: 'owner',
                     status: 'active',
-                    availability: 'idle'
+                    availability: 'available'
                 },
                 {
                     name: 'Diva',
@@ -40,7 +40,7 @@ async function resetDatabase() {
                     password: hashedPassword,
                     role: 'staff',
                     status: 'active',
-                    availability: 'idle'
+                    availability: 'available'
                 }
             ]
         });

@@ -25,14 +25,15 @@ export function BookingNotifier() {
             oscillator.frequency.setValueAtTime(500, ctx.currentTime);
             oscillator.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
 
-            gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+            // Increased volume to maximum (1.0) and longer duration
+            gainNode.gain.setValueAtTime(1.0, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
 
             oscillator.connect(gainNode);
             gainNode.connect(ctx.destination);
 
             oscillator.start();
-            oscillator.stop(ctx.currentTime + 0.5);
+            oscillator.stop(ctx.currentTime + 1.0);
         } catch (error) {
             console.error("Audio play failed", error);
         }

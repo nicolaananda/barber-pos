@@ -75,7 +75,7 @@ export default function PosPage() {
         if (!user || isTogglingStatus) return;
 
         setIsTogglingStatus(true);
-        const newStatus = user.availability === 'busy' ? 'idle' : 'busy';
+        const newStatus = user.availability === 'working' ? 'available' : 'working';
 
         try {
             const token = localStorage.getItem('token');
@@ -136,14 +136,14 @@ export default function PosPage() {
                             size="sm"
                             className={cn(
                                 "h-9 font-bold transition-all border-zinc-200",
-                                user?.availability === 'busy'
+                                user?.availability === 'working'
                                     ? "bg-zinc-900 text-white hover:bg-zinc-800 border-zinc-900"
                                     : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
                             )}
                             onClick={handleToggleAvailability}
                             disabled={isTogglingStatus}
                         >
-                            {isTogglingStatus ? '...' : (user?.availability === 'busy' ? 'BUSY' : 'IDLE')}
+                            {isTogglingStatus ? '...' : (user?.availability === 'working' ? 'WORKING' : 'AVAILABLE')}
                         </Button>
                         {user?.role === 'owner' ? (
                             <Button

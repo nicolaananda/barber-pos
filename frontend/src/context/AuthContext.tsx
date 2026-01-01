@@ -6,7 +6,7 @@ interface User {
     name: string;
     username: string;
     role: string;
-    availability?: string; // 'idle' | 'busy'
+    availability?: string; // 'available' | 'working' | 'offday'
 }
 
 interface AuthContextType {

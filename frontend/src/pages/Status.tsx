@@ -29,17 +29,18 @@ export default function StatusPage() {
     const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
     const [existingBookings, setExistingBookings] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date()); // Today by default
 
     useEffect(() => {
         const fetchData = async () => {
-            await Promise.all([fetchBarbers(), fetchTodayBookings()]);
+            await Promise.all([fetchBarbers(), fetchBookingsForDate(selectedDate)]);
             setIsLoading(false);
         };
 
         fetchData();
         const interval = setInterval(fetchData, 10000); // Poll every 10s instead of 5s
         return () => clearInterval(interval);
-    }, []);
+    }, [selectedDate]);
 
     const fetchBarbers = async () => {
         try {
@@ -59,9 +60,11 @@ export default function StatusPage() {
         }
     };
 
-    const fetchTodayBookings = async () => {
+    const fetchBookingsForDate = async (date: Date) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/bookings/today`);
+            // Format date as YYYY-MM-DD
+            const dateStr = date.toISOString().split('T')[0];
+            const res = await fetch(`${API_BASE_URL}/bookings/date/${dateStr}`);
             if (res.ok) {
                 const data = await res.json();
                 setExistingBookings(data);
@@ -71,17 +74,18 @@ export default function StatusPage() {
         }
     };
 
-    const generateTimeSlots = () => {
+    const generateTimeSlots = (forDate: Date) => {
         const slots = [];
         const now = new Date();
+        const isToday = forDate.toDateString() === now.toDateString();
         const currentHour = now.getHours();
 
         const OPENING_HOUR = 11; // 11:00
         const CLOSING_HOUR = 22; // 22:00 (last slot ends at 22:00)
 
         for (let startHour = OPENING_HOUR; startHour < CLOSING_HOUR; startHour++) {
-            // Only show future slots for today
-            if (startHour <= currentHour) continue;
+            // Only filter past slots if booking for today
+            if (isToday && startHour <= currentHour) continue;
 
             const endHour = startHour + 1;
             slots.push({
@@ -94,7 +98,15 @@ export default function StatusPage() {
         return slots;
     };
 
-    const timeSlots = generateTimeSlots();
+    // Helper function to check if barber is on offday
+    const isBarberOffday = (username: string, date: Date) => {
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        if (username === 'bagus' && dayOfWeek === 4) return true; // Thursday
+        if (username === 'diva' && dayOfWeek === 2) return true; // Tuesday
+        return false;
+    };
+
+    const timeSlots = generateTimeSlots(selectedDate);
 
     return (
         <div className="min-h-screen bg-zinc-50 text-zinc-900 p-4 md:p-8 relative overflow-hidden">
@@ -142,6 +154,34 @@ export default function StatusPage() {
                     </button> */}
                 </div>
 
+                {/* Date Selector */}
+                <div className="flex justify-center mb-6 md:mb-8">
+                    <div className="inline-flex bg-white border border-zinc-200 rounded-full p-1 shadow-sm">
+                        <button
+                            onClick={() => setSelectedDate(new Date())}
+                            className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${selectedDate.toDateString() === new Date().toDateString()
+                                ? 'bg-zinc-900 text-white'
+                                : 'text-zinc-500 hover:text-zinc-900'
+                                }`}
+                        >
+                            Today
+                        </button>
+                        <button
+                            onClick={() => {
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                setSelectedDate(tomorrow);
+                            }}
+                            className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${selectedDate.toDateString() !== new Date().toDateString()
+                                ? 'bg-zinc-900 text-white'
+                                : 'text-zinc-500 hover:text-zinc-900'
+                                }`}
+                        >
+                            Tomorrow
+                        </button>
+                    </div>
+                </div>
+
                 {isLoading ? (
                     <div className="flex items-center justify-center py-20">
                         <div className="text-zinc-500 text-lg">Loading barbers...</div>
@@ -153,7 +193,21 @@ export default function StatusPage() {
                 ) : (
                     <div className="space-y-6">
                         {barbers.map((barber) => {
-                            const isAvailable = barber.availability === 'idle';
+                            // Check if barber is on offday
+                            const onOffday = isBarberOffday(barber.username, selectedDate);
+                            const isToday = selectedDate.toDateString() === new Date().toDateString();
+
+                            // For future dates (tomorrow), default to 'available' unless offday
+                            // For today, use actual database status
+                            const actualAvailability = onOffday
+                                ? 'offday'
+                                : isToday
+                                    ? barber.availability
+                                    : 'available';
+
+                            const isAvailable = actualAvailability === 'available';
+                            const isWorking = actualAvailability === 'working';
+                            const isOffday = actualAvailability === 'offday';
 
                             return (
                                 <div
@@ -163,7 +217,9 @@ export default function StatusPage() {
                                     border-2 transition-all duration-300 hover:shadow-xl
                                     ${isAvailable
                                             ? 'bg-white border-zinc-200 shadow-sm'
-                                            : 'bg-zinc-50 border-zinc-100 opacity-90'
+                                            : isOffday
+                                                ? 'bg-zinc-100 border-zinc-200 opacity-75'
+                                                : 'bg-zinc-50 border-zinc-100 opacity-90'
                                         }
                                 `}
                                 >
@@ -174,7 +230,12 @@ export default function StatusPage() {
                                                 className={`
                                             w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center text-2xl md:text-3xl font-bold
                                             border-4 relative flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity
-                                            ${isAvailable ? 'bg-zinc-900 text-white border-white shadow-lg' : 'bg-zinc-200 text-zinc-500 border-zinc-100'}
+                                            ${isAvailable
+                                                        ? 'bg-zinc-900 text-white border-white shadow-lg'
+                                                        : isOffday
+                                                            ? 'bg-zinc-300 text-zinc-500 border-zinc-200'
+                                                            : 'bg-zinc-200 text-zinc-500 border-zinc-100'
+                                                    }
                                         `}
                                                 onClick={() => {
                                                     if (barber.username === 'bagus') {
@@ -203,18 +264,25 @@ export default function StatusPage() {
                                                 )}
                                             </div>
                                             <div className="flex-1">
-                                                <h2 className={`text-2xl md:text-3xl font-bold mb-2 ${isAvailable ? 'text-zinc-900' : 'text-zinc-500'}`}>{barber.name}</h2>
+                                                <h2 className={`text-2xl md:text-3xl font-bold mb-2 ${isOffday ? 'text-zinc-400' : isAvailable ? 'text-zinc-900' : 'text-zinc-500'}`}>{barber.name}</h2>
                                                 <div className={`
                                                 inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full font-bold text-xs md:text-sm uppercase tracking-wider
                                                 ${isAvailable
                                                         ? 'bg-zinc-900 text-white'
-                                                        : 'bg-zinc-200 text-zinc-500'
+                                                        : isOffday
+                                                            ? 'bg-zinc-300 text-zinc-600'
+                                                            : 'bg-zinc-200 text-zinc-500'
                                                     }
                                             `}>
                                                     {isAvailable ? (
                                                         <>
                                                             <Coffee className="w-3 h-3 md:w-4 md:h-4" />
                                                             Available
+                                                        </>
+                                                    ) : isOffday ? (
+                                                        <>
+                                                            <Coffee className="w-3 h-3 md:w-4 md:h-4" />
+                                                            Offday
                                                         </>
                                                     ) : (
                                                         <>
@@ -229,9 +297,9 @@ export default function StatusPage() {
                                         {/* Time Slots - Show for ALL barbers */}
                                         <div className="flex-1 w-full md:max-w-md">
                                             <p className="text-xs text-zinc-400 font-semibold mb-3 uppercase tracking-wider">
-                                                {isAvailable ? 'Book Ahead' : 'Available Slots'}
+                                                {isOffday ? 'Offday - No Bookings' : isAvailable ? 'Book Ahead' : 'Available Slots'}
                                             </p>
-                                            <div className="grid grid-cols-2 gap-2">
+                                            <div className="grid grid-cols-3 md:grid-cols-2 gap-2">
                                                 {timeSlots.map((slot, idx) => {
                                                     // Check if this slot is already booked
                                                     const isBooked = existingBookings.some(booking =>
@@ -242,16 +310,16 @@ export default function StatusPage() {
                                                     return (
                                                         <button
                                                             key={idx}
-                                                            disabled={isBooked}
+                                                            disabled={isBooked || isOffday}
                                                             className={`
-                                                            px-2 md:px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all
-                                                            ${isBooked
+                                                            px-1.5 md:px-3 py-2.5 md:py-2 rounded-lg text-[10px] md:text-sm font-medium transition-all min-h-[44px] md:min-h-0
+                                                            ${isBooked || isOffday
                                                                     ? 'bg-zinc-100 text-zinc-300 cursor-not-allowed decoration-zinc-300'
-                                                                    : 'bg-white border border-zinc-200 text-zinc-900 hover:bg-zinc-900 hover:text-white shadow-sm'
+                                                                    : 'bg-white border border-zinc-200 text-zinc-900 hover:bg-zinc-900 hover:text-white shadow-sm active:scale-95'
                                                                 }
                                                         `}
                                                             onClick={() => {
-                                                                if (!isBooked) {
+                                                                if (!isBooked && !isOffday) {
                                                                     setSelectedBooking({
                                                                         barber: { id: barber.id, name: barber.name },
                                                                         timeSlot: slot
@@ -281,11 +349,11 @@ export default function StatusPage() {
                     onOpenChange={setBookingModalOpen}
                     barber={selectedBooking.barber}
                     timeSlot={selectedBooking.timeSlot}
-                    bookingDate={new Date()}
+                    bookingDate={selectedDate}
                     onSuccess={() => {
                         // Refresh barbers list and bookings
                         fetchBarbers();
-                        fetchTodayBookings();
+                        fetchBookingsForDate(selectedDate);
                     }}
                 />
             )}
