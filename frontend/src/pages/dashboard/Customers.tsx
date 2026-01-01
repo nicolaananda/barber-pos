@@ -28,6 +28,7 @@ import {
     SheetTitle,
     SheetDescription
 } from "@/components/ui/sheet";
+import { API_BASE_URL } from '@/lib/api';
 
 
 interface Customer {
@@ -75,7 +76,7 @@ export default function CustomersPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/customers?q=${search}`, {
+            const res = await fetch(`${API_BASE_URL}/customers?q=${search}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch customers');
@@ -100,7 +101,7 @@ export default function CustomersPage() {
         setIsSubmitting(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/customers/${editingCustomer.id}`, {
+            const res = await fetch(`${API_BASE_URL}/customers/${editingCustomer.id}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -126,7 +127,7 @@ export default function CustomersPage() {
         setHistoryLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/transactions?phone=${customer.phone}`, {
+            const res = await fetch(`${API_BASE_URL}/transactions?phone=${customer.phone}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch history');

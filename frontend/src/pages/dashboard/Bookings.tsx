@@ -10,6 +10,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Booking {
     id: number;
@@ -40,7 +41,7 @@ export default function BookingsPage() {
     const fetchBookings = async () => {
         try {
             const token = localStorage.getItem('token');
-            let url = '/api/bookings?';
+            let url = `${API_BASE_URL}/bookings?`;
 
             if (filterStatus !== 'all') {
                 url += `status=${filterStatus}&`;
@@ -79,7 +80,7 @@ export default function BookingsPage() {
     const updateBookingStatus = async (bookingId: number, newStatus: string) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/bookings/${bookingId}/status`, {
+            const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
