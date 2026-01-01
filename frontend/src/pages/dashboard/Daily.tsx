@@ -14,6 +14,7 @@ import {
     Users
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { API_BASE_URL } from '@/lib/api';
 import {
     BarChart,
     Bar,
@@ -62,7 +63,7 @@ export default function DailyPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/dashboard/daily', {
+            const res = await fetch(`${API_BASE_URL}/dashboard/daily`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch daily data');
