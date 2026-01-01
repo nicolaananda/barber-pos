@@ -9,7 +9,9 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 3001,
         WA_GATEWAY_URL: 'https://gowa.nicola.id',
-        WA_DEVICE_ID: '99eae17f-63a1-4fee-b5fb-10cdd48dcacb'
+        WA_DEVICE_ID: '99eae17f-63a1-4fee-b5fb-10cdd48dcacb',
+        WA_GATEWAY_USER: 'admin',
+        WA_GATEWAY_PASS: '@Nandha20'
       },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',

@@ -4,7 +4,19 @@ const pdfGenerator = require('./pdf-generator');
 const { Blob } = require('buffer');
 
 const WA_GATEWAY_URL = process.env.WA_GATEWAY_URL || 'http://localhost:3000';
-const WA_DEVICE_ID = process.env.WA_DEVICE_ID || ''; // Added Device ID support
+const WA_DEVICE_ID = process.env.WA_DEVICE_ID || '';
+const WA_GATEWAY_USER = process.env.WA_GATEWAY_USER || '';
+const WA_GATEWAY_PASS = process.env.WA_GATEWAY_PASS || '';
+
+// Helper to generate Basic Auth header
+const getAuthHeader = () => {
+    if (WA_GATEWAY_USER && WA_GATEWAY_PASS) {
+        const token = Buffer.from(`${WA_GATEWAY_USER}:${WA_GATEWAY_PASS}`).toString('base64');
+        return { 'Authorization': `Basic ${token}` };
+    }
+    return {};
+};
+
 // API Key might not be needed for internal Go-WA, or user can set WA_DEVICE_KEY if they use Basic Auth.
 // Go-WA often uses Basic Auth if configured. Assuming simple setup for now or header based.
 const WAHA_API_KEY = process.env.WAHA_API_KEY || ''; // Keep for compatibility if user reuses it, but mostly unused.
@@ -86,7 +98,9 @@ async function sendWhatsAppMessage(phoneNumber, message) {
         const response = await fetch(`${WA_GATEWAY_URL}/send/message`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Device-Id': WA_DEVICE_ID,
+                ...getAuthHeader()
             },
             body: JSON.stringify(payload)
         });
@@ -126,6 +140,10 @@ async function sendWhatsAppFile(phoneNumber, filepath, caption = '') {
 
         const response = await fetch(`${WA_GATEWAY_URL}/send/file`, {
             method: 'POST',
+            headers: {
+                'X-Device-Id': WA_DEVICE_ID,
+                ...getAuthHeader()
+            },
             body: formData
         });
 
