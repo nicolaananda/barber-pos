@@ -7,7 +7,8 @@ module.exports = {
       args: 'run server',
       env: {
         NODE_ENV: 'production',
-        PORT: 3001
+        PORT: 3001,
+        WA_GATEWAY_URL: 'http://localhost:3000'
       },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',

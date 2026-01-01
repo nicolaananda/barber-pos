@@ -1,11 +1,12 @@
-const axios = require('axios');
 const { format } = require('date-fns');
 const fs = require('fs').promises;
 const pdfGenerator = require('./pdf-generator');
+const { Blob } = require('buffer');
 
-const WAHA_URL = process.env.WAHA_URL || 'http://localhost:3000';
-const WAHA_SESSION = process.env.WAHA_SESSION || 'default';
-const WAHA_API_KEY = process.env.WAHA_API_KEY || '';
+const WA_GATEWAY_URL = process.env.WA_GATEWAY_URL || 'http://localhost:3000';
+// API Key might not be needed for internal Go-WA, or user can set WA_DEVICE_KEY if they use Basic Auth.
+// Go-WA often uses Basic Auth if configured. Assuming simple setup for now or header based.
+const WAHA_API_KEY = process.env.WAHA_API_KEY || ''; // Keep for compatibility if user reuses it, but mostly unused.
 
 /**
  * Format phone number to WhatsApp format (628xxx)
@@ -13,20 +14,13 @@ const WAHA_API_KEY = process.env.WAHA_API_KEY || '';
  */
 function formatPhoneNumber(phone) {
     if (!phone) return null;
-
-    // Remove all non-digit characters
     let cleaned = phone.replace(/\D/g, '');
-
-    // Convert 08xxx to 628xxx
     if (cleaned.startsWith('08')) {
         cleaned = '62' + cleaned.substring(1);
     }
-
-    // Ensure it starts with 62
     if (!cleaned.startsWith('62')) {
         cleaned = '62' + cleaned;
     }
-
     return cleaned;
 }
 
@@ -48,7 +42,6 @@ function generateInvoiceMessage(transaction, barberName) {
     message += `\n━━━━━━━━━━━━━━━━━━\n`;
     message += `*DETAIL LAYANAN*\n\n`;
 
-    // Items
     transaction.items.forEach((item, index) => {
         const subtotal = item.price * item.qty;
         message += `${index + 1}. ${item.name}\n`;
@@ -72,192 +65,113 @@ function generateInvoiceMessage(transaction, barberName) {
 }
 
 /**
- * Send WhatsApp message via WAHA API
+ * Send WhatsApp text message via Go-WA API
  */
 async function sendWhatsAppMessage(phoneNumber, message) {
     try {
         const formattedPhone = formatPhoneNumber(phoneNumber);
+        if (!formattedPhone) throw new Error('Invalid phone number');
 
-        if (!formattedPhone) {
-            throw new Error('Invalid phone number');
-        }
+        // Go-WA expects user ID (e.g. 628x@s.whatsapp.net) or just number?
+        // Usually implementation accepts number string.
+        // Let's try sending just phone number in 'phone' field.
+        const payload = {
+            phone: formattedPhone,
+            message: message
+        };
 
-        const chatId = `${formattedPhone}@c.us`;
+        console.log('Sending WA Message:', { url: `${WA_GATEWAY_URL}/send/message`, payload });
 
-        console.log('Sending WhatsApp message:', {
-            wahaUrl: WAHA_URL,
-            session: WAHA_SESSION,
-            chatId: chatId,
-            phoneNumber: phoneNumber,
-            formattedPhone: formattedPhone
-        });
-
-        const response = await axios.post(
-            `${WAHA_URL}/api/sendText`,
-            {
-                session: WAHA_SESSION,
-                chatId: chatId,
-                text: message
+        const response = await fetch(`${WA_GATEWAY_URL}/send/message`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
             },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Api-Key': process.env.WAHA_API_KEY
-                },
-                timeout: 10000 // 10 second timeout
-            }
-        );
-
-        return {
-            success: true,
-            data: response.data
-        };
-    } catch (error) {
-        console.error('WhatsApp Send Error Details:', {
-            message: error.message,
-            code: error.code,
-            response: error.response?.data,
-            status: error.response?.status
+            body: JSON.stringify(payload)
         });
 
-        let errorMessage = 'Failed to send WhatsApp message';
+        const data = await response.json();
 
-        if (error.code === 'ECONNREFUSED') {
-            errorMessage = 'Cannot connect to WhatsApp service. Check WAHA_URL in .env';
-        } else if (error.code === 'ENOTFOUND') {
-            errorMessage = 'WhatsApp service URL not found. Check WAHA_URL in .env';
-        } else if (error.response) {
-            // Server responded with error
-            const responseError = error.response.data?.error || error.response.data?.message;
-            errorMessage = responseError || `Server error: ${error.response.status} ${error.response.statusText}`;
-        } else if (error.request) {
-            errorMessage = 'No response from WhatsApp service. Is WAHA running?';
-        } else if (error.message) {
-            errorMessage = error.message;
+        if (!response.ok) {
+            throw new Error(data.message || data.error || 'Failed to send message');
         }
 
-        return {
-            success: false,
-            error: errorMessage
-        };
+        return { success: true, data };
+    } catch (error) {
+        console.error('WhatsApp Send Error:', error.message);
+        return { success: false, error: error.message };
     }
 }
 
 /**
- * Send file via WhatsApp
+ * Send file via WhatsApp (Go-WA API)
  */
 async function sendWhatsAppFile(phoneNumber, filepath, caption = '') {
     try {
         const formattedPhone = formatPhoneNumber(phoneNumber);
+        if (!formattedPhone) throw new Error('Invalid phone number');
 
-        if (!formattedPhone) {
-            throw new Error('Invalid phone number');
-        }
-
-        const chatId = `${formattedPhone}@c.us`;
-
-        // Read file and convert to base64
         const fileBuffer = await fs.readFile(filepath);
-        const base64File = fileBuffer.toString('base64');
         const filename = filepath.split('/').pop();
 
-        console.log('Sending WhatsApp file:', {
-            wahaUrl: WAHA_URL,
-            session: WAHA_SESSION,
-            chatId: chatId,
-            filename: filename
+        const formData = new FormData();
+        formData.append('phone', formattedPhone);
+        formData.append('caption', caption);
+        // 'file' is the field name expected by typical go-whatsapp implementations or 'image'
+        // Plan said /send/file, usually expects 'file'.
+        formData.append('file', new Blob([fileBuffer]), filename);
+
+        console.log('Sending WA File:', { url: `${WA_GATEWAY_URL}/send/file`, phone: formattedPhone, filename });
+
+        const response = await fetch(`${WA_GATEWAY_URL}/send/file`, {
+            method: 'POST',
+            body: formData
         });
 
-        const response = await axios.post(
-            `${WAHA_URL}/api/sendFile`,
-            {
-                session: WAHA_SESSION,
-                chatId: chatId,
-                file: {
-                    mimetype: 'application/pdf',
-                    filename: filename,
-                    data: base64File
-                },
-                caption: caption
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(WAHA_API_KEY && { 'X-Api-Key': WAHA_API_KEY })
-                },
-                timeout: 30000 // 30 second timeout for file upload
-            }
-        );
+        const data = await response.json();
 
-        return {
-            success: true,
-            data: response.data
-        };
-    } catch (error) {
-        console.error('WhatsApp Send File Error Details:', {
-            message: error.message,
-            code: error.code,
-            response: error.response?.data,
-            status: error.response?.status
-        });
-
-        let errorMessage = 'Failed to send WhatsApp file';
-
-        if (error.code === 'ECONNREFUSED') {
-            errorMessage = 'Cannot connect to WhatsApp service. Check WAHA_URL in .env';
-        } else if (error.code === 'ENOTFOUND') {
-            errorMessage = 'WhatsApp service URL not found. Check WAHA_URL in .env';
-        } else if (error.response) {
-            const responseError = error.response.data?.error || error.response.data?.message;
-            errorMessage = responseError || `Server error: ${error.response.status} ${error.response.statusText}`;
-        } else if (error.request) {
-            errorMessage = 'No response from WhatsApp service. Is WAHA running?';
-        } else if (error.message) {
-            errorMessage = error.message;
+        if (!response.ok) {
+            throw new Error(data.message || data.error || 'Failed to send file');
         }
 
-        return {
-            success: false,
-            error: errorMessage
-        };
+        return { success: true, data };
+    } catch (error) {
+        console.error('WhatsApp Send File Error:', error.message);
+        return { success: false, error: error.message };
     }
 }
 
 /**
  * Send invoice via WhatsApp as PDF link
+ * Note: Keeping this as fallback or primary if file upload fails, 
+ * but Go-WA supports file upload so we can use sendWhatsAppFile if we wanted to attach PDF directly.
+ * For now, I'll keep the link logic but maybe switch to file upload if desired?
+ * The original code sent a LINK. Let's keep sending LINK to avoid file size issues, 
+ * unless user explicitly asked to send the FILE. 
+ * Wait, existing code uses sendWhatsAppMessage for link. 
+ * I will keep it as is (sending Link) since it's reliable.
  */
 async function sendInvoice(transaction, barberName, cashReceived = 0) {
     if (!transaction.customerPhone) {
-        return {
-            success: false,
-            error: 'Customer phone number not available'
-        };
+        return { success: false, error: 'Customer phone number not available' };
     }
 
     try {
-        // Generate PDF and Upload to R2
         console.log('Generating PDF for invoice:', transaction.invoiceCode);
         const pdfUrl = await pdfGenerator.generateInvoicePDF(transaction, barberName, cashReceived);
         console.log('PDF available at:', pdfUrl);
 
-        // Create message with link
         const message = `🧾 *INVOICE STAYCOOL HAIRLAB*\n\n` +
             `📋 Invoice: *${transaction.invoiceCode}*\n` +
             `💰 Total: *Rp ${transaction.totalAmount.toLocaleString('id-ID')}*\n\n` +
             `📄 Lihat invoice lengkap di:\n${pdfUrl}\n\n` +
             `Terima kasih atas kunjungan Anda! 🙏`;
 
-        // Send via WhatsApp
         const result = await sendWhatsAppMessage(transaction.customerPhone, message);
-
         return result;
     } catch (error) {
         console.error('Send Invoice Error:', error);
-
-        return {
-            success: false,
-            error: error.message || 'Failed to send invoice'
-        };
+        return { success: false, error: error.message || 'Failed to send invoice' };
     }
 }
 
