@@ -11,6 +11,7 @@ import { User } from 'lucide-react';
 interface Barber {
     id: number;
     name: string;
+    username: string; // Added username
 }
 
 export default function BarberSelector() {
@@ -58,6 +59,12 @@ export default function BarberSelector() {
 
     if (loading) return <div>Loading Barbers...</div>;
 
+    const getBarberImage = (username: string) => {
+        if (username === 'bagus') return '/bagus.webp';
+        if (username === 'diva') return '/profil_diva.webp';
+        return null; // Fallback to icon
+    };
+
     return (
         <div className="mb-6 md:mb-8">
             <h2 className="text-xl font-bold mb-4 tracking-tight uppercase text-zinc-900 flex items-center gap-2">
@@ -65,33 +72,47 @@ export default function BarberSelector() {
                 Select Barber
             </h2>
             <div className="flex md:grid md:grid-cols-4 gap-3 md:gap-4 overflow-x-auto pb-4 md:pb-0 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                {barbers.map((barber) => (
-                    <Card
-                        key={barber.id}
-                        className={cn(
-                            'cursor-pointer transition-all duration-200 border min-w-[140px] md:min-w-0 snap-center shadow-sm',
-                            'hover:border-zinc-900 flex-shrink-0',
-                            // eslint-disable-next-line eqeqeq
-                            selectedBarber?.id == (barber.id as unknown as string)
-                                ? 'border-zinc-900 bg-zinc-900 text-white shadow-md scale-[1.02]'
-                                : 'bg-white border-zinc-200 text-zinc-900 hover:shadow-md'
-                        )}
-                        onClick={() => setBarber({ id: barber.id.toString(), name: barber.name })}
-                    >
-                        <CardContent className="flex flex-col items-center justify-center p-4 md:p-5 gap-3">
-                            <div className={cn(
-                                "p-3 rounded-full transition-colors border",
-                                // eslint-disable-next-line eqeqeq
-                                selectedBarber?.id == (barber.id as unknown as string)
-                                    ? "bg-white text-zinc-900 border-transparent"
-                                    : "bg-zinc-100 text-zinc-500 border-zinc-100"
-                            )}>
-                                <User className="h-6 w-6 md:h-7 md:w-7" />
-                            </div>
-                            <span className="font-bold text-center tracking-wide text-sm md:text-base line-clamp-1">{barber.name}</span>
-                        </CardContent>
-                    </Card>
-                ))}
+                {barbers.map((barber) => {
+                    const imageUrl = getBarberImage(barber.username);
+                    const isSelected = selectedBarber?.id == (barber.id as unknown as string); // eslint-disable-line eqeqeq
+
+                    return (
+                        <Card
+                            key={barber.id}
+                            className={cn(
+                                'cursor-pointer transition-all duration-200 border min-w-[140px] md:min-w-0 snap-center shadow-sm',
+                                'hover:border-zinc-900 flex-shrink-0',
+                                isSelected
+                                    ? 'border-zinc-900 bg-zinc-900 text-white shadow-md scale-[1.02]'
+                                    : 'bg-white border-zinc-200 text-zinc-900 hover:shadow-md'
+                            )}
+                            onClick={() => setBarber({ id: barber.id.toString(), name: barber.name })}
+                        >
+                            <CardContent className="flex flex-col items-center justify-center p-4 md:p-5 gap-3">
+                                <div className={cn(
+                                    "w-16 h-16 rounded-full flex items-center justify-center overflow-hidden border-2 transition-colors relative",
+                                    isSelected
+                                        ? "border-white bg-zinc-800"
+                                        : "border-zinc-100 bg-zinc-50"
+                                )}>
+                                    {imageUrl ? (
+                                        <img
+                                            src={imageUrl}
+                                            alt={barber.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <User className={cn(
+                                            "h-8 w-8",
+                                            isSelected ? "text-white" : "text-zinc-400"
+                                        )} />
+                                    )}
+                                </div>
+                                <span className="font-bold text-center tracking-wide text-sm md:text-base line-clamp-1">{barber.name}</span>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
             </div>
         </div>
     );
