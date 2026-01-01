@@ -94,8 +94,6 @@ router.get('/barbers-list', authenticateToken, requireOwner, async (req, res) =>
                 role: true,
                 status: true,
                 availability: true,
-                commissionType: true,
-                commissionValue: true,
                 createdAt: true,
                 updatedAt: true,
             },
@@ -112,27 +110,13 @@ router.get('/barbers-list', authenticateToken, requireOwner, async (req, res) =>
 // POST /api/users/barbers - Create new barber (owner only)
 router.post('/barbers', authenticateToken, requireOwner, async (req, res) => {
     try {
-        const { username, password, name, commissionType, commissionValue, status } = req.body;
+        const { username, password, name, status } = req.body;
 
         if (!username || !password || !name) {
             return res.status(400).json({ error: 'Username, password, and name are required' });
         }
 
-        // Validate commissionType
-        const validCommissionTypes = ['percentage', 'flat'];
-        const finalCommissionType = commissionType && validCommissionTypes.includes(commissionType)
-            ? commissionType
-            : 'percentage';
 
-        // Validate status
-        const validStatuses = ['active', 'inactive'];
-        const finalStatus = status && validStatuses.includes(status) ? status : 'active';
-
-        // Validate commissionValue
-        const finalCommissionValue = parseFloat(commissionValue) || 0;
-        if (isNaN(finalCommissionValue) || finalCommissionValue < 0) {
-            return res.status(400).json({ error: 'Commission value must be a valid positive number' });
-        }
 
         // Check if username already exists
         const existingUser = await prisma.user.findUnique({
@@ -154,8 +138,6 @@ router.post('/barbers', authenticateToken, requireOwner, async (req, res) => {
                 name: name.trim(),
                 role: 'staff',
                 status: finalStatus,
-                commissionType: finalCommissionType,
-                commissionValue: finalCommissionValue,
             },
             select: {
                 id: true,
@@ -164,8 +146,6 @@ router.post('/barbers', authenticateToken, requireOwner, async (req, res) => {
                 role: true,
                 status: true,
                 availability: true,
-                commissionType: true,
-                commissionValue: true,
                 createdAt: true,
                 updatedAt: true,
             }
@@ -189,7 +169,7 @@ router.post('/barbers', authenticateToken, requireOwner, async (req, res) => {
 router.put('/barbers/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { id } = req.params;
-        const { username, password, name, commissionType, commissionValue, status } = req.body;
+        const { username, password, name, status } = req.body;
 
         const updateData = {};
 
@@ -203,24 +183,7 @@ router.put('/barbers/:id', authenticateToken, requireOwner, async (req, res) => 
             updateData.name = name.trim();
         }
 
-        // Validate and set commissionType
-        if (commissionType) {
-            const validCommissionTypes = ['percentage', 'flat'];
-            if (validCommissionTypes.includes(commissionType)) {
-                updateData.commissionType = commissionType;
-            } else {
-                return res.status(400).json({ error: 'Invalid commission type. Must be "percentage" or "flat"' });
-            }
-        }
 
-        // Validate and set commissionValue
-        if (commissionValue !== undefined) {
-            const parsedValue = parseFloat(commissionValue);
-            if (isNaN(parsedValue) || parsedValue < 0) {
-                return res.status(400).json({ error: 'Commission value must be a valid positive number' });
-            }
-            updateData.commissionValue = parsedValue;
-        }
 
         // Validate and set status
         if (status) {
@@ -259,8 +222,6 @@ router.put('/barbers/:id', authenticateToken, requireOwner, async (req, res) => 
                 role: true,
                 status: true,
                 availability: true,
-                commissionType: true,
-                commissionValue: true,
                 createdAt: true,
                 updatedAt: true,
             }

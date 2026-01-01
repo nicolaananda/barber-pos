@@ -21,7 +21,17 @@ router.get('/', authenticateToken, async (req, res) => {
         const payrollStats = await Promise.all(
             barbers.map(async (barber) => {
                 // Aggregate transactions for this barber in this period
-                const aggregate = await prisma.transaction.aggregate({
+                // Fetch all services to get commission rules
+                const services = await prisma.service.findMany();
+                const serviceMap = services.reduce((acc, service) => {
+                    acc[service.name] = service;
+                    return acc;
+                }, {});
+
+                let estimatedCommission = 0;
+
+                // Fetch full transactions to iterate items
+                const transactions = await prisma.transaction.findMany({
                     where: {
                         barberId: barber.id,
                         date: {
@@ -29,22 +39,30 @@ router.get('/', authenticateToken, async (req, res) => {
                             lte: endDate,
                         },
                     },
-                    _sum: {
-                        totalAmount: true,
-                    },
-                    _count: {
-                        id: true,
-                    },
                 });
 
-                const totalRevenue = aggregate._sum.totalAmount || 0;
-                const totalTransactions = aggregate._count.id || 0;
+                let totalRevenue = 0;
+                let totalTransactions = transactions.length;
 
-                let estimatedCommission = 0;
-                if (barber.commissionType === 'percentage') {
-                    estimatedCommission = totalRevenue * (barber.commissionValue / 100);
-                } else {
-                    estimatedCommission = totalTransactions * barber.commissionValue;
+                for (const t of transactions) {
+                    totalRevenue += t.totalAmount;
+                    if (Array.isArray(t.items)) {
+                        for (const item of t.items) {
+                            const service = serviceMap[item.name];
+                            if (service) {
+                                if (service.commissionType === 'percentage') {
+                                    // Calculate based on item price
+                                    estimatedCommission += (item.price * service.commissionValue) / 100;
+                                } else {
+                                    // Flat rate
+                                    estimatedCommission += service.commissionValue;
+                                }
+                            } else {
+                                // Fallback or log if service not found (maybe deleted)
+                                // For now, assume 0 or maybe try to match by loose name
+                            }
+                        }
+                    }
                 }
 
                 return {
@@ -52,8 +70,6 @@ router.get('/', authenticateToken, async (req, res) => {
                     barberName: barber.name,
                     totalTransactions,
                     totalRevenue,
-                    commissionType: barber.commissionType,
-                    commissionRate: barber.commissionValue,
                     estimatedCommission,
                     period: startDate.toLocaleString('default', {
                         month: 'long',

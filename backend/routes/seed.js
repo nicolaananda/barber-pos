@@ -23,8 +23,6 @@ router.get('/', async (req, res) => {
                 username: 'owner',
                 password: hashedPassword,
                 role: 'owner',
-                commissionType: 'percentage',
-                commissionValue: 0,
             },
         });
 
@@ -34,8 +32,6 @@ router.get('/', async (req, res) => {
                 username: 'andi',
                 password: hashedPassword,
                 role: 'staff',
-                commissionType: 'percentage',
-                commissionValue: 40,
             },
         });
 
@@ -45,17 +41,30 @@ router.get('/', async (req, res) => {
                 username: 'budi',
                 password: hashedPassword,
                 role: 'staff',
-                commissionType: 'flat',
-                commissionValue: 15000,
             },
         });
 
         // Create Services
         await prisma.service.createMany({
             data: [
-                { name: 'Regular Cut', price: 40000 },
-                { name: 'Shaving', price: 20000 },
-                { name: 'Coloring', price: 100000 },
+                {
+                    name: 'Regular Cut',
+                    price: 40000,
+                    commissionType: 'percentage',
+                    commissionValue: 50
+                },
+                {
+                    name: 'Shaving',
+                    price: 20000,
+                    commissionType: 'flat',
+                    commissionValue: 10000
+                },
+                {
+                    name: 'Coloring',
+                    price: 100000,
+                    commissionType: 'flat',
+                    commissionValue: 40000
+                },
             ],
         });
 

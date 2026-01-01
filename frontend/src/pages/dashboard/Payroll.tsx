@@ -16,8 +16,6 @@ interface PayrollData {
     barberName: string;
     totalTransactions: number;
     totalRevenue: number;
-    commissionType: string;
-    commissionRate: number;
     estimatedCommission: number;
     period: string;
 }
@@ -323,16 +321,7 @@ export default function PayrollPage() {
                                 <td>-</td>
                                 <td>IDR ${barber.totalRevenue.toLocaleString('id-ID')}</td>
                             </tr>
-                            <tr>
-                                <td>Tipe Komisi</td>
-                                <td>${barber.commissionType === 'percentage' ? 'Persentase' : 'Flat Rate'}</td>
-                                <td>-</td>
-                            </tr>
-                            <tr>
-                                <td>Rate Komisi</td>
-                                <td>${barber.commissionType === 'percentage' ? `${barber.commissionRate}%` : `IDR ${barber.commissionRate.toLocaleString('id-ID')}`}</td>
-                                <td>-</td>
-                            </tr>
+
                         </tbody>
                     </table>
 
@@ -341,14 +330,6 @@ export default function PayrollPage() {
                         <tr>
                             <td>Total Pendapatan</td>
                             <td>IDR ${barber.totalRevenue.toLocaleString('id-ID')}</td>
-                        </tr>
-                        <tr>
-                            <td>Tipe Komisi</td>
-                            <td>${barber.commissionType === 'percentage' ? 'Persentase' : 'Flat Rate'}</td>
-                        </tr>
-                        <tr>
-                            <td>Rate Komisi</td>
-                            <td>${barber.commissionType === 'percentage' ? `${barber.commissionRate}%` : `IDR ${barber.commissionRate.toLocaleString('id-ID')}`}</td>
                         </tr>
                         <tr>
                             <td>Total Transaksi</td>
@@ -504,8 +485,6 @@ export default function PayrollPage() {
                                         <th className="p-4 pl-6">Barber</th>
                                         <th className="p-4 text-center">Transactions</th>
                                         <th className="p-4 text-right">Revenue</th>
-                                        <th className="p-4 text-center">Commission Type</th>
-                                        <th className="p-4 text-center">Rate</th>
                                         <th className="p-4 text-right">Commission</th>
                                         <th className="p-4 text-center">Action</th>
                                     </tr>
@@ -520,20 +499,7 @@ export default function PayrollPage() {
                                             <td className="p-4 text-right font-mono text-zinc-900">
                                                 IDR {barber.totalRevenue.toLocaleString('id-ID')}
                                             </td>
-                                            <td className="p-4 text-center">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${barber.commissionType === 'percentage'
-                                                    ? 'bg-zinc-100 text-zinc-600 border-zinc-200'
-                                                    : 'bg-zinc-900 text-white border-zinc-900'
-                                                    }`}>
-                                                    {barber.commissionType === 'percentage' ? 'Percentage' : 'Flat Rate'}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-center font-mono font-bold text-zinc-700">
-                                                {barber.commissionType === 'percentage'
-                                                    ? `${barber.commissionRate}%`
-                                                    : `IDR ${barber.commissionRate.toLocaleString('id-ID')}`
-                                                }
-                                            </td>
+
                                             <td className="p-4 text-right font-bold text-zinc-900 font-mono text-base">
                                                 IDR {barber.estimatedCommission.toLocaleString('id-ID')}
                                             </td>
@@ -560,8 +526,6 @@ export default function PayrollPage() {
                                         <td className="p-4 text-right font-mono font-bold text-zinc-900">
                                             IDR {totalRevenue.toLocaleString('id-ID')}
                                         </td>
-                                        <td className="p-4"></td>
-                                        <td className="p-4"></td>
                                         <td className="p-4 text-right font-bold text-zinc-900 font-mono text-lg">
                                             IDR {totalCommissions.toLocaleString('id-ID')}
                                         </td>

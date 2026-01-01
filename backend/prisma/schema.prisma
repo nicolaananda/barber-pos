@@ -16,8 +16,6 @@ model User {
   role            String   @default("staff") // 'owner' | 'staff'
   status          String   @default("active")
   availability    String   @default("idle") // 'idle' | 'busy'
-  commissionType  String   @default("percentage") // 'percentage' | 'flat'
-  commissionValue Float    @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -29,12 +27,14 @@ model User {
 }
 
 model Service {
-  id        Int      @id @default(autoincrement())
-  name      String
-  price     Float
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  name            String
+  price           Float
+  commissionType  String   @default("percentage") // 'percentage' | 'flat'
+  commissionValue Float    @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Customer {

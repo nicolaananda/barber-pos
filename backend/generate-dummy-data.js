@@ -112,7 +112,7 @@ async function generateDummyData() {
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
             const currentDate = new Date(d);
             const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
-            
+
             // Skip Sunday (assuming closed on Sunday)
             if (dayOfWeek === 0) {
                 continue;
@@ -130,7 +130,7 @@ async function generateDummyData() {
                 shiftCloseTime.setHours(21, 0, 0, 0); // 9:00 PM
 
                 const startCash = Math.floor(Math.random() * 500000) + 100000; // 100k - 600k
-                
+
                 const shift = await prisma.cashShift.create({
                     data: {
                         openedById: barber.id,
@@ -175,7 +175,7 @@ async function generateDummyData() {
                     const paymentMethod = Math.random() > 0.3 ? 'cash' : 'qris'; // 70% cash, 30% qris
 
                     const invoiceCode = generateInvoiceCode(transactionTime);
-                    
+
                     await prisma.transaction.create({
                         data: {
                             invoiceCode: invoiceCode,
@@ -218,7 +218,7 @@ async function generateDummyData() {
             for (let i = 0; i < numBookings; i++) {
                 const barber = barbers[Math.floor(Math.random() * barbers.length)];
                 const customer = allCustomers[Math.floor(Math.random() * allCustomers.length)];
-                
+
                 const bookingTime = new Date(currentDate);
                 const hour = Math.floor(Math.random() * 11) + 9; // 9-19
                 bookingTime.setHours(hour, 0, 0, 0);
@@ -280,11 +280,24 @@ async function generateDummyData() {
             const totalServices = transactions.length;
             let totalCommission = 0;
 
+            // Create service map for commission lookup
+            const serviceMap = services.reduce((acc, s) => {
+                acc[s.name] = s;
+                return acc;
+            }, {});
+
             for (const transaction of transactions) {
-                if (barber.commissionType === 'percentage') {
-                    totalCommission += (transaction.totalAmount * barber.commissionValue) / 100;
-                } else {
-                    totalCommission += barber.commissionValue;
+                if (Array.isArray(transaction.items)) {
+                    for (const item of transaction.items) {
+                        const service = serviceMap[item.name];
+                        if (service) {
+                            if (service.commissionType === 'percentage') {
+                                totalCommission += (item.price * service.commissionValue) / 100;
+                            } else {
+                                totalCommission += service.commissionValue;
+                            }
+                        }
+                    }
                 }
             }
 

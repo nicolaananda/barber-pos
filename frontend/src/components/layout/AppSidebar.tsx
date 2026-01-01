@@ -73,9 +73,17 @@ export function AppSidebar() {
 
             <div className="p-4 border-t border-zinc-100 bg-white">
                 <div className="flex items-center gap-3 mb-4 px-2">
-                    <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-900 font-bold border border-zinc-200">
-                        {user?.name?.charAt(0) || 'U'}
-                    </div>
+                    {user?.username === 'bagus' ? (
+                        <img
+                            src="/bagus.jpg"
+                            alt="Profile"
+                            className="w-8 h-8 rounded-full object-cover border border-zinc-200"
+                        />
+                    ) : (
+                        <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-900 font-bold border border-zinc-200">
+                            {user?.name?.charAt(0) || 'U'}
+                        </div>
+                    )}
                     <div className="overflow-hidden">
                         <p className="text-sm font-bold truncate text-zinc-900">{user?.name || 'User'}</p>
                         <p className="text-xs text-zinc-500 uppercase tracking-wider">{user?.role || 'Staff'}</p>

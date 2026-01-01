@@ -31,8 +31,7 @@ interface Barber {
     role: string;
     status: string;
     availability: string;
-    commissionType: string;
-    commissionValue: number;
+
     createdAt: string;
     updatedAt: string;
 }
@@ -49,8 +48,7 @@ export default function BarbersPage() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
-    const [commissionType, setCommissionType] = useState('percentage');
-    const [commissionValue, setCommissionValue] = useState('');
+
     const [status, setStatus] = useState('active');
 
     useEffect(() => {
@@ -106,21 +104,9 @@ export default function BarbersPage() {
             const method = currentId ? 'PUT' : 'POST';
             const url = currentId ? `/api/users/barbers/${currentId}` : '/api/users/barbers';
 
-            // Ensure commissionType is valid
-            const validCommissionType = commissionType === 'flat' ? 'flat' : 'percentage';
-
-            // Parse commissionValue
-            const parsedCommissionValue = parseFloat(commissionValue);
-            if (isNaN(parsedCommissionValue) || parsedCommissionValue < 0) {
-                alert('Commission value must be a valid positive number');
-                return;
-            }
-
             const body: any = {
                 username: username.trim(),
                 name: name.trim(),
-                commissionType: validCommissionType,
-                commissionValue: parsedCommissionValue,
                 status: status || 'active'
             };
 
@@ -186,8 +172,6 @@ export default function BarbersPage() {
         setUsername(barber.username);
         setPassword('');
         setName(barber.name);
-        setCommissionType(barber.commissionType);
-        setCommissionValue(barber.commissionValue.toString());
         setStatus(barber.status);
         setIsDialogOpen(true);
     };
@@ -197,8 +181,6 @@ export default function BarbersPage() {
         setUsername('');
         setPassword('');
         setName('');
-        setCommissionType('percentage');
-        setCommissionValue('0');
         setStatus('active');
         setIsDialogOpen(true);
     };
@@ -209,8 +191,6 @@ export default function BarbersPage() {
         setUsername('');
         setPassword('');
         setName('');
-        setCommissionType('percentage');
-        setCommissionValue('0');
         setStatus('active');
     };
 
@@ -287,31 +267,7 @@ export default function BarbersPage() {
                                     required
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="commissionType">Commission Type</Label>
-                                <Select value={commissionType} onValueChange={setCommissionType}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="percentage">Percentage</SelectItem>
-                                        <SelectItem value="flat">Flat Rate</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="commissionValue">
-                                    Commission Value {commissionType === 'percentage' ? '(%)' : '(IDR)'} *
-                                </Label>
-                                <Input
-                                    id="commissionValue"
-                                    type="number"
-                                    step="0.01"
-                                    value={commissionValue}
-                                    onChange={(e) => setCommissionValue(e.target.value)}
-                                    required
-                                />
-                            </div>
+
                             <div className="space-y-2">
                                 <Label htmlFor="status">Status</Label>
                                 <Select value={status} onValueChange={setStatus}>
@@ -385,8 +341,6 @@ export default function BarbersPage() {
                                         <th className="p-4 pl-6">Name</th>
                                         <th className="p-4">Username</th>
                                         <th className="p-4 text-center">Status</th>
-                                        <th className="p-4 text-center">Commission Type</th>
-                                        <th className="p-4 text-right">Commission Value</th>
                                         <th className="p-4 text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -406,20 +360,6 @@ export default function BarbersPage() {
                                                 >
                                                     {barber.status}
                                                 </Badge>
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-zinc-300 text-zinc-700 bg-white"
-                                                >
-                                                    {barber.commissionType === 'percentage' ? 'Percentage' : 'Flat Rate'}
-                                                </Badge>
-                                            </td>
-                                            <td className="p-4 text-right font-mono font-bold text-zinc-900">
-                                                {barber.commissionType === 'percentage'
-                                                    ? `${barber.commissionValue}%`
-                                                    : `IDR ${barber.commissionValue.toLocaleString('id-ID')}`
-                                                }
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex gap-2 justify-center">

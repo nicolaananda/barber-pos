@@ -21,11 +21,13 @@ router.get('/', async (req, res) => {
 // POST /api/services
 router.post('/', authenticateToken, async (req, res) => {
     try {
-        const { name, price } = req.body;
+        const { name, price, commissionType, commissionValue } = req.body;
         const service = await prisma.service.create({
             data: {
                 name,
                 price: parseInt(price),
+                commissionType: commissionType || 'percentage',
+                commissionValue: parseFloat(commissionValue) || 0,
                 isActive: true
             }
         });
@@ -40,12 +42,14 @@ router.post('/', authenticateToken, async (req, res) => {
 router.patch('/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, price } = req.body;
+        const { name, price, commissionType, commissionValue } = req.body;
         const service = await prisma.service.update({
             where: { id: parseInt(id) },
             data: {
                 name,
-                price: parseInt(price)
+                price: parseInt(price),
+                commissionType,
+                commissionValue: parseFloat(commissionValue)
             }
         });
         res.json(service);

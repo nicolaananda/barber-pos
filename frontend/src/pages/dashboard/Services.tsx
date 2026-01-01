@@ -28,6 +28,8 @@ interface Service {
     id: number;
     name: string;
     price: number;
+    commissionType: 'percentage' | 'flat';
+    commissionValue: number;
 }
 
 export default function ServicesPage() {
@@ -43,6 +45,8 @@ export default function ServicesPage() {
     const [currentId, setCurrentId] = useState<number | null>(null);
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
+    const [commissionType, setCommissionType] = useState<'percentage' | 'flat'>('percentage');
+    const [commissionValue, setCommissionValue] = useState('');
 
     useEffect(() => {
         fetchServices();
@@ -78,7 +82,12 @@ export default function ServicesPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ name, price })
+                body: JSON.stringify({
+                    name,
+                    price,
+                    commissionType,
+                    commissionValue
+                })
             });
 
             await fetchServices();
@@ -106,6 +115,8 @@ export default function ServicesPage() {
         setCurrentId(service.id);
         setName(service.name);
         setPrice(service.price.toString());
+        setCommissionType(service.commissionType);
+        setCommissionValue(service.commissionValue.toString());
         setIsDialogOpen(true);
     };
 
@@ -115,6 +126,8 @@ export default function ServicesPage() {
             setCurrentId(null);
             setName('');
             setPrice('');
+            setCommissionType('percentage');
+            setCommissionValue('');
         }, 150);
     };
 
@@ -153,6 +166,34 @@ export default function ServicesPage() {
                                 <Label htmlFor="price">Price (IDR)</Label>
                                 <Input id="price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} required />
                             </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="commissionType">Commission Type</Label>
+                                    <Select value={commissionType} onValueChange={(v: 'percentage' | 'flat') => setCommissionType(v)}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="percentage">Percentage (%)</SelectItem>
+                                            <SelectItem value="flat">Flat Rate (IDR)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="commissionValue">
+                                        {commissionType === 'percentage' ? 'Percentage (%)' : 'Amount (IDR)'}
+                                    </Label>
+                                    <Input
+                                        id="commissionValue"
+                                        type="number"
+                                        value={commissionValue}
+                                        onChange={(e) => setCommissionValue(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
                             <DialogFooter className="pt-4">
                                 <Button type="submit">{currentId ? 'Save Changes' : 'Create'}</Button>
                             </DialogFooter>
@@ -222,6 +263,15 @@ export default function ServicesPage() {
                                 <div className="mt-auto pt-4 border-t border-zinc-100 flex items-center justify-between">
                                     <span className="text-sm text-zinc-500 font-medium">Price</span>
                                     <span className="text-xl font-black font-mono text-zinc-900">IDR {service.price.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-xs">
+                                    <span className="text-zinc-500 font-medium">Commission</span>
+                                    <span className="font-mono font-bold text-zinc-700 bg-zinc-50 px-2 py-1 rounded">
+                                        {service.commissionType === 'percentage'
+                                            ? `${service.commissionValue}%`
+                                            : `IDR ${service.commissionValue.toLocaleString('id-ID')}`
+                                        }
+                                    </span>
                                 </div>
                             </CardContent>
                         </Card>
