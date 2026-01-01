@@ -68,7 +68,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'https://api.staycoolhairlab.id',
+        target: 'http://localhost:3001',
         changeOrigin: true,
       },
     },

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE_URL } from '@/lib/api';
 import { usePosStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
@@ -40,7 +41,7 @@ export default function PosPage() {
         const checkShift = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch('/api/shifts?status=open', {
+                const res = await fetch(`${API_BASE_URL}/shifts?status=open`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -78,7 +79,7 @@ export default function PosPage() {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/users/${user.id}/availability`, {
+            const res = await fetch(`${API_BASE_URL}/users/${user.id}/availability`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

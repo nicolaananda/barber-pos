@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from '@/components/ui/badge';
 import { Scissors, Sparkles, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Service {
     id: number;
@@ -20,7 +21,7 @@ export default function ServicesModal({ open, onOpenChange }: ServicesModalProps
 
     useEffect(() => {
         if (open) {
-            fetch('/api/services')
+            fetch(`${API_BASE_URL}/services`)
                 .then(res => {
                     if (!res.ok) throw new Error('Failed to fetch');
                     return res.json();

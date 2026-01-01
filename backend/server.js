@@ -23,6 +23,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({
     origin: [
         'https://staycoolhairlab.id',
+        'https://www.staycoolhairlab.id',
         'https://pos.staycoolhairlab.id',
         'http://localhost:5173',
         'http://localhost:3000'

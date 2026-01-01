@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+
 import { usePosStore } from '@/lib/store';
+import { API_BASE_URL } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { User } from 'lucide-react';
@@ -18,7 +20,7 @@ export default function BarberSelector() {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        fetch('/api/users', {
+        fetch(`${API_BASE_URL}/users`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }

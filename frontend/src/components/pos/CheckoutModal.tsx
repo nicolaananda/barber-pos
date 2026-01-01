@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePosStore } from '@/lib/store';
+import { API_BASE_URL } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,7 +58,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/customers?q=${query}`, {
+            const res = await fetch(`${API_BASE_URL}/customers?q=${query}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -84,7 +85,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
             // 1. Save/Update Customer if info exists
             if (customerName && customerPhone) {
                 const token = localStorage.getItem('token');
-                await fetch('/api/customers', {
+                await fetch(`${API_BASE_URL}/customers`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -96,7 +97,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
 
             // 2. Create Transaction
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/transactions', {
+            const res = await fetch(`${API_BASE_URL}/transactions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -150,7 +151,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/transactions/${lastTx.id}/send-whatsapp`, {
+            const res = await fetch(`${API_BASE_URL}/transactions/${lastTx.id}/send-whatsapp`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`

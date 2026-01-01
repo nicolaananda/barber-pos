@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+
 import { usePosStore } from '@/lib/store';
+import { API_BASE_URL } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Scissors } from 'lucide-react';
@@ -20,7 +22,7 @@ export default function ServiceGrid() {
     useEffect(() => {
         setLoading(true);
         const token = localStorage.getItem('token');
-        fetch('/api/services', {
+        fetch(`${API_BASE_URL}/services`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }

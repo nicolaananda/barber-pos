@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Bell, Check, X, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { API_BASE_URL } from '@/lib/api';
 import {
     Dialog,
     DialogContent,
@@ -40,7 +41,7 @@ export default function PendingBookingAlert() {
     const fetchPendingBookings = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/bookings?status=pending', {
+            const res = await fetch(`${API_BASE_URL}/bookings?status=pending`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -78,7 +79,7 @@ export default function PendingBookingAlert() {
     const handleAction = async (bookingId: number, status: 'confirmed' | 'cancelled') => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/bookings/${bookingId}/status`, {
+            const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
