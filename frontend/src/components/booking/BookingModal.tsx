@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ArrowRight, ArrowLeft, UploadCloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { API_BASE_URL } from '@/lib/api';
 
 // Dummy QRIS - In production, this should be real
 const QRIS_IMAGE = "/qris.jpg";
@@ -18,15 +20,60 @@ interface BookingModalProps {
     onSuccess?: () => void;
 }
 
+interface Service {
+    id: number;
+    name: string;
+    price: number;
+}
+
 export default function BookingModal({ open, onOpenChange, barber, timeSlot, bookingDate, onSuccess }: BookingModalProps) {
     const [step, setStep] = useState(1); // 1: Details, 2: Payment
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
+
+    // Service State
+    const [services, setServices] = useState<Service[]>([]);
+    const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+    const [selectedService, setSelectedService] = useState<Service | null>(null);
+
     const [paymentProof, setPaymentProof] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+    const [isLoadingServices, setIsLoadingServices] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (open) {
+            fetchServices();
+        }
+    }, [open]);
+
+    const fetchServices = async () => {
+        setIsLoadingServices(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/services`);
+            if (res.ok) {
+                const data = await res.json();
+                setServices(data.filter((s: any) => s.isActive));
+                // Set default if exists
+                if (data.length > 0) {
+                    setSelectedServiceId(data[0].id.toString());
+                    setSelectedService(data[0]);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch services", error);
+        } finally {
+            setIsLoadingServices(false);
+        }
+    };
+
+    const handleServiceChange = (value: string) => {
+        setSelectedServiceId(value);
+        const service = services.find(s => s.id.toString() === value);
+        setSelectedService(service || null);
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -46,6 +93,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
         if (!customerName.trim()) return setError('Nama harus diisi');
         if (!customerPhone.trim()) return setError('Nomor WhatsApp harus diisi');
         if (!/^08\d{8,11}$/.test(customerPhone)) return setError('Nomor WhatsApp tidak valid (08xxx)');
+        if (!selectedServiceId) return setError('Pilih layanan');
 
         setStep(2);
     };
@@ -65,9 +113,10 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
             formData.append('customerPhone', customerPhone.trim());
             formData.append('bookingDate', bookingDate.toISOString());
             formData.append('timeSlot', timeSlot.label);
+            formData.append('serviceId', selectedServiceId);
             formData.append('proof', paymentProof);
 
-            const res = await fetch('/api/bookings', {
+            const res = await fetch(`${API_BASE_URL}/bookings`, {
                 method: 'POST',
                 body: formData
             });
@@ -98,6 +147,15 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // Format currency
+    const formatRp = (value: number) => {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(value);
     };
 
     return (
@@ -136,6 +194,26 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                     className="bg-white border-zinc-200 focus:ring-zinc-900"
                                 />
                             </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="service" className="text-zinc-700">Pilih Layanan</Label>
+                                {isLoadingServices ? (
+                                    <div className="text-sm text-zinc-500">Loading services...</div>
+                                ) : (
+                                    <Select value={selectedServiceId} onValueChange={handleServiceChange}>
+                                        <SelectTrigger className="w-full bg-white border-zinc-200">
+                                            <SelectValue placeholder="Pilih Service" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {services.map((service) => (
+                                                <SelectItem key={service.id} value={service.id.toString()}>
+                                                    {service.name} - {formatRp(service.price)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -149,7 +227,8 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                     className="w-48 h-48 object-cover rounded-lg border border-zinc-200 shadow-sm"
                                 />
                                 <p className="text-xs text-zinc-500 mt-2 text-center">
-                                    Silakan transfer DP minimal Rp 20.000 (atau lunas).<br />Upload bukti transfer di bawah ini.
+                                    Total yang harus dibayar:<br />
+                                    <span className="text-lg font-bold text-zinc-900">{selectedService ? formatRp(selectedService.price) : '-'}</span>
                                 </p>
                             </div>
 

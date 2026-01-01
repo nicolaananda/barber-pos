@@ -24,7 +24,22 @@ router.post('/', (req, res, next) => {
         // Safety check for req.body
         req.body = req.body || {};
 
-        const { barberId, customerName, customerPhone, bookingDate, timeSlot } = req.body;
+        const { barberId, customerName, customerPhone, bookingDate, timeSlot, serviceId } = req.body;
+
+        // Fetch Service Details if provided
+        let serviceName = 'Potong Rambut'; // Default
+        let servicePrice = null;
+
+        if (serviceId) {
+            const service = await prisma.service.findUnique({
+                where: { id: parseInt(serviceId) }
+            });
+            if (service) {
+                serviceName = service.name;
+                servicePrice = service.price;
+            }
+        }
+
         // Handle R2 Upload
         let paymentProof = null;
         if (req.file) {
@@ -86,6 +101,9 @@ router.post('/', (req, res, next) => {
                 customerPhone,
                 bookingDate: new Date(bookingDate),
                 timeSlot,
+                serviceId: serviceId ? parseInt(serviceId) : null,
+                serviceName,
+                servicePrice,
                 status: 'pending',
                 paymentProof: paymentProof
             },
@@ -241,7 +259,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
                 const dateStr = format(new Date(booking.bookingDate), 'dd MMMM yyyy', { locale: idLocale });
                 const message = `✅ *BOOKING KONFIRMASI*\n\n` +
                     `Halo Kak *${booking.customerName}*, booking Anda telah kami terima!\n\n` +
-                    `✂️ Layanan: Potong Rambut\n` +
+                    `✂️ Layanan: ${booking.serviceName || 'Potong Rambut'}\n` +
                     `📅 Tanggal: ${dateStr}\n` +
                     `⏰ Jam: ${booking.timeSlot}\n` +
                     `💈 Barber: ${booking.barber.name}\n\n` +

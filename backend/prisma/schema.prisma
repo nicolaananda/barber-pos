@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -109,6 +109,9 @@ model Booking {
   customerPhone String
   bookingDate   DateTime
   timeSlot      String   // e.g., "14:00 - 15:00"
+  serviceId     Int?     // Selected Service ID
+  serviceName   String?  // Snapshot of service name
+  servicePrice  Float?   // Snapshot of service price
   status        String   @default("pending") // pending, confirmed, cancelled, completed
   paymentProof  String?  // URL/Path to uploaded evidence
   createdAt     DateTime @default(now())
