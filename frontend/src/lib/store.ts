@@ -9,13 +9,13 @@ export interface CartItem {
 }
 
 export interface PosState {
-    selectedBarber: { id: string; name: string } | null;
+    selectedBarber: { id: string; name: string; username: string } | null;
     cart: CartItem[];
     customerName: string;
     customerPhone: string;
     activeShift: { id: string; status: 'open' | 'closed' } | null;
 
-    setBarber: (barber: { id: string; name: string } | null) => void;
+    setBarber: (barber: { id: string; name: string; username: string } | null) => void;
     addToCart: (item: CartItem) => void;
     removeFromCart: (itemId: string) => void;
     updateQty: (itemId: string, delta: number) => void;

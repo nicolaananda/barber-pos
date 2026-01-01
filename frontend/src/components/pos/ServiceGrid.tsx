@@ -40,9 +40,30 @@ export default function ServiceGrid() {
 
     const [searchTerm, setSearchTerm] = useState('');
 
-    const filteredServices = services.filter(service =>
-        service.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredServices = services.filter(service => {
+        // Search filter
+        if (!service.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+
+        if (!selectedBarber) return true;
+
+        const serviceName = service.name.toLowerCase();
+
+        // Owner (Bagus) Logic
+        if (selectedBarber.username === 'bagus') {
+            // Hide regular haircut
+            if (serviceName === 'haircut') return false;
+            // Show everything else (including 'Haircut by Head')
+            return true;
+        }
+
+        // Other Barbers Logic
+        else {
+            // Hide owner exclusive services
+            if (serviceName.includes('head') || serviceName.includes('owner')) return false;
+            // Show everything else (including regular 'Haircut')
+            return true;
+        }
+    });
 
     if (loading) return <div>Loading Services...</div>;
 

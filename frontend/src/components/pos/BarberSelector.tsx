@@ -46,7 +46,7 @@ export default function BarberSelector() {
                         const matchByName = data.find((b: Barber) => b.name === currentFromStore.name);
                         if (matchByName) {
                             console.log('Auto-healing stale barber ID', currentFromStore.id, 'to', matchByName.id);
-                            setBarber({ id: matchByName.id.toString(), name: matchByName.name });
+                            setBarber({ id: matchByName.id.toString(), name: matchByName.name, username: matchByName.username });
                         } else {
                             console.warn('Selected barber no longer exists, clearing selection');
                             setBarber(null);
@@ -86,7 +86,7 @@ export default function BarberSelector() {
                                     ? 'border-zinc-900 bg-zinc-900 text-white shadow-md scale-[1.02]'
                                     : 'bg-white border-zinc-200 text-zinc-900 hover:shadow-md'
                             )}
-                            onClick={() => setBarber({ id: barber.id.toString(), name: barber.name })}
+                            onClick={() => setBarber({ id: barber.id.toString(), name: barber.name, username: barber.username })}
                         >
                             <CardContent className="flex flex-col items-center justify-center p-4 md:p-5 gap-3">
                                 <div className={cn(

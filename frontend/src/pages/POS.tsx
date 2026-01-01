@@ -67,6 +67,7 @@ export default function PosPage() {
             usePosStore.getState().setBarber({
                 id: user.id,
                 name: user.name || 'Staff',
+                username: user.username,
             });
         }
     }, [user, selectedBarber]);
