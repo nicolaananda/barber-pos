@@ -123,7 +123,7 @@ async function generateInvoicePDF(transaction, barberName, cashReceived = 0) {
             // FOOTER
             doc.fontSize(8).text('Thank you for coming!', 10, doc.y, { width: 207, align: 'center' });
             doc.text('Follow us on Instagram', 10, doc.y, { width: 207, align: 'center' });
-            doc.text('@staycool_hairlab', 10, doc.y, { width: 207, align: 'center' });
+            doc.text('@staycoolhair_lab', 10, doc.y, { width: 207, align: 'center' });
 
             // Finalize PDF
             doc.end();

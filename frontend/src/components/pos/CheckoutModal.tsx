@@ -263,7 +263,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
 
                         <div class="text-center" style="margin-top: 20px; font-size: 10px;">
                             <p style="margin-bottom: 5px;">Thank you for coming!</p>
-                            <p>Follow us on Instagram<br>@staycool_hairlab</p>
+                            <p>Follow us on Instagram<br>@staycoolhair_lab</p>
                         </div>
                     </div>
                   </body>
