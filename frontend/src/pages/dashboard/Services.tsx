@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { API_BASE_URL } from '@/lib/api';
 
 interface Service {
     id: number;
@@ -57,7 +56,7 @@ export default function ServicesPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/services`, {
+            const res = await fetch('/api/services', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch services');
@@ -75,7 +74,7 @@ export default function ServicesPage() {
         try {
             const token = localStorage.getItem('token');
             const method = currentId ? 'PATCH' : 'POST';
-            const url = currentId ? `${API_BASE_URL}/services/${currentId}` : `${API_BASE_URL}/services`;
+            const url = currentId ? `/api/services/${currentId}` : '/api/services';
 
             await fetch(url, {
                 method,
@@ -102,7 +101,7 @@ export default function ServicesPage() {
         if (!confirm('Are you sure you want to delete this service?')) return;
         try {
             const token = localStorage.getItem('token');
-            await fetch(`${API_BASE_URL}/services/${id}`, {
+            await fetch(`/api/services/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

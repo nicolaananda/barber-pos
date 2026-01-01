@@ -6,7 +6,6 @@ import { format } from 'date-fns';
 import { Loader2, Calendar, FileText, Download, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { API_BASE_URL } from '@/lib/api';
 
 interface Transaction {
     id: number;
@@ -34,7 +33,7 @@ export default function TransactionsPage() {
         try {
             const token = localStorage.getItem('token');
             const query = dateFilter ? `?date=${dateFilter}` : '';
-            const res = await fetch(`${API_BASE_URL}/transactions${query}`, {
+            const res = await fetch(`/api/transactions${query}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch transactions');

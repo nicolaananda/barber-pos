@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/select"
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import { Progress } from "@/components/ui/progress"
-import { API_BASE_URL } from '@/lib/api';
 
 
 interface Expense {
@@ -55,7 +54,7 @@ export default function ExpensesPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/expenses`, {
+            const res = await fetch('/api/expenses', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch expenses');
@@ -73,7 +72,7 @@ export default function ExpensesPage() {
         setIsSubmitting(true);
         try {
             const token = localStorage.getItem('token');
-            await fetch(`${API_BASE_URL}/expenses`, {
+            await fetch('/api/expenses', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -94,7 +93,7 @@ export default function ExpensesPage() {
         if (!confirm('Are you sure you want to delete this expense?')) return;
         try {
             const token = localStorage.getItem('token');
-            await fetch(`${API_BASE_URL}/expenses`, {
+            await fetch(`/api/expenses`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ id })

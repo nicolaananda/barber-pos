@@ -10,7 +10,6 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Label } from '@/components/ui/label';
-import { API_BASE_URL } from '@/lib/api';
 
 interface PayrollData {
     barberId: number;
@@ -35,7 +34,7 @@ export default function PayrollPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/payroll?month=${selectedMonth}&year=${selectedYear}`, {
+            const res = await fetch(`/api/payroll?month=${selectedMonth}&year=${selectedYear}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch payroll');
