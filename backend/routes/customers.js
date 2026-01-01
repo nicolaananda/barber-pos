@@ -17,16 +17,13 @@ router.get('/', authenticateToken, async (req, res) => {
             return res.json(customers);
         }
 
-        // Search by name or phone
-        const customers = await prisma.customer.findMany({
-            where: {
-                OR: [
-                    { name: { contains: q, mode: 'insensitive' } },
-                    { phone: { contains: q, mode: 'insensitive' } },
-                ],
-            },
-            take: 20,
-        });
+        // Search by name or phone (case-insensitive for MariaDB)
+        const customers = await prisma.$queryRaw`
+            SELECT * FROM Customer 
+            WHERE LOWER(name) LIKE LOWER(CONCAT('%', ${q}, '%'))
+               OR phone LIKE CONCAT('%', ${q}, '%')
+            LIMIT 20
+        `;
 
         res.json(customers);
     } catch (error) {

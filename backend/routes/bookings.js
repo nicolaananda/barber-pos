@@ -264,7 +264,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
                     `⏰ Jam: ${booking.timeSlot}\n` +
                     `💈 Barber: ${booking.barber.name}\n\n` +
                     `Mohon datang 10 menit sebelum jam booking ya. Terima kasih! 🙏\n` +
-                    `\n📍 *Staycool Hairlab*\nJl. Imam Bonjol Pertigaan No.370`;
+                    `\n📍 *Staycool Hairlab*\nJl. Imam Bonjol Pertigaan No.370 Kediri`;
 
                 await whatsappService.sendWhatsAppMessage(booking.customerPhone, message);
                 console.log(`[Auto] WA sent to ${booking.customerPhone}`);
