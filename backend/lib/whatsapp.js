@@ -68,11 +68,11 @@ function generateInvoiceMessage(transaction, barberName) {
     message += `━━━━━━━━━━━━━━━━━━\n\n`;
 
     message += `📍 Staycool Hairlab\n`;
-    message += `Jl. Imam Bonjol Pertigaan No.370\n`;
+    message += `Jl. Imam Bonjol  No.370 (Pertigaan Kodim 0809)\n`;
     message += `Ngadirejo, Kota Kediri\n`;
     message += `📞 0877-7099-5270\n\n`;
     message += `Terima kasih atas kunjungan Anda! 🙏\n`;
-    message += `Follow us: @staycool_hairlab`;
+    message += `Follow us: @staycoolhair_lab`;
 
     return message;
 }
