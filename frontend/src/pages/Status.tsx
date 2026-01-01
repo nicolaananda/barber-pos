@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { Coffee, Scissors, Sparkles, BookOpen } from 'lucide-react';
 import BookingModal from '@/components/booking/BookingModal';
 import ServicesModal from '@/components/pos/ServicesModal';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface Barber {
     id: number;
     name: string;
+    username: string;
     availability: string;
 }
 
@@ -18,6 +20,11 @@ export default function StatusPage() {
     const [barbers, setBarbers] = useState<Barber[]>([]);
     const [bookingModalOpen, setBookingModalOpen] = useState(false);
     const [servicesModalOpen, setServicesModalOpen] = useState(false);
+
+    // Image Modal State
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [imageModalOpen, setImageModalOpen] = useState(false);
+
     const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
     const [existingBookings, setExistingBookings] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -38,10 +45,10 @@ export default function StatusPage() {
             const res = await fetch('/api/users/barbers');
             if (res.ok) {
                 const data = await res.json();
-                // Sort: Staycool Owner first, then others alphabetically
+                // Sort: Owner (username 'bagus') first, then others alphabetically
                 const sortedData = data.sort((a: Barber, b: Barber) => {
-                    if (a.name === 'Staycool Owner') return -1;
-                    if (b.name === 'Staycool Owner') return 1;
+                    if (a.username === 'bagus') return -1;
+                    if (b.username === 'bagus') return 1;
                     return a.name.localeCompare(b.name);
                 });
                 setBarbers(sortedData);
@@ -114,7 +121,7 @@ export default function StatusPage() {
                         />
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black tracking-wider text-center text-zinc-900 uppercase mb-2">
-                        Staycool Barbershop
+                        StaycoolHair Lab.
                     </h1>
                     <div className="flex items-center gap-2 md:gap-3 text-zinc-400 text-xs md:text-sm uppercase tracking-widest">
                         <div className="w-8 md:w-12 h-px bg-zinc-200"></div>
@@ -162,15 +169,32 @@ export default function StatusPage() {
                                     <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-4 md:gap-6">
                                         {/* Barber Info */}
                                         <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
-                                            <div className={`
+                                            <div
+                                                className={`
                                             w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center text-2xl md:text-3xl font-bold
-                                            border-4 relative flex-shrink-0
+                                            border-4 relative flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity
                                             ${isAvailable ? 'bg-zinc-900 text-white border-white shadow-lg' : 'bg-zinc-200 text-zinc-500 border-zinc-100'}
-                                        `}>
-                                                {barber.name === 'Staycool Owner' ? (
+                                        `}
+                                                onClick={() => {
+                                                    if (barber.username === 'bagus') {
+                                                        setSelectedImage('/bagus.webp');
+                                                        setImageModalOpen(true);
+                                                    } else if (barber.username === 'diva') {
+                                                        setSelectedImage('/profil_diva.webp');
+                                                        setImageModalOpen(true);
+                                                    }
+                                                }}
+                                            >
+                                                {barber.username === 'bagus' ? (
                                                     <img
-                                                        src="/bagus.jpg"
+                                                        src="/bagus.webp"
                                                         alt="Owner"
+                                                        className="w-full h-full object-cover rounded-full"
+                                                    />
+                                                ) : barber.username === 'diva' ? (
+                                                    <img
+                                                        src="/profil_diva.webp"
+                                                        alt="Diva"
                                                         className="w-full h-full object-cover rounded-full"
                                                     />
                                                 ) : (
@@ -271,13 +295,22 @@ export default function StatusPage() {
                 <div className="grid md:grid-cols-2 gap-8 text-sm text-zinc-500">
                     <div className="space-y-2">
                         {/* Removed duplicate title as requested */}
-                        <p>Jl. Imam Bonjol Pertigaan No.370</p>
-                        <p>Imam Bonjol, Kota Kediri</p>
+                        <p>
+                            <a
+                                href="https://maps.app.goo.gl/AitnhHiAY3Ka9fAM9"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:text-zinc-900 transition-colors hover:underline"
+                            >
+                                Jl. Imam Bonjol No.370 (Pertigaan Kodim 0809)
+                            </a>
+                        </p>
+                        <p>Kota Kediri</p>
                     </div>
                     <div className="space-y-2">
                         <h3 className="font-bold text-zinc-900 tracking-wider uppercase">Contact & Open Hours</h3>
                         <p>WA: +62 812-3490-6750</p>
-                        <p>Daily: 10:00 - 21:00</p>
+                        <p>Daily: 11:00 - 22:00</p>
                     </div>
                 </div>
 
@@ -290,6 +323,19 @@ export default function StatusPage() {
                 open={servicesModalOpen}
                 onOpenChange={setServicesModalOpen}
             />
+
+            {/* Profile Image Modal */}
+            <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
+                <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-transparent border-none shadow-none flex items-center justify-center">
+                    {selectedImage && (
+                        <img
+                            src={selectedImage}
+                            alt="Full Profile"
+                            className="w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

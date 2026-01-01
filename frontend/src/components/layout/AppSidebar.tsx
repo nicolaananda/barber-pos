@@ -75,7 +75,13 @@ export function AppSidebar() {
                 <div className="flex items-center gap-3 mb-4 px-2">
                     {user?.username === 'bagus' ? (
                         <img
-                            src="/bagus.jpg"
+                            src="/bagus.webp"
+                            alt="Profile"
+                            className="w-8 h-8 rounded-full object-cover border border-zinc-200"
+                        />
+                    ) : user?.username === 'diva' ? (
+                        <img
+                            src="/profil_diva.webp"
                             alt="Profile"
                             className="w-8 h-8 rounded-full object-cover border border-zinc-200"
                         />
