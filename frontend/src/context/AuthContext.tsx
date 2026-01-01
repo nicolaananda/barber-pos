@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface User {
     id: string;
@@ -26,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const fetchUserFromAPI = async (authToken: string) => {
         try {
-            const res = await fetch('/api/auth/me', {
+            const res = await fetch(`${API_BASE_URL}/auth/me`, {
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (res.ok) {

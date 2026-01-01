@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { Coffee, Scissors, Sparkles, BookOpen } from 'lucide-react';
 import BookingModal from '@/components/booking/BookingModal';
 import ServicesModal from '@/components/pos/ServicesModal';
@@ -42,7 +43,7 @@ export default function StatusPage() {
 
     const fetchBarbers = async () => {
         try {
-            const res = await fetch('/api/users/barbers');
+            const res = await fetch(`${API_BASE_URL}/users/barbers`);
             if (res.ok) {
                 const data = await res.json();
                 // Sort: Owner (username 'bagus') first, then others alphabetically
@@ -60,7 +61,7 @@ export default function StatusPage() {
 
     const fetchTodayBookings = async () => {
         try {
-            const res = await fetch('/api/bookings/today');
+            const res = await fetch(`${API_BASE_URL}/bookings/today`);
             if (res.ok) {
                 const data = await res.json();
                 setExistingBookings(data);
