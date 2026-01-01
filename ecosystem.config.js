@@ -8,7 +8,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3001,
-        WA_GATEWAY_URL: 'http://localhost:3000'
+        WA_GATEWAY_URL: 'https://gowa.nicola.id',
+        WA_DEVICE_ID: '99eae17f-63a1-4fee-b5fb-10cdd48dcacb'
       },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',
