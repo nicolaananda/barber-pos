@@ -1,6 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
+import { API_BASE_URL } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarCheck, DollarSign, Trophy, Wallet } from 'lucide-react';
 
@@ -29,7 +30,7 @@ interface DailyStats {
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function DailyRecap() {
-    const { data: stats, error, isLoading } = useSWR<DailyStats>('/api/dashboard/daily', fetcher);
+    const { data: stats, error, isLoading } = useSWR<DailyStats>(`${API_BASE_URL}/dashboard/daily`, fetcher);
 
     if (isLoading) return <div className="h-[200px] flex items-center justify-center animate-pulse text-muted-foreground">Loading Daily Recap...</div>;
     if (error) return <div className="h-[200px] flex items-center justify-center text-destructive">Failed to load daily recap</div>;
