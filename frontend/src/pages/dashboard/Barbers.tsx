@@ -23,6 +23,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Barber {
     id: number;
@@ -63,7 +64,7 @@ export default function BarbersPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/users/barbers-list', {
+            const res = await fetch(`${API_BASE_URL}/users/barbers-list`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) {
@@ -102,7 +103,7 @@ export default function BarbersPage() {
 
             const token = localStorage.getItem('token');
             const method = currentId ? 'PUT' : 'POST';
-            const url = currentId ? `/api/users/barbers/${currentId}` : '/api/users/barbers';
+            const url = currentId ? `${API_BASE_URL}/users/barbers/${currentId}` : `${API_BASE_URL}/users/barbers`;
 
             const body: any = {
                 username: username.trim(),
@@ -149,7 +150,7 @@ export default function BarbersPage() {
         if (!confirm('Are you sure you want to delete this barber?')) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/users/barbers/${id}`, {
+            const res = await fetch(`${API_BASE_URL}/users/barbers/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
