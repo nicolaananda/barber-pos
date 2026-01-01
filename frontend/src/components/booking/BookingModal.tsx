@@ -3,8 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ArrowRight, ArrowLeft, UploadCloud } from 'lucide-react';
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, ArrowRight, ArrowLeft, UploadCloud, Scissors, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -200,18 +200,69 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                 {isLoadingServices ? (
                                     <div className="text-sm text-zinc-500">Loading services...</div>
                                 ) : (
-                                    <Select value={selectedServiceId} onValueChange={handleServiceChange}>
-                                        <SelectTrigger className="w-full bg-white border-zinc-200">
-                                            <SelectValue placeholder="Pilih Service" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {services.map((service) => (
-                                                <SelectItem key={service.id} value={service.id.toString()}>
-                                                    {service.name} - {formatRp(service.price)}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1">
+                                        {services.map((service) => {
+                                            const getServiceImage = (name: string) => {
+                                                const n = name.toLowerCase();
+                                                if (n.includes('coloring')) return '/service_fashioncoloring.webp';
+                                                if (n.includes('cukur')) return '/service_haircut.webp';
+                                                return null;
+                                            };
+                                            const bgImage = getServiceImage(service.name);
+                                            const isSelected = selectedServiceId === service.id.toString();
+
+                                            return (
+                                                <button
+                                                    key={service.id}
+                                                    type="button"
+                                                    onClick={() => handleServiceChange(service.id.toString())}
+                                                    className={cn(
+                                                        "relative flex flex-col items-start justify-end p-3 h-24 rounded-xl border text-left transition-all overflow-hidden group",
+                                                        isSelected
+                                                            ? "ring-2 ring-zinc-900 border-zinc-900"
+                                                            : "border-zinc-200 hover:border-zinc-300",
+                                                        bgImage ? "border-0" : "bg-white"
+                                                    )}
+                                                >
+                                                    {bgImage ? (
+                                                        <>
+                                                            <div
+                                                                className="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+                                                                style={{ backgroundImage: `url('${bgImage}')` }}
+                                                            />
+                                                            <div className={cn(
+                                                                "absolute inset-0 z-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 transition-opacity",
+                                                                isSelected ? "opacity-90" : "opacity-70 group-hover:opacity-80"
+                                                            )} />
+                                                            {isSelected && (
+                                                                <div className="absolute top-2 right-2 z-10 bg-white text-zinc-900 rounded-full p-0.5">
+                                                                    <Check className="w-3 h-3" />
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className={cn(
+                                                                "absolute top-2 right-2 p-1.5 rounded-lg transition-colors",
+                                                                isSelected ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-400 group-hover:text-zinc-600"
+                                                            )}>
+                                                                {isSelected ? <Check className="w-3 h-3" /> : <Scissors className="w-3 h-3" />}
+                                                            </div>
+                                                        </>
+                                                    )}
+
+                                                    <div className={cn("relative z-10 w-full", bgImage ? "text-white" : "text-zinc-900")}>
+                                                        <div className={cn("font-bold text-xs line-clamp-2 leading-tight mb-0.5", bgImage && "drop-shadow-sm")}>
+                                                            {service.name}
+                                                        </div>
+                                                        <div className={cn("text-xs font-mono", bgImage ? "text-white/90" : "text-zinc-500", bgImage && "font-bold")}>
+                                                            {formatRp(service.price)}
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 )}
                             </div>
                         </div>

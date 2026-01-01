@@ -133,13 +133,13 @@ export default function StatusPage() {
                     </div>
 
                     {/* View Services Button */}
-                    <button
+                    {/* <button
                         onClick={() => setServicesModalOpen(true)}
                         className="mt-6 px-6 py-2 bg-white border border-zinc-200 rounded-full shadow-sm text-zinc-900 text-sm font-semibold hover:bg-zinc-50 transition-all flex items-center gap-2"
                     >
                         <BookOpen className="w-4 h-4" />
                         View Services & Price List
-                    </button>
+                    </button> */}
                 </div>
 
                 {isLoading ? (
