@@ -21,33 +21,16 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 // Middleware
-const allowedOrigins = [
-    'https://staycoolhairlab.id',
-    'https://www.staycoolhairlab.id',
-    'https://pos.staycoolhairlab.id',
-    'http://localhost:5173',
-    'http://localhost:3000'
-];
-
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-
-        if (allowedOrigins.indexOf(origin) === -1) {
-            console.log('Blocked by CORS:', origin); // Log blocked origins for debugging
-            var msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
-        }
-        return callback(null, true);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Id']
+    origin: [
+        'https://staycoolhairlab.id',
+        'https://www.staycoolhairlab.id',
+        'https://pos.staycoolhairlab.id',
+        'http://localhost:5173',
+        'http://localhost:3000'
+    ],
+    credentials: true
 }));
-
-// Enable pre-flight requests for all routes
-app.options('*', cors());
 app.use(express.json());
 
 // Routes
@@ -74,7 +57,7 @@ app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
-app.get(/.*/, (req, res) => {
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
