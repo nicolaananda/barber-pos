@@ -24,6 +24,18 @@ model User {
   closedShifts CashShift[]   @relation("ClosedShifts")
   transactions Transaction[]
   bookings     Booking[]
+  offDays      OffDay[]
+}
+
+model OffDay {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  date      DateTime @db.Date // YYYY-MM-DD
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date]) // Prevent duplicate off-days for same user/date
 }
 
 model Service {

@@ -46,6 +46,7 @@ app.use('/api/shifts', shiftsRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/bookings', bookingsRoutes);
+app.use('/api/offdays', require('./routes/offdays'));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -62,6 +63,7 @@ app.use((req, res) => {
 });
 
 const server = app.listen(PORT, () => {
+    // Server running ...
     console.log(`Server running on port ${PORT}`);
 });
 

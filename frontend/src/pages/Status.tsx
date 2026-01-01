@@ -29,16 +29,21 @@ export default function StatusPage() {
     const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
     const [existingBookings, setExistingBookings] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedDate, setSelectedDate] = useState<Date>(new Date()); // Today by default
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [currentOffDays, setCurrentOffDays] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
-            await Promise.all([fetchBarbers(), fetchBookingsForDate(selectedDate)]);
+            await Promise.all([
+                fetchBarbers(),
+                fetchBookingsForDate(selectedDate),
+                fetchOffDaysForDate(selectedDate)
+            ]);
             setIsLoading(false);
         };
 
         fetchData();
-        const interval = setInterval(fetchData, 10000); // Poll every 10s instead of 5s
+        const interval = setInterval(fetchData, 10000);
         return () => clearInterval(interval);
     }, [selectedDate]);
 
@@ -74,17 +79,30 @@ export default function StatusPage() {
         }
     };
 
+    const fetchOffDaysForDate = async (date: Date) => {
+        try {
+            const dateStr = date.toISOString().split('T')[0];
+            // Fetch off days for this specific date
+            const res = await fetch(`${API_BASE_URL}/offdays?start=${dateStr}&end=${dateStr}`);
+            if (res.ok) {
+                const data = await res.json();
+                setCurrentOffDays(data);
+            }
+        } catch (error) {
+            console.error('Error fetching off days:', error);
+        }
+    };
+
     const generateTimeSlots = (forDate: Date) => {
         const slots = [];
         const now = new Date();
         const isToday = forDate.toDateString() === now.toDateString();
         const currentHour = now.getHours();
 
-        const OPENING_HOUR = 11; // 11:00
-        const CLOSING_HOUR = 22; // 22:00 (last slot ends at 22:00)
+        const OPENING_HOUR = 11;
+        const CLOSING_HOUR = 22;
 
         for (let startHour = OPENING_HOUR; startHour < CLOSING_HOUR; startHour++) {
-            // Only filter past slots if booking for today
             if (isToday && startHour <= currentHour) continue;
 
             const endHour = startHour + 1;
@@ -100,6 +118,11 @@ export default function StatusPage() {
 
     // Helper function to check if barber is on offday
     const isBarberOffday = (username: string, date: Date) => {
+        // 1. Check Manual Off Days (Database)
+        const manualOff = currentOffDays.find((od: any) => od.user.username === username);
+        if (manualOff) return true;
+
+        // 2. Check Regular Off Days (Hardcoded)
         const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
         if (username === 'bagus' && dayOfWeek === 4) return true; // Thursday
         if (username === 'diva' && dayOfWeek === 2) return true; // Tuesday

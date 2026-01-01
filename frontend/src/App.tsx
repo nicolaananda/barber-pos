@@ -12,6 +12,7 @@ import PayrollPage from './pages/dashboard/Payroll';
 import BookingsPage from './pages/dashboard/Bookings';
 import BarbersPage from './pages/dashboard/Barbers';
 import PosPage from './pages/POS';
+import SchedulePage from './pages/dashboard/Schedule';
 import StatusPage from './pages/Status';
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="payroll" element={<PayrollPage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="barbers" element={<BarbersPage />} />
+            <Route path="schedule" element={<SchedulePage />} />
           </Route>
           <Route
             path="/pos"

@@ -28,7 +28,10 @@ export function AppSidebar() {
         { name: 'Expenses', href: '/dashboard/expenses', icon: Wallet },
         { name: 'Payroll', href: '/dashboard/payroll', icon: DollarSign },
         { name: 'Bookings', href: '/dashboard/bookings', icon: Calendar },
-        ...(user?.role === 'owner' ? [{ name: 'Barbers', href: '/dashboard/barbers', icon: UserCog }] : []),
+        ...(user?.role === 'owner' ? [
+            { name: 'Barbers', href: '/dashboard/barbers', icon: UserCog },
+            { name: 'Schedule', href: '/dashboard/schedule', icon: CalendarClock }
+        ] : []),
     ];
 
     return (
