@@ -120,13 +120,13 @@ export default function PendingBookingAlert() {
                 </Button>
             </div>
 
-            {/* Modal for Details */}
+            {/* Modal for Details with Scrollable Content */}
             <Dialog open={isOpen} onOpenChange={(val) => {
                 setIsOpen(val);
                 if (!val) setSelectedBooking(null);
             }}>
-                <DialogContent className="sm:max-w-md bg-white text-zinc-900 border-zinc-200">
-                    <DialogHeader>
+                <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] flex flex-col bg-white text-zinc-900 border-zinc-200 p-0 overflow-hidden rounded-xl">
+                    <DialogHeader className="p-4 md:p-6 border-b border-zinc-100 flex-shrink-0">
                         <DialogTitle>Pending Booking Request</DialogTitle>
                         <DialogDescription>
                             Please review the booking details and payment proof.
@@ -134,50 +134,56 @@ export default function PendingBookingAlert() {
                     </DialogHeader>
 
                     {selectedBooking && (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <p className="text-zinc-500">Customer</p>
-                                    <p className="font-bold">{selectedBooking.customerName}</p>
-                                    <p className="font-mono text-xs">{selectedBooking.customerPhone}</p>
-                                </div>
-                                <div>
-                                    <p className="text-zinc-500">Service Info</p>
-                                    <p className="font-medium">{selectedBooking.timeSlot}</p>
-                                    <p className="text-xs">{new Date(selectedBooking.bookingDate).toLocaleDateString()}</p>
-                                </div>
-                                <div className="col-span-2">
-                                    <p className="text-zinc-500">Barber</p>
-                                    <p className="font-medium">{selectedBooking.barber.name}</p>
-                                </div>
-                            </div>
-
-                            {selectedBooking.paymentProof ? (
-                                <div className="space-y-2">
-                                    <p className="text-sm text-zinc-500">Payment Proof</p>
-                                    <div className="relative group cursor-pointer border rounded-lg overflow-hidden bg-zinc-50 h-48 flex items-center justify-center">
-                                        <img
-                                            src={selectedBooking.paymentProof}
-                                            alt="Proof"
-                                            className="h-full object-contain"
-                                        />
-                                        <a
-                                            href={selectedBooking.paymentProof}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-medium transition-opacity"
-                                        >
-                                            <ExternalLink className="w-4 h-4 mr-2" /> Open Full Image
-                                        </a>
+                        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p className="text-zinc-500">Customer</p>
+                                        <p className="font-bold">{selectedBooking.customerName}</p>
+                                        <p className="font-mono text-xs">{selectedBooking.customerPhone}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-zinc-500">Service Info</p>
+                                        <p className="font-medium">{selectedBooking.timeSlot}</p>
+                                        <p className="text-xs">{new Date(selectedBooking.bookingDate).toLocaleDateString()}</p>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <p className="text-zinc-500">Barber</p>
+                                        <p className="font-medium">{selectedBooking.barber.name}</p>
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="bg-yellow-50 text-yellow-700 p-3 rounded text-sm text-center">
-                                    No Payment Proof Uploaded
-                                </div>
-                            )}
 
-                            <DialogFooter className="flex gap-2 sm:justify-between pt-4">
+                                {selectedBooking.paymentProof ? (
+                                    <div className="space-y-2">
+                                        <p className="text-sm text-zinc-500">Payment Proof</p>
+                                        <div className="relative group cursor-pointer border rounded-lg overflow-hidden bg-zinc-50 h-64 md:h-48 flex items-center justify-center">
+                                            <img
+                                                src={selectedBooking.paymentProof}
+                                                alt="Proof"
+                                                className="w-full h-full object-contain"
+                                            />
+                                            <a
+                                                href={selectedBooking.paymentProof}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-medium transition-opacity"
+                                            >
+                                                <ExternalLink className="w-4 h-4 mr-2" /> Open Full Image
+                                            </a>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="bg-yellow-50 text-yellow-700 p-3 rounded text-sm text-center">
+                                        No Payment Proof Uploaded
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedBooking && (
+                        <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex-shrink-0">
+                            <div className="flex gap-3">
                                 <Button
                                     variant="destructive"
                                     onClick={() => handleAction(selectedBooking.id, 'cancelled')}
@@ -191,8 +197,7 @@ export default function PendingBookingAlert() {
                                 >
                                     <Check className="w-4 h-4 mr-2" /> Confirm
                                 </Button>
-                            </DialogFooter>
-
+                            </div>
                             {/* Pagination/Queue Info if multiple */}
                             {pendingBookings.length > 1 && (
                                 <p className="text-center text-xs text-zinc-400 mt-2">
