@@ -66,8 +66,24 @@ export default function ServiceGrid() {
                 {filteredServices.map((service) => {
                     const getServiceImage = (name: string) => {
                         const n = name.toLowerCase();
-                        if (n.includes('coloring')) return '/service_fashioncoloring.webp';
-                        if (n.includes('cukur')) return '/service_haircut.webp';
+                        // Haircut services
+                        if (n.includes('head barber')) return '/service_headbarber.webp';
+                        if (n.includes('haircut') || n.includes('cukur')) return '/service_haircut.webp';
+
+                        // Beard services
+                        if (n.includes('beard trim')) return '/service_beardtrim.webp';
+                        if (n.includes('beard shave')) return '/service_beardshave.webp';
+
+                        // Coloring services
+                        if (n.includes('fashion colour') || n.includes('fashion color') || n.includes('coloring')) return '/service_fashioncoloring.webp';
+                        if (n.includes('toning') || n.includes('semir')) return '/service_toning.webp';
+
+                        // Styling services
+                        if (n.includes('perm')) return '/service_perm.webp';
+
+                        // Special services
+                        if (n.includes('home service')) return '/service_homeservice.webp';
+
                         return null;
                     };
 

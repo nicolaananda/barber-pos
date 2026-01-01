@@ -56,28 +56,52 @@ async function resetDatabase() {
         */
         const servicesData = [
             {
-                name: 'Cukur',
+                name: 'Haircut',
+                price: 40000,
+                commissionType: 'percentage',
+                commissionValue: 50 // 50%
+            },
+            {
+                name: 'Haircut by Head Barber',
                 price: 50000,
                 commissionType: 'percentage',
                 commissionValue: 50 // 50%
             },
             {
-                name: 'Smoothing',
-                price: 150000,
+                name: 'Beard Trim',
+                price: 15000,
+                commissionType: 'flat',
+                commissionValue: 7500 // 50% flat
+            },
+            {
+                name: 'Beard Shave',
+                price: 25000,
+                commissionType: 'flat',
+                commissionValue: 12500 // 50% flat
+            },
+            {
+                name: 'Toning (Semir Hitam)',
+                price: 40000,
                 commissionType: 'flat',
                 commissionValue: 40000 // 40k flat
             },
             {
-                name: 'Coloring',
-                price: 100000,
+                name: 'Fashion Colour',
+                price: 200000, // start from 200k
                 commissionType: 'flat',
                 commissionValue: 40000 // 40k flat
             },
             {
-                name: 'Cukur + Wash',
-                price: 60000,
+                name: 'Perm',
+                price: 200000, // start from 200k
+                commissionType: 'flat',
+                commissionValue: 40000 // 40k flat
+            },
+            {
+                name: 'Home Service',
+                price: 150000, // by appointment 150k
                 commissionType: 'percentage',
-                commissionValue: 50
+                commissionValue: 50 // 50%
             }
         ];
 
