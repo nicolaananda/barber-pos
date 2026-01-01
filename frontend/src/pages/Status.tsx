@@ -102,11 +102,11 @@ export default function StatusPage() {
             <div className="absolute top-0 left-0 w-96 h-96 bg-zinc-200/50 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 right-0 w-96 h-96 bg-zinc-200/50 rounded-full blur-3xl"></div>
 
-            {/* PROMO BANNER */}
+            {/* INVITATION BANNER */}
             <div className="bg-zinc-900 text-white py-2 px-4 text-center relative z-20">
                 <p className="text-xs md:text-sm font-medium tracking-wide flex items-center justify-center gap-2">
                     <Sparkles className="w-4 h-4 text-yellow-500" />
-                    <span>PROMO: Get 10% OFF on your 5th visit! Join Member now.</span>
+                    <span>Kunjungi kami dan nikmati layanan terbaik! Booking sekarang untuk slot favorit Anda.</span>
                     <Sparkles className="w-4 h-4 text-yellow-500" />
                 </p>
             </div>
