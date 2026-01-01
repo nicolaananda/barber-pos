@@ -24,6 +24,8 @@ interface DashboardData {
     }[];
 }
 
+import { API_BASE_URL } from '@/lib/api';
+
 export function DashboardHome() {
     const navigate = useNavigate(); // Replaces useRouter
     const [data, setData] = useState<DashboardData | null>(null);
@@ -32,7 +34,7 @@ export function DashboardHome() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await fetch('/api/dashboard/stats');
+                const res = await fetch(`${API_BASE_URL}/dashboard/stats`);
                 if (res.ok) {
                     const json = await res.json();
                     setData(json);
