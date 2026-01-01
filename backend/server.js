@@ -19,7 +19,16 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+// Middleware
+app.use(cors({
+    origin: [
+        'https://staycoolhairlab.id',
+        'https://pos.staycoolhairlab.id',
+        'http://localhost:5173',
+        'http://localhost:3000'
+    ],
+    credentials: true
+}));
 app.use(express.json());
 
 // Routes
@@ -56,10 +65,10 @@ const server = app.listen(PORT, () => {
 // Graceful shutdown
 const gracefulShutdown = async (signal) => {
     console.log(`\n${signal} received. Starting graceful shutdown...`);
-    
+
     server.close(async () => {
         console.log('HTTP server closed.');
-        
+
         try {
             // Disconnect Prisma
             const prisma = require('./lib/prisma');
@@ -68,10 +77,10 @@ const gracefulShutdown = async (signal) => {
         } catch (error) {
             console.error('Error closing database connections:', error);
         }
-        
+
         process.exit(0);
     });
-    
+
     // Force shutdown after 10 seconds
     setTimeout(() => {
         console.error('Could not close connections in time, forcefully shutting down');
