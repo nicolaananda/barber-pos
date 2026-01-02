@@ -183,12 +183,15 @@ export default function StatusPage() {
                     <div className="inline-flex bg-white border border-zinc-200 rounded-full p-1 shadow-sm">
                         <button
                             onClick={() => setSelectedDate(new Date())}
-                            className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${selectedDate.toDateString() === new Date().toDateString()
+                            className={`px-6 py-2 rounded-full text-sm font-semibold transition-all flex flex-col items-center leading-tight gap-0.5 ${selectedDate.toDateString() === new Date().toDateString()
                                 ? 'bg-zinc-900 text-white'
                                 : 'text-zinc-500 hover:text-zinc-900'
                                 }`}
                         >
-                            Today
+                            <span>Today</span>
+                            <span className="text-[10px] opacity-80 font-normal">
+                                {format(new Date(), 'd MMM')}
+                            </span>
                         </button>
                         <button
                             onClick={() => {
@@ -196,12 +199,19 @@ export default function StatusPage() {
                                 tomorrow.setDate(tomorrow.getDate() + 1);
                                 setSelectedDate(tomorrow);
                             }}
-                            className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${selectedDate.toDateString() !== new Date().toDateString()
+                            className={`px-6 py-2 rounded-full text-sm font-semibold transition-all flex flex-col items-center leading-tight gap-0.5 ${selectedDate.toDateString() !== new Date().toDateString()
                                 ? 'bg-zinc-900 text-white'
                                 : 'text-zinc-500 hover:text-zinc-900'
                                 }`}
                         >
-                            Tomorrow
+                            <span>Tomorrow</span>
+                            <span className="text-[10px] opacity-80 font-normal">
+                                {format((() => {
+                                    const t = new Date();
+                                    t.setDate(t.getDate() + 1);
+                                    return t;
+                                })(), 'd MMM')}
+                            </span>
                         </button>
                     </div>
                 </div>
