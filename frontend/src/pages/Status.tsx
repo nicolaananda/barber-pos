@@ -133,65 +133,55 @@ export default function StatusPage() {
     const timeSlots = generateTimeSlots(selectedDate);
 
     return (
-        <div className="min-h-screen bg-zinc-50 text-zinc-900 p-4 md:p-8 relative overflow-hidden">
-            {/* Decorative Background Elements - Subtle Zinc */}
-            <div className="absolute top-0 left-0 w-96 h-96 bg-zinc-200/50 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-zinc-200/50 rounded-full blur-3xl"></div>
-
-            {/* INVITATION BANNER */}
-            <div className="bg-zinc-900 text-white py-2 px-4 text-center relative z-20">
-                <p className="text-xs md:text-sm font-medium tracking-wide flex items-center justify-center gap-2">
-                    <Sparkles className="w-4 h-4 text-yellow-500" />
-                    <span>Kunjungi kami dan nikmati layanan terbaik! Booking sekarang untuk slot favorit Anda.</span>
-                    <Sparkles className="w-4 h-4 text-yellow-500" />
-                </p>
-            </div>
-
-            <div className="max-w-6xl mx-auto relative z-10 pt-8">
-                {/* Header with Logo */}
-                <div className="flex flex-col items-center mb-8 md:mb-12">
-                    <div className="mb-4 md:mb-6 relative">
-                        <img
-                            src="/logo.jpg"
-                            alt="Staycool Logo"
-                            className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover shadow-2xl shadow-zinc-200 border-4 border-white relative z-10"
-                        />
+        <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white pb-20">
+            {/* Top Navigation / Brand */}
+            <nav className="sticky top-0 z-50 bg-[#FAFAFA]/80 backdrop-blur-xl border-b border-zinc-200/50">
+                <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Scissors className="w-5 h-5 text-zinc-900" />
+                        <span className="font-extrabold tracking-tighter text-xl">STAYCOOL.</span>
                     </div>
-                    <h1 className="text-4xl md:text-6xl font-black tracking-wider text-center text-zinc-900 uppercase mb-2">
-                        StaycoolHair Lab.
+                    <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-500">
+                        <span className="text-zinc-900">Live Status</span>
+                        <span>Services</span>
+                        <span>Contact</span>
+                    </div>
+                </div>
+            </nav>
+
+            <main className="max-w-4xl mx-auto px-4 pt-12 md:pt-20">
+                {/* Hero Section */}
+                <div className="text-center mb-12 md:mb-16 space-y-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-4">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        Live Booking Board
+                    </div>
+                    <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-zinc-900">
+                        Book Your <br className="hidden md:block" />
+                        <span className="text-zinc-400">Fresh Cut.</span>
                     </h1>
-                    <div className="flex items-center gap-2 md:gap-3 text-zinc-400 text-xs md:text-sm uppercase tracking-widest">
-                        <div className="w-8 md:w-12 h-px bg-zinc-200"></div>
-                        <Scissors className="w-3 h-3 md:w-4 md:h-4" />
-                        <span>Live Status Board</span>
-                        <Scissors className="w-3 h-3 md:w-4 md:h-4" />
-                        <div className="w-8 md:w-12 h-px bg-zinc-200"></div>
-                    </div>
-
-                    {/* View Services Button */}
-                    {/* <button
-                        onClick={() => setServicesModalOpen(true)}
-                        className="mt-6 px-6 py-2 bg-white border border-zinc-200 rounded-full shadow-sm text-zinc-900 text-sm font-semibold hover:bg-zinc-50 transition-all flex items-center gap-2"
-                    >
-                        <BookOpen className="w-4 h-4" />
-                        View Services & Price List
-                    </button> */}
+                    <p className="text-zinc-500 max-w-lg mx-auto text-lg leading-relaxed">
+                        Select your preferred barber and time slot below. <br />
+                        Real-time availability updates.
+                    </p>
                 </div>
 
-                {/* Date Selector */}
-                <div className="flex justify-center mb-6 md:mb-8">
-                    <div className="inline-flex bg-white border border-zinc-200 rounded-full p-1 shadow-sm">
+                {/* Date Selector - Floating Segmented Control */}
+                <div className="flex justify-center mb-12 sticky top-20 z-40">
+                    <div className="inline-flex bg-white/80 backdrop-blur-md border border-zinc-200/50 p-1.5 rounded-full shadow-lg shadow-zinc-200/50">
                         <button
                             onClick={() => setSelectedDate(new Date())}
-                            className={`px-6 py-2 rounded-full text-sm font-semibold transition-all flex flex-col items-center leading-tight gap-0.5 ${selectedDate.toDateString() === new Date().toDateString()
-                                ? 'bg-zinc-900 text-white'
-                                : 'text-zinc-500 hover:text-zinc-900'
-                                }`}
+                            className={`
+                                relative px-8 py-3 rounded-full text-sm font-bold transition-all duration-300
+                                flex flex-col items-center leading-none gap-1 min-w-[120px]
+                                ${selectedDate.toDateString() === new Date().toDateString()
+                                    ? 'bg-zinc-900 text-white shadow-md transform scale-105'
+                                    : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50'
+                                }
+                            `}
                         >
-                            <span>Today</span>
-                            <span className="text-[10px] opacity-80 font-normal">
-                                {format(new Date(), 'd MMM')}
-                            </span>
+                            <span className="uppercase tracking-wide text-[10px]">Today</span>
+                            <span className="text-base">{format(new Date(), 'd MMM')}</span>
                         </button>
                         <button
                             onClick={() => {
@@ -199,13 +189,17 @@ export default function StatusPage() {
                                 tomorrow.setDate(tomorrow.getDate() + 1);
                                 setSelectedDate(tomorrow);
                             }}
-                            className={`px-6 py-2 rounded-full text-sm font-semibold transition-all flex flex-col items-center leading-tight gap-0.5 ${selectedDate.toDateString() !== new Date().toDateString()
-                                ? 'bg-zinc-900 text-white'
-                                : 'text-zinc-500 hover:text-zinc-900'
-                                }`}
+                            className={`
+                                relative px-8 py-3 rounded-full text-sm font-bold transition-all duration-300
+                                flex flex-col items-center leading-none gap-1 min-w-[120px]
+                                ${selectedDate.toDateString() !== new Date().toDateString()
+                                    ? 'bg-zinc-900 text-white shadow-md transform scale-105'
+                                    : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50'
+                                }
+                            `}
                         >
-                            <span>Tomorrow</span>
-                            <span className="text-[10px] opacity-80 font-normal">
+                            <span className="uppercase tracking-wide text-[10px]">Tomorrow</span>
+                            <span className="text-base">
                                 {format((() => {
                                     const t = new Date();
                                     t.setDate(t.getDate() + 1);
@@ -216,23 +210,21 @@ export default function StatusPage() {
                     </div>
                 </div>
 
+                {/* Barbers Grid */}
                 {isLoading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="text-zinc-500 text-lg">Loading barbers...</div>
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <div className="w-8 h-8 border-4 border-zinc-900 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-zinc-400 font-medium">Loading availability...</p>
                     </div>
                 ) : barbers.length === 0 ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="text-zinc-500 text-lg">No barbers available</div>
+                    <div className="text-center py-20 text-zinc-400">
+                        No barbers available.
                     </div>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="grid gap-6">
                         {barbers.map((barber) => {
-                            // Check if barber is on offday
                             const onOffday = isBarberOffday(barber.username, selectedDate);
                             const isToday = selectedDate.toDateString() === new Date().toDateString();
-
-                            // For future dates (tomorrow), default to 'available' unless offday
-                            // For today, use actual database status
                             const actualAvailability = onOffday
                                 ? 'offday'
                                 : isToday
@@ -247,30 +239,19 @@ export default function StatusPage() {
                                 <div
                                     key={barber.id}
                                     className={`
-                                    relative overflow-hidden rounded-2xl p-4 md:p-6
-                                    border-2 transition-all duration-300 hover:shadow-xl
-                                    ${isAvailable
-                                            ? 'bg-white border-zinc-200 shadow-sm'
-                                            : isOffday
-                                                ? 'bg-zinc-100 border-zinc-200 opacity-75'
-                                                : 'bg-zinc-50 border-zinc-100 opacity-90'
+                                        group relative bg-white rounded-3xl p-6 md:p-8
+                                        transition-all duration-300
+                                        ${isOffday
+                                            ? 'opacity-60 grayscale border border-dashed border-zinc-200'
+                                            : 'border border-zinc-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.06)] hover:-translate-y-1'
                                         }
-                                `}
+                                    `}
                                 >
-                                    <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-4 md:gap-6">
-                                        {/* Barber Info */}
-                                        <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
+                                    <div className="flex flex-col md:flex-row gap-8">
+                                        {/* Barber Profile */}
+                                        <div className="flex md:flex-col items-center gap-5 md:w-48 shrink-0">
                                             <div
-                                                className={`
-                                            w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center text-2xl md:text-3xl font-bold
-                                            border-4 relative flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity
-                                            ${isAvailable
-                                                        ? 'bg-zinc-900 text-white border-white shadow-lg'
-                                                        : isOffday
-                                                            ? 'bg-zinc-300 text-zinc-500 border-zinc-200'
-                                                            : 'bg-zinc-200 text-zinc-500 border-zinc-100'
-                                                    }
-                                        `}
+                                                className="relative group-hover:scale-105 transition-transform duration-500 cursor-pointer"
                                                 onClick={() => {
                                                     if (barber.username === 'bagus') {
                                                         setSelectedImage('/bagus.webp');
@@ -281,79 +262,64 @@ export default function StatusPage() {
                                                     }
                                                 }}
                                             >
-                                                {barber.username === 'bagus' ? (
-                                                    <img
-                                                        src="/bagus.webp"
-                                                        alt="Owner"
-                                                        className="w-full h-full object-cover rounded-full"
-                                                    />
-                                                ) : barber.username === 'diva' ? (
-                                                    <img
-                                                        src="/profil_diva.webp"
-                                                        alt="Diva"
-                                                        className="w-full h-full object-cover rounded-full"
-                                                    />
-                                                ) : (
-                                                    <span className="relative z-10">{barber.name.charAt(0).toUpperCase()}</span>
-                                                )}
-                                            </div>
-                                            <div className="flex-1">
-                                                <h2 className={`text-2xl md:text-3xl font-bold mb-2 ${isOffday ? 'text-zinc-400' : isAvailable ? 'text-zinc-900' : 'text-zinc-500'}`}>{barber.name}</h2>
+                                                <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-lg bg-zinc-100">
+                                                    {barber.username === 'bagus' ? (
+                                                        <img src="/bagus.webp" alt="Owner" className="w-full h-full object-cover" />
+                                                    ) : barber.username === 'diva' ? (
+                                                        <img src="/profil_diva.webp" alt="Diva" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-3xl font-black text-zinc-300">
+                                                            {barber.name.charAt(0)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {/* Status Badge Over Avatar */}
                                                 <div className={`
-                                                inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full font-bold text-xs md:text-sm uppercase tracking-wider
-                                                ${isAvailable
-                                                        ? 'bg-zinc-900 text-white'
-                                                        : isOffday
-                                                            ? 'bg-zinc-300 text-zinc-600'
-                                                            : 'bg-zinc-200 text-zinc-500'
-                                                    }
-                                            `}>
-                                                    {isAvailable ? (
-                                                        <>
-                                                            <Coffee className="w-3 h-3 md:w-4 md:h-4" />
-                                                            Available
-                                                        </>
-                                                    ) : isOffday ? (
-                                                        <>
-                                                            <Coffee className="w-3 h-3 md:w-4 md:h-4" />
-                                                            Offday
-                                                        </>
+                                                    absolute -bottom-2 -right-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border border-white
+                                                    ${isAvailable ? 'bg-zinc-900 text-white' : isOffday ? 'bg-zinc-200 text-zinc-500' : 'bg-zinc-100 text-zinc-900'}
+                                                `}>
+                                                    {isAvailable ? 'OPEN' : isOffday ? 'OFF' : 'BUSY'}
+                                                </div>
+                                            </div>
+
+                                            <div className="text-left md:text-center w-full">
+                                                <h3 className="text-2xl font-bold text-zinc-900 tracking-tight">{barber.name}</h3>
+                                                <p className="text-xs text-zinc-400 font-medium uppercase tracking-widest mt-1">Master Barber</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Slots Grid */}
+                                        <div className="flex-1 border-t md:border-t-0 md:border-l border-zinc-100 pt-6 md:pt-0 md:pl-8">
+                                            <div className="flex items-center justify-between mb-6">
+                                                <h4 className="text-sm font-semibold text-zinc-900">Available Slots</h4>
+                                                <div className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                                                    {isOffday ? (
+                                                        <span className="bg-zinc-100 px-2 py-1 rounded">Not Taking Bookings</span>
                                                     ) : (
                                                         <>
-                                                            <Scissors className="w-3 h-3 md:w-4 md:h-4" />
-                                                            Working
+                                                            <span className="w-2 h-2 rounded-full bg-zinc-900"></span> Available
+                                                            <span className="w-2 h-2 rounded-full bg-zinc-200 ml-2"></span> Booked
                                                         </>
                                                     )}
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Time Slots - Show for ALL barbers */}
-                                        <div className="flex-1 w-full md:max-w-md">
-                                            <p className="text-xs text-zinc-400 font-semibold mb-3 uppercase tracking-wider">
-                                                {isOffday ? 'Offday - No Bookings' : isAvailable ? 'Book Ahead' : 'Available Slots'}
-                                            </p>
-                                            <div className="grid grid-cols-3 md:grid-cols-2 gap-2">
+                                            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                                                 {timeSlots.map((slot, idx) => {
-                                                    // Check if this slot is already booked
                                                     const isBooked = existingBookings.some(booking =>
                                                         booking.barberId === barber.id &&
                                                         booking.timeSlot === slot.label
                                                     );
 
+                                                    // Determine visual state
+                                                    const isLocked = isBooked || isOffday;
+
                                                     return (
                                                         <button
                                                             key={idx}
-                                                            disabled={isBooked || isOffday}
-                                                            className={`
-                                                            px-1.5 md:px-3 py-2.5 md:py-2 rounded-lg text-[10px] md:text-sm font-medium transition-all min-h-[44px] md:min-h-0
-                                                            ${isBooked || isOffday
-                                                                    ? 'bg-zinc-100 text-zinc-300 cursor-not-allowed decoration-zinc-300'
-                                                                    : 'bg-white border border-zinc-200 text-zinc-900 hover:bg-zinc-900 hover:text-white shadow-sm active:scale-95'
-                                                                }
-                                                        `}
+                                                            disabled={isLocked}
                                                             onClick={() => {
-                                                                if (!isBooked && !isOffday) {
+                                                                if (!isLocked) {
                                                                     setSelectedBooking({
                                                                         barber: { id: barber.id, name: barber.name, username: barber.username },
                                                                         timeSlot: slot
@@ -361,8 +327,15 @@ export default function StatusPage() {
                                                                     setBookingModalOpen(true);
                                                                 }
                                                             }}
+                                                            className={`
+                                                                group relative py-3 rounded-xl text-xs font-bold transition-all duration-200
+                                                                ${isLocked
+                                                                    ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed'
+                                                                    : 'bg-white border text-zinc-600 hover:bg-zinc-900 hover:text-white hover:shadow-lg hover:-translate-y-0.5 border-zinc-200'
+                                                                }
+                                                            `}
                                                         >
-                                                            {isBooked ? '' : ''}{slot.label}
+                                                            {slot.start}
                                                         </button>
                                                     );
                                                 })}
@@ -374,9 +347,21 @@ export default function StatusPage() {
                         })}
                     </div>
                 )}
-            </div>
 
-            {/* Booking Modal */}
+                {/* Footer */}
+                <footer className="mt-24 border-t border-zinc-200 py-12 text-center">
+                    <p className="text-zinc-400 text-sm mb-4">
+                        &copy; {new Date().getFullYear()} Staycool Hairlab. All rights reserved.
+                    </p>
+                    <div className="flex justify-center gap-6 text-zinc-900 font-medium text-sm">
+                        <a href="https://maps.app.goo.gl/AitnhHiAY3Ka9fAM9" target="_blank" className="hover:underline">Location</a>
+                        <a href="#" className="hover:underline">Instagram</a>
+                        <a href="#" className="hover:underline">Support</a>
+                    </div>
+                </footer>
+            </main>
+
+            {/* Modals */}
             {selectedBooking && (
                 <BookingModal
                     open={bookingModalOpen}
@@ -385,56 +370,20 @@ export default function StatusPage() {
                     timeSlot={selectedBooking.timeSlot}
                     bookingDate={selectedDate}
                     onSuccess={() => {
-                        // Refresh barbers list and bookings
                         fetchBarbers();
                         fetchBookingsForDate(selectedDate);
                     }}
                 />
             )}
-            {/* Footer Info - Acts as Mini Landing Page */}
-            <div className="max-w-4xl mx-auto mt-16 text-center space-y-4 relative z-10 pb-8">
-                <div className="border-t border-zinc-200 w-24 mx-auto mb-8"></div>
+            <ServicesModal open={servicesModalOpen} onOpenChange={setServicesModalOpen} />
 
-                <div className="grid md:grid-cols-2 gap-8 text-sm text-zinc-500">
-                    <div className="space-y-2">
-                        {/* Removed duplicate title as requested */}
-                        <p>
-                            <a
-                                href="https://maps.app.goo.gl/AitnhHiAY3Ka9fAM9"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:text-zinc-900 transition-colors hover:underline"
-                            >
-                                Jl. Imam Bonjol No.370 (Pertigaan Kodim 0809)
-                            </a>
-                        </p>
-                        <p>Kota Kediri</p>
-                    </div>
-                    <div className="space-y-2">
-                        <h3 className="font-bold text-zinc-900 tracking-wider uppercase">Contact & Open Hours</h3>
-                        <p>WA: +62 812-3490-6750</p>
-                        <p>Daily: 11:00 - 22:00</p>
-                    </div>
-                </div>
-
-                <p className="text-xs text-zinc-300 pt-8 uppercase tracking-widest">
-                    &copy; {new Date().getFullYear()} Staycool Management System
-                </p>
-            </div>
-            {/* Services Modal */}
-            <ServicesModal
-                open={servicesModalOpen}
-                onOpenChange={setServicesModalOpen}
-            />
-
-            {/* Profile Image Modal */}
             <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
-                <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-transparent border-none shadow-none flex items-center justify-center">
+                <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-transparent border-none shadow-none flex items-center justify-center ring-0 focus:ring-0">
                     {selectedImage && (
                         <img
                             src={selectedImage}
                             alt="Full Profile"
-                            className="w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                            className="w-auto max-h-[85vh] rounded-2xl shadow-2xl animate-in zoom-in-95 duration-300"
                         />
                     )}
                 </DialogContent>
