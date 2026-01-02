@@ -179,68 +179,67 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md bg-white border-zinc-200 text-zinc-900 shadow-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-zinc-900">
+            <DialogContent className="sm:max-w-md bg-white p-0 overflow-hidden rounded-3xl border-none shadow-2xl gap-0">
+                {/* Header Section */}
+                <div className="bg-zinc-50 border-b border-zinc-100 p-6 flex flex-col items-center justify-center text-center">
+                    <DialogTitle className="text-xl font-black text-zinc-900 uppercase tracking-wide">
                         {step === 1 ? 'Booking Details' : 'Payment Verification'}
                     </DialogTitle>
-                    <DialogDescription className="text-zinc-500">
-                        {barber.name} • {timeSlot.label}
-                    </DialogDescription>
-                </DialogHeader>
+                    <div className="mt-2 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-zinc-200 shadow-sm">
+                        <span className="text-xs font-bold text-zinc-900">{barber.name}</span>
+                        <span className="text-zinc-300">•</span>
+                        <span className="text-xs font-medium text-zinc-500">{timeSlot.label}</span>
+                    </div>
+                </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                <form onSubmit={handleSubmit} className="p-6">
                     {step === 1 && (
-                        <div className="space-y-4 animate-in slide-in-from-left-4 fade-in duration-300">
-                            <div className="space-y-2">
-                                <Label htmlFor="name" className="text-zinc-700">Nama Lengkap</Label>
-                                <Input
-                                    id="name"
-                                    placeholder="Masukkan nama Anda"
-                                    value={customerName}
-                                    onChange={(e) => setCustomerName(e.target.value)}
-                                    className="bg-white border-zinc-200 focus:ring-zinc-900"
-                                />
+                        <div className="space-y-6 animate-in slide-in-from-left-4 fade-in duration-300">
+                            {/* Inputs Group */}
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="name" className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 pl-1">Nama Lengkap</Label>
+                                    <Input
+                                        id="name"
+                                        placeholder="Masukkan nama Anda"
+                                        value={customerName}
+                                        onChange={(e) => setCustomerName(e.target.value)}
+                                        className="h-12 rounded-2xl bg-zinc-50 border-transparent focus:ring-2 focus:ring-zinc-900 focus:bg-white transition-all text-sm font-medium"
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="phone" className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 pl-1">Nomor WhatsApp</Label>
+                                    <Input
+                                        id="phone"
+                                        placeholder="08xxxxxxxxxx"
+                                        value={customerPhone}
+                                        onChange={(e) => setCustomerPhone(e.target.value)}
+                                        className="h-12 rounded-2xl bg-zinc-50 border-transparent focus:ring-2 focus:ring-zinc-900 focus:bg-white transition-all text-sm font-medium"
+                                    />
+                                </div>
                             </div>
 
+                            {/* Service Selection */}
                             <div className="space-y-2">
-                                <Label htmlFor="phone" className="text-zinc-700">Nomor WhatsApp</Label>
-                                <Input
-                                    id="phone"
-                                    placeholder="08xxxxxxxxxx"
-                                    value={customerPhone}
-                                    onChange={(e) => setCustomerPhone(e.target.value)}
-                                    className="bg-white border-zinc-200 focus:ring-zinc-900"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="service" className="text-zinc-700">Pilih Layanan</Label>
+                                <Label htmlFor="service" className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 pl-1">Pilih Layanan</Label>
                                 {isLoadingServices ? (
-                                    <div className="text-sm text-zinc-500">Loading services...</div>
+                                    <div className="h-24 flex items-center justify-center bg-zinc-50 rounded-2xl">
+                                        <Loader2 className="w-5 h-5 animate-spin text-zinc-300" />
+                                    </div>
                                 ) : (
-                                    <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1">
+                                    <div className="grid grid-cols-2 gap-3 max-h-[260px] overflow-y-auto pr-1">
                                         {services.map((service) => {
                                             const getServiceImage = (name: string) => {
                                                 const n = name.toLowerCase();
-                                                // Haircut services
                                                 if (n.includes('head barber')) return '/service_haircuthead.jpeg';
                                                 if (n.includes('haircut') || n.includes('cukur')) return '/service_haircut.webp';
-
-                                                // Beard services
                                                 if (n.includes('beard trim')) return '/service_trim_beard.jpeg';
                                                 if (n.includes('beard shave')) return '/service_trim_beard.jpeg';
-
-                                                // Coloring services
                                                 if (n.includes('fashion colour') || n.includes('fashion color') || n.includes('coloring')) return '/service_fashioncoloring.webp';
                                                 if (n.includes('toning') || n.includes('semir')) return '/service_semir.jpeg';
-
-                                                // Styling services
                                                 if (n.includes('perm')) return '/service_perm.webp';
-
-                                                // Special services
                                                 if (n.includes('home service')) return '/service_home.webp';
-
                                                 return null;
                                             };
                                             const bgImage = getServiceImage(service.name);
@@ -252,47 +251,45 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                                     type="button"
                                                     onClick={() => handleServiceChange(service.id.toString())}
                                                     className={cn(
-                                                        "relative flex flex-col items-start justify-end p-3 h-24 rounded-xl border text-left transition-all overflow-hidden group",
+                                                        "relative h-24 rounded-2xl overflow-hidden transition-all duration-300 group text-left",
                                                         isSelected
-                                                            ? "ring-2 ring-zinc-900 border-zinc-900"
-                                                            : "border-zinc-200 hover:border-zinc-300",
-                                                        bgImage ? "border-0" : "bg-white"
+                                                            ? "ring-2 ring-zinc-900 shadow-xl scale-[1.02]"
+                                                            : "ring-1 ring-zinc-100 opacity-80 hover:opacity-100 hover:scale-[1.01]"
                                                     )}
                                                 >
                                                     {bgImage ? (
                                                         <>
                                                             <div
-                                                                className="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+                                                                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                                                                 style={{ backgroundImage: `url('${bgImage}')` }}
                                                             />
-                                                            <div className={cn(
-                                                                "absolute inset-0 z-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 transition-opacity",
-                                                                isSelected ? "opacity-90" : "opacity-70 group-hover:opacity-80"
-                                                            )} />
-                                                            {isSelected && (
-                                                                <div className="absolute top-2 right-2 z-10 bg-white text-zinc-900 rounded-full p-0.5">
-                                                                    <Check className="w-3 h-3" />
-                                                                </div>
-                                                            )}
+                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                                                         </>
                                                     ) : (
-                                                        <>
-                                                            <div className={cn(
-                                                                "absolute top-2 right-2 p-1.5 rounded-lg transition-colors",
-                                                                isSelected ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-400 group-hover:text-zinc-600"
-                                                            )}>
-                                                                {isSelected ? <Check className="w-3 h-3" /> : <Scissors className="w-3 h-3" />}
-                                                            </div>
-                                                        </>
+                                                        <div className="absolute inset-0 bg-zinc-100" />
                                                     )}
 
-                                                    <div className={cn("relative z-10 w-full", bgImage ? "text-white" : "text-zinc-900")}>
-                                                        <div className={cn("font-bold text-xs line-clamp-2 leading-tight mb-0.5", bgImage && "drop-shadow-sm")}>
+                                                    {/* Checkmark Badge */}
+                                                    <div className={cn(
+                                                        "absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center transition-all",
+                                                        isSelected ? "bg-white text-zinc-900 scale-100" : "bg-black/20 text-white/0 scale-0"
+                                                    )}>
+                                                        <Check className="w-3 h-3 stroke-[3]" />
+                                                    </div>
+
+                                                    <div className="absolute bottom-0 left-0 w-full p-3 text-white">
+                                                        <p className={cn(
+                                                            "text-[10px] font-bold uppercase tracking-wider mb-0.5 leading-tight",
+                                                            !bgImage && "text-zinc-900"
+                                                        )}>
                                                             {service.name}
-                                                        </div>
-                                                        <div className={cn("text-xs font-mono", bgImage ? "text-white/90" : "text-zinc-500", bgImage && "font-bold")}>
+                                                        </p>
+                                                        <p className={cn(
+                                                            "text-xs font-medium opacity-90",
+                                                            !bgImage && "text-zinc-500"
+                                                        )}>
                                                             {formatRp(service.price)}
-                                                        </div>
+                                                        </p>
                                                     </div>
                                                 </button>
                                             );
@@ -304,99 +301,119 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                     )}
 
                     {step === 2 && (
-                        <div className="space-y-4 animate-in slide-in-from-right-4 fade-in duration-300">
-                            <div className="bg-zinc-50 p-4 rounded-lg flex flex-col items-center border border-zinc-200">
-                                <p className="text-sm font-semibold text-zinc-900 mb-2">Scan QRIS untuk Pembayaran</p>
-                                <img
-                                    src={QRIS_IMAGE}
-                                    alt="QRIS Code"
-                                    className="w-48 h-48 object-cover rounded-lg border border-zinc-200 shadow-sm"
-                                />
-                                <p className="text-xs text-zinc-500 mt-2 text-center">
-                                    Total yang harus dibayar:<br />
-                                    <span className="text-lg font-bold text-zinc-900">{selectedService ? formatRp(selectedService.price) : '-'}</span>
+                        <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
+                            <div className="bg-zinc-50 p-6 rounded-3xl flex flex-col items-center border border-zinc-100 text-center">
+                                <div className="w-12 h-12 rounded-full bg-white border border-zinc-100 flex items-center justify-center mb-4 shadow-sm">
+                                    <UploadCloud className="w-6 h-6 text-zinc-900" />
+                                </div>
+                                <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wide mb-1">Payment Verification</h3>
+                                <p className="text-xs text-zinc-500 mb-6 max-w-[200px]">
+                                    Scan QRIS dibawah dan upload bukti pembayaran.
                                 </p>
+
+                                <div className="relative group cursor-pointer">
+                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-zinc-200 to-zinc-400 rounded-xl blur opacity-30 group-hover:opacity-60 transition duration-1000"></div>
+                                    <div className="relative bg-white p-2 rounded-xl border border-zinc-100">
+                                        <img
+                                            src={QRIS_IMAGE}
+                                            alt="QRIS Code"
+                                            className="w-40 h-40 object-cover rounded-lg"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 inline-flex flex-col items-center">
+                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Total Payment</span>
+                                    <span className="text-xl font-black text-zinc-900">{selectedService ? formatRp(selectedService.price) : '-'}</span>
+                                </div>
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-zinc-700">Bukti Transfer</Label>
-                                <div className="grid w-full items-center gap-1.5">
-                                    <Label
-                                        htmlFor="proof"
-                                        className={cn(
-                                            "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-zinc-50 transition-colors",
-                                            previewUrl ? "border-zinc-900 bg-zinc-50" : "border-zinc-300 bg-white"
-                                        )}
-                                    >
-                                        {previewUrl ? (
-                                            <img src={previewUrl} alt="Preview" className="h-full object-contain p-2" />
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                <UploadCloud className="w-8 h-8 text-zinc-400 mb-2" />
-                                                <p className="text-sm text-zinc-500">Klik untuk upload bukti</p>
+                                <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 pl-1">Bukti Transfer</Label>
+                                <Label
+                                    htmlFor="proof"
+                                    className={cn(
+                                        "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl cursor-pointer transition-all overflow-hidden relative group",
+                                        previewUrl
+                                            ? "border-zinc-900 bg-white"
+                                            : "border-zinc-200 bg-zinc-50 hover:bg-zinc-100 hover:border-zinc-300"
+                                    )}
+                                >
+                                    {previewUrl ? (
+                                        <div className="relative w-full h-full p-2">
+                                            <img src={previewUrl} alt="Preview" className="w-full h-full object-contain rounded-lg" />
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <span className="text-white text-xs font-bold bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">Ganti File</span>
                                             </div>
-                                        )}
-                                        <Input
-                                            id="proof"
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleFileChange}
-                                        />
-                                    </Label>
-                                </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center text-zinc-400 group-hover:text-zinc-600">
+                                            <UploadCloud className="w-8 h-8 mb-2" />
+                                            <p className="text-xs font-medium">Tap to upload</p>
+                                        </div>
+                                    )}
+                                    <Input
+                                        id="proof"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleFileChange}
+                                    />
+                                </Label>
                             </div>
                         </div>
                     )}
 
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-md text-sm">
+                        <div className="mt-4 p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-xs font-medium flex items-center gap-2">
+                            <div className="w-1 h-4 bg-red-500 rounded-full"></div>
                             {error}
                         </div>
                     )}
 
-                    <div className="flex gap-3 pt-4">
+                    {/* Footer Actions */}
+                    <div className="flex gap-3 mt-8">
                         {step === 1 ? (
                             <>
                                 <Button
                                     type="button"
-                                    variant="outline"
+                                    variant="ghost"
                                     onClick={() => onOpenChange(false)}
-                                    className="flex-1 border-zinc-200 hover:bg-zinc-50 text-zinc-900"
+                                    className="flex-1 rounded-full hover:bg-zinc-100 text-zinc-500 font-bold"
                                 >
-                                    Batal
+                                    Cancel
                                 </Button>
                                 <Button
                                     type="button"
                                     onClick={handleNextStep}
-                                    className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800"
+                                    className="flex-[2] rounded-full bg-zinc-900 text-white hover:bg-zinc-800 font-bold"
                                 >
-                                    Lanjut Bayar <ArrowRight className="w-4 h-4 ml-2" />
+                                    Lanjut Bayar
                                 </Button>
                             </>
                         ) : (
                             <>
                                 <Button
                                     type="button"
-                                    variant="outline"
+                                    variant="ghost"
                                     onClick={() => setStep(1)}
                                     disabled={isSubmitting}
-                                    className="flex-1 border-zinc-200 hover:bg-zinc-50 text-zinc-900"
+                                    className="flex-1 rounded-full hover:bg-zinc-100 text-zinc-500 font-bold"
                                 >
-                                    <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
+                                    Kembali
                                 </Button>
                                 <Button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800"
+                                    className="flex-[2] rounded-full bg-zinc-900 text-white hover:bg-zinc-800 font-bold shadow-lg shadow-zinc-900/20"
                                 >
                                     {isSubmitting ? (
                                         <>
                                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            Uploading...
+                                            Wait...
                                         </>
                                     ) : (
-                                        'Konfirmasi Booking'
+                                        'Konfirmasi'
                                     )}
                                 </Button>
                             </>
