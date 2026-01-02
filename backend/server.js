@@ -45,6 +45,7 @@ app.use('/api/expenses', expensesRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/shifts', shiftsRoutes);
 app.use('/api/transactions', transactionsRoutes);
+app.use('/api/capital', capitalRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/offdays', require('./routes/offdays'));
