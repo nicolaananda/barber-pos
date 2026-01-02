@@ -153,7 +153,7 @@ export default function StatusPage() {
                 </div>
 
                 {/* Date Selector - Floating Segmented Control */}
-                <div className="flex justify-center mb-12 sticky top-20 z-40">
+                <div className="flex justify-center mb-12">
                     <div className="inline-flex bg-white/80 backdrop-blur-md border border-zinc-200/50 p-1.5 rounded-full shadow-lg shadow-zinc-200/50">
                         <button
                             onClick={() => setSelectedDate(new Date())}
@@ -350,7 +350,7 @@ export default function StatusPage() {
                             <MapPin className="w-5 h-5" />
                         </a>
                         <a
-                            href="https://instagram.com"
+                            href="https://www.instagram.com/staycoolhair_lab/?hl=en"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 hover:bg-zinc-900 hover:text-white transition-all hover:scale-110"
