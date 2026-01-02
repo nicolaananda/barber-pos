@@ -141,7 +141,7 @@ export default function StatusPage() {
                 <div className="text-center mb-12 md:mb-16 space-y-4">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-4">
                         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                        Live Booking Board
+                        Waktunya Tampil Keren!
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-zinc-900 uppercase">
                         STAYCOOLHAIR <br className="hidden md:block" />
@@ -359,7 +359,7 @@ export default function StatusPage() {
                             <Instagram className="w-5 h-5" />
                         </a>
                         <a
-                            href="#"
+                            href="https://wa.me/6287770995270"
                             className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 hover:bg-zinc-900 hover:text-white transition-all hover:scale-110"
                             aria-label="Support"
                         >
