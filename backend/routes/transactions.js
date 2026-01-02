@@ -161,4 +161,66 @@ router.post('/:id/send-whatsapp', authenticateToken, async (req, res) => {
     }
 });
 
+// PUT /api/transactions/:id
+router.put('/:id', authenticateToken, async (req, res) => {
+    try {
+        const transactionId = parseInt(req.params.id);
+        const { items, totalAmount, paymentMethod, customerName, customerPhone, barberId } = req.body;
+
+        if (isNaN(transactionId)) return res.status(400).json({ error: 'Invalid ID' });
+
+        // 1. Get Old Transaction
+        const oldTransaction = await prisma.transaction.findUnique({
+            where: { id: transactionId }
+        });
+
+        if (!oldTransaction) return res.status(404).json({ error: 'Transaction not found' });
+
+        const amountDiff = totalAmount - oldTransaction.totalAmount;
+
+        // 2. Update Transaction
+        const updatedTransaction = await prisma.transaction.update({
+            where: { id: transactionId },
+            data: {
+                items, // Json
+                totalAmount,
+                paymentMethod,
+                customerName,
+                customerPhone,
+                barberId: parseInt(barberId) // Allow changing barber too
+            }
+        });
+
+        // 3. Update Active Shift if applicable (Simple logic: if transaction is recent)
+        // Only update if shift is OPEN. If closed, we probably shouldn't touch provided 'totalRevenue'.
+        // Or we should? 'totalRevenue' in Shift is meant to track cash in drawer? 
+        // If payment method is QRIS, it affects 'totalRevenue' only if we track all revenue there.
+        // Let's assume we update active shift if exists.
+
+        if (amountDiff !== 0) {
+            const activeShift = await prisma.cashShift.findFirst({
+                where: { status: 'open' }
+            });
+
+            // Only update shift if the transaction date is "current" (e.g. today). 
+            // If I edit a transaction from last month, I should NOT update today's shift.
+            // Check if transaction.date is same day as activeShift.startTime?
+            // Simplification: If activeShift exists and transaction date is > activeShift.startTime
+            if (activeShift && new Date(updatedTransaction.date) >= new Date(activeShift.startTime)) {
+                await prisma.cashShift.update({
+                    where: { id: activeShift.id },
+                    data: {
+                        totalRevenue: { increment: amountDiff }
+                    }
+                });
+            }
+        }
+
+        res.json(updatedTransaction);
+    } catch (error) {
+        console.error('Update Transaction Error:', error);
+        res.status(500).json({ error: 'Failed to update transaction' });
+    }
+});
+
 module.exports = router;

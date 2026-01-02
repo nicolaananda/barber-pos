@@ -11,7 +11,8 @@ import {
     CalendarClock,
     Calendar,
     DollarSign,
-    UserCog
+    UserCog,
+    LineChart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -25,6 +26,7 @@ export function AppSidebar() {
         { name: 'Services', href: '/dashboard/services', icon: Scissors },
         { name: 'Customers', href: '/dashboard/customers', icon: Users },
         { name: 'Transactions', href: '/dashboard/transactions', icon: Receipt },
+        { name: 'Profit & Loss', href: '/dashboard/profit-loss', icon: LineChart },
         { name: 'Expenses', href: '/dashboard/expenses', icon: Wallet },
         { name: 'Payroll', href: '/dashboard/payroll', icon: DollarSign },
         { name: 'Bookings', href: '/dashboard/bookings', icon: Calendar },

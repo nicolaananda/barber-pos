@@ -10,6 +10,7 @@ const usersRoutes = require('./routes/users');
 const dashboardRoutes = require('./routes/dashboard');
 const webhookRoutes = require('./routes/webhook');
 const expensesRoutes = require('./routes/expenses');
+const capitalRoutes = require('./routes/capital');
 const payrollRoutes = require('./routes/payroll');
 const shiftsRoutes = require('./routes/shifts');
 const transactionsRoutes = require('./routes/transactions');

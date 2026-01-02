@@ -11,7 +11,8 @@ import {
     RefreshCcw,
     TrendingUp,
     Calendar,
-    Users
+    Users,
+    Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { API_BASE_URL } from '@/lib/api';
@@ -26,6 +27,13 @@ import {
     AreaChart,
     Area
 } from 'recharts';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Transaction {
     id: number;
@@ -54,6 +62,7 @@ export default function DailyPage() {
     const [data, setData] = useState<DailyData | null>(null);
     const [loading, setLoading] = useState(true);
     const [chartData, setChartData] = useState<any[]>([]);
+    const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -68,6 +77,14 @@ export default function DailyPage() {
             });
             if (!res.ok) throw new Error('Failed to fetch daily data');
             const json = await res.json();
+
+            // Sort recentTransactions descending (newest first)
+            if (json.recentTransactions) {
+                json.recentTransactions.sort((a: Transaction, b: Transaction) =>
+                    new Date(b.time).getTime() - new Date(a.time).getTime()
+                );
+            }
+
             setData(json);
 
             // Process chart data: Group interactions by hour
@@ -294,18 +311,19 @@ export default function DailyPage() {
                                     <th className="p-4 hidden md:table-cell">Details</th>
                                     <th className="p-4 text-right">Amount</th>
                                     <th className="p-4 text-center">Status</th>
+                                    <th className="p-4 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100">
                                 {data.recentTransactions.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="p-8 text-center text-zinc-400 font-medium">
+                                        <td colSpan={7} className="p-8 text-center text-zinc-400 font-medium">
                                             No transactions found for today.
                                         </td>
                                     </tr>
                                 ) : (
                                     data.recentTransactions.map((tx) => (
-                                        <tr key={tx.id} className="hover:bg-zinc-50 transition-colors">
+                                        <tr key={tx.id} className="hover:bg-zinc-50 transition-colors cursor-pointer" onClick={() => setSelectedTransaction(tx)}>
                                             <td className="p-4 font-mono text-zinc-500 w-[100px]">
                                                 {format(new Date(tx.time), 'HH:mm')}
                                             </td>
@@ -318,7 +336,7 @@ export default function DailyPage() {
                                             </td>
                                             <td className="p-4 hidden md:table-cell">
                                                 <div className="text-xs text-zinc-500 truncate max-w-[200px]">
-                                                    {tx.items.map((i: any) => i.name).join(', ')}
+                                                    {tx.items.map((i: any) => `${i.name}${i.qty > 1 ? ` (x${i.qty})` : ''}`).join(', ')}
                                                 </div>
                                             </td>
                                             <td className="p-4 text-right font-bold font-mono text-zinc-900">
@@ -336,6 +354,11 @@ export default function DailyPage() {
                                                     {tx.paymentMethod.toUpperCase()}
                                                 </Badge>
                                             </td>
+                                            <td className="p-4 text-center">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500">
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                            </td>
                                         </tr>
                                     ))
                                 )}
@@ -344,6 +367,62 @@ export default function DailyPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <Dialog open={!!selectedTransaction} onOpenChange={() => setSelectedTransaction(null)}>
+                <DialogContent className="sm:max-w-md bg-white text-zinc-900">
+                    <DialogHeader>
+                        <DialogTitle>Transaction Details</DialogTitle>
+                        <DialogDescription>
+                            Invoice: <span className="font-mono text-zinc-900 font-bold">{selectedTransaction?.invoiceCode}</span>
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p className="text-zinc-500">Date</p>
+                                <p className="font-medium">{selectedTransaction && format(new Date(selectedTransaction.time), 'dd MMM yyyy HH:mm')}</p>
+                            </div>
+                            <div>
+                                <p className="text-zinc-500">Staff</p>
+                                <p className="font-medium">{selectedTransaction?.barberName}</p>
+                            </div>
+                            <div>
+                                <p className="text-zinc-500">Payment Method</p>
+                                <div className="mt-1">
+                                    <Badge variant="outline" className="border-zinc-300">
+                                        {selectedTransaction?.paymentMethod.toUpperCase()}
+                                    </Badge>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-zinc-200 pt-4">
+                            <h4 className="font-semibold mb-2 text-sm text-zinc-900">Items</h4>
+                            <div className="space-y-2">
+                                {selectedTransaction?.items.map((item: any, i: number) => (
+                                    <div key={i} className="flex justify-between text-sm py-1 border-b border-zinc-100 last:border-0">
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-zinc-800">{item.name}</span>
+                                            <span className="text-xs text-zinc-500">@{item.price.toLocaleString('id-ID')} x {item.qty || 1}</span>
+                                        </div>
+                                        <span className="font-mono font-medium">
+                                            IDR {((item.price) * (item.qty || 1)).toLocaleString('id-ID')}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="border-t border-zinc-200 pt-4 flex justify-between items-center bg-zinc-50 p-3 rounded-lg -mx-2">
+                            <span className="font-bold text-lg">Total Amount</span>
+                            <span className="font-bold text-lg font-mono">
+                                IDR {selectedTransaction?.totalAmount.toLocaleString('id-ID')}
+                            </span>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

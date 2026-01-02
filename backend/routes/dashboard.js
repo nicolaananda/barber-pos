@@ -207,6 +207,106 @@ router.get('/stats', async (req, res) => {
         console.error('Dashboard Stats Error:', error);
         res.status(500).json({ error: 'Failed to fetch dashboard stats' });
     }
+}); // Added missing closing brace and parenthesis
+
+// GET /api/dashboard/profit-loss
+router.get('/profit-loss', authenticateToken, async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+
+        // Default to current month if no dates provided
+        const now = new Date();
+        const start = startDate ? new Date(startDate) : startOfMonth(now);
+        const end = endDate ? new Date(endDate) : endOfMonth(now);
+
+        // Ensure end date includes the full day
+        end.setHours(23, 59, 59, 999);
+
+        // 1. Calculate Total Revenue (Transactions)
+        const revenueAgg = await prisma.transaction.aggregate({
+            _sum: { totalAmount: true },
+            where: {
+                date: {
+                    gte: start,
+                    lte: end,
+                },
+            },
+        });
+        const totalRevenue = revenueAgg._sum.totalAmount || 0;
+
+        // 2. Calculate Total Expenses
+        const expensesAgg = await prisma.expense.aggregate({
+            _sum: { amount: true },
+            where: {
+                date: {
+                    gte: start,
+                    lte: end,
+                },
+            },
+        });
+        const totalExpenses = expensesAgg._sum.amount || 0;
+
+        // 3. Calculate Total Capital Injections
+        const capitalAgg = await prisma.capital.aggregate({
+            _sum: { amount: true },
+            where: {
+                date: {
+                    gte: start,
+                    lte: end,
+                },
+            },
+        });
+        const totalCapital = capitalAgg._sum.amount || 0;
+
+        // 4. Get Breakdown of Expenses by Category
+        const expensesByCategory = await prisma.expense.groupBy({
+            by: ['category'],
+            _sum: {
+                amount: true,
+            },
+            where: {
+                date: {
+                    gte: start,
+                    lte: end,
+                },
+            },
+        });
+
+        // 5. Get Breakdown of Revenue by Payment Method
+        const revenueByMethod = await prisma.transaction.groupBy({
+            by: ['paymentMethod'],
+            _sum: {
+                totalAmount: true,
+            },
+            where: {
+                date: {
+                    gte: start,
+                    lte: end,
+                },
+            },
+        });
+
+        res.json({
+            range: {
+                start: start,
+                end: end,
+            },
+            summary: {
+                totalRevenue,
+                totalExpenses,
+                totalCapital,
+                netProfit: totalRevenue - totalExpenses,
+            },
+            breakdown: {
+                expenses: expensesByCategory.map(e => ({ category: e.category, amount: e._sum.amount })),
+                revenue: revenueByMethod.map(r => ({ method: r.paymentMethod, amount: r._sum.totalAmount })),
+            }
+        });
+
+    } catch (error) {
+        console.error('Profit/Loss Error:', error);
+        res.status(500).json({ error: 'Failed to calculate profit and loss' });
+    }
 });
 
 module.exports = router;
