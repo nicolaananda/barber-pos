@@ -270,7 +270,9 @@ export default function StatusPage() {
 
                                             <div className="text-left md:text-center w-full">
                                                 <h3 className="text-2xl font-bold text-zinc-900 tracking-tight">{barber.name}</h3>
-                                                <p className="text-xs text-zinc-400 font-medium uppercase tracking-widest mt-1">Master Barber</p>
+                                                <p className="text-xs text-zinc-400 font-medium uppercase tracking-widest mt-1">
+                                                    {barber.username === 'bagus' ? 'Head Barber' : 'Barber'}
+                                                </p>
                                             </div>
                                         </div>
 
