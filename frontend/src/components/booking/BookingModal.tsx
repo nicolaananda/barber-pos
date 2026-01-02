@@ -14,7 +14,7 @@ const QRIS_IMAGE = "/qris.jpg";
 interface BookingModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    barber: { id: number; name: string };
+    barber: { id: number; name: string; username?: string };
     timeSlot: { start: string; end: string; label: string };
     bookingDate: Date;
     onSuccess?: () => void;
@@ -55,11 +55,30 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
             const res = await fetch(`${API_BASE_URL}/services`);
             if (res.ok) {
                 const data = await res.json();
-                setServices(data.filter((s: any) => s.isActive));
+                let availableServices = data.filter((s: any) => s.isActive);
+
+                // Filter by barber specific rules
+                if (barber.username) {
+                    const isOwner = barber.username === 'bagus';
+                    availableServices = availableServices.filter((service: any) => {
+                        const serviceName = service.name.toLowerCase();
+                        if (isOwner) {
+                            // Owner Logic: Hide regular haircuts, show Head Barber only
+                            if ((serviceName.includes('haircut') || serviceName.includes('cukur')) && !serviceName.includes('head')) return false;
+                            return true;
+                        } else {
+                            // Staff Logic: Hide Head Barber services
+                            if (serviceName.includes('head') || serviceName.includes('owner')) return false;
+                            return true;
+                        }
+                    });
+                }
+
+                setServices(availableServices);
                 // Set default if exists
-                if (data.length > 0) {
-                    setSelectedServiceId(data[0].id.toString());
-                    setSelectedService(data[0]);
+                if (availableServices.length > 0) {
+                    setSelectedServiceId(availableServices[0].id.toString());
+                    setSelectedService(availableServices[0]);
                 }
             }
         } catch (error) {
@@ -205,22 +224,22 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                             const getServiceImage = (name: string) => {
                                                 const n = name.toLowerCase();
                                                 // Haircut services
-                                                if (n.includes('head barber')) return '/service_headbarber.webp';
+                                                if (n.includes('head barber')) return '/service_haircuthead.jpeg';
                                                 if (n.includes('haircut') || n.includes('cukur')) return '/service_haircut.webp';
 
                                                 // Beard services
-                                                if (n.includes('beard trim')) return '/service_beardtrim.webp';
-                                                if (n.includes('beard shave')) return '/service_beardshave.webp';
+                                                if (n.includes('beard trim')) return '/service_trim_beard.jpeg';
+                                                if (n.includes('beard shave')) return '/service_trim_beard.jpeg';
 
                                                 // Coloring services
                                                 if (n.includes('fashion colour') || n.includes('fashion color') || n.includes('coloring')) return '/service_fashioncoloring.webp';
-                                                if (n.includes('toning') || n.includes('semir')) return '/service_toning.webp';
+                                                if (n.includes('toning') || n.includes('semir')) return '/service_semir.jpeg';
 
                                                 // Styling services
                                                 if (n.includes('perm')) return '/service_perm.webp';
 
                                                 // Special services
-                                                if (n.includes('home service')) return '/service_homeservice.webp';
+                                                if (n.includes('home service')) return '/service_home.webp';
 
                                                 return null;
                                             };

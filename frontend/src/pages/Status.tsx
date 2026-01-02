@@ -13,7 +13,7 @@ interface Barber {
 }
 
 interface BookingData {
-    barber: { id: number; name: string };
+    barber: { id: number; name: string; username: string };
     timeSlot: { start: string; end: string; label: string };
 }
 
@@ -344,7 +344,7 @@ export default function StatusPage() {
                                                             onClick={() => {
                                                                 if (!isBooked && !isOffday) {
                                                                     setSelectedBooking({
-                                                                        barber: { id: barber.id, name: barber.name },
+                                                                        barber: { id: barber.id, name: barber.name, username: barber.username },
                                                                         timeSlot: slot
                                                                     });
                                                                     setBookingModalOpen(true);

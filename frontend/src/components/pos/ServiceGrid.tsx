@@ -51,7 +51,7 @@ export default function ServiceGrid() {
         // Owner (Bagus) Logic
         if (selectedBarber.username === 'bagus') {
             // Hide regular haircut
-            if (serviceName === 'haircut') return false;
+            if ((serviceName.includes('haircut') || serviceName.includes('cukur')) && !serviceName.includes('head')) return false;
             // Show everything else (including 'Haircut by Head')
             return true;
         }
@@ -88,22 +88,22 @@ export default function ServiceGrid() {
                     const getServiceImage = (name: string) => {
                         const n = name.toLowerCase();
                         // Haircut services
-                        if (n.includes('head barber')) return '/service_headbarber.webp';
+                        if (n.includes('head barber')) return '/service_haircuthead.jpeg';
                         if (n.includes('haircut') || n.includes('cukur')) return '/service_haircut.webp';
 
                         // Beard services
-                        if (n.includes('beard trim')) return '/service_beardtrim.webp';
-                        if (n.includes('beard shave')) return '/service_beardshave.webp';
+                        if (n.includes('beard trim')) return '/service_trim_beard.jpeg';
+                        if (n.includes('beard shave')) return '/service_trim_beard.jpeg';
 
                         // Coloring services
                         if (n.includes('fashion colour') || n.includes('fashion color') || n.includes('coloring')) return '/service_fashioncoloring.webp';
-                        if (n.includes('toning') || n.includes('semir')) return '/service_toning.webp';
+                        if (n.includes('toning') || n.includes('semir')) return '/service_semir.jpeg';
 
                         // Styling services
                         if (n.includes('perm')) return '/service_perm.webp';
 
                         // Special services
-                        if (n.includes('home service')) return '/service_homeservice.webp';
+                        if (n.includes('home service')) return '/service_home.webp';
 
                         return null;
                     };
