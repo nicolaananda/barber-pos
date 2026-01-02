@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/lib/api';
-import { Coffee, Scissors, Sparkles, BookOpen } from 'lucide-react';
+import { Coffee, Scissors, Sparkles, BookOpen, MapPin, Instagram, MessageCircle } from 'lucide-react';
 import BookingModal from '@/components/booking/BookingModal';
 import ServicesModal from '@/components/pos/ServicesModal';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -336,13 +336,35 @@ export default function StatusPage() {
 
                 {/* Footer */}
                 <footer className="mt-24 border-t border-zinc-200 py-12 text-center">
-                    <p className="text-zinc-400 text-sm mb-4">
+                    <p className="text-zinc-400 text-sm mb-6">
                         &copy; {new Date().getFullYear()} Staycool Hairlab. All rights reserved.
                     </p>
-                    <div className="flex justify-center gap-6 text-zinc-900 font-medium text-sm">
-                        <a href="https://maps.app.goo.gl/AitnhHiAY3Ka9fAM9" target="_blank" className="hover:underline">Location</a>
-                        <a href="#" className="hover:underline">Instagram</a>
-                        <a href="#" className="hover:underline">Support</a>
+                    <div className="flex justify-center gap-6">
+                        <a
+                            href="https://maps.app.goo.gl/AitnhHiAY3Ka9fAM9"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 hover:bg-zinc-900 hover:text-white transition-all hover:scale-110"
+                            aria-label="Location"
+                        >
+                            <MapPin className="w-5 h-5" />
+                        </a>
+                        <a
+                            href="https://instagram.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 hover:bg-zinc-900 hover:text-white transition-all hover:scale-110"
+                            aria-label="Instagram"
+                        >
+                            <Instagram className="w-5 h-5" />
+                        </a>
+                        <a
+                            href="#"
+                            className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 hover:bg-zinc-900 hover:text-white transition-all hover:scale-110"
+                            aria-label="Support"
+                        >
+                            <MessageCircle className="w-5 h-5" />
+                        </a>
                     </div>
                 </footer>
             </main>
