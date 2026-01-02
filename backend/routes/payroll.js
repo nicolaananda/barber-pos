@@ -48,18 +48,19 @@ router.get('/', authenticateToken, async (req, res) => {
                     totalRevenue += t.totalAmount;
                     if (Array.isArray(t.items)) {
                         for (const item of t.items) {
+                            const qty = item.qty || 1;
                             const service = serviceMap[item.name];
                             if (service) {
                                 if (service.commissionType === 'percentage') {
-                                    // Calculate based on item price
-                                    estimatedCommission += (item.price * service.commissionValue) / 100;
+                                    // Calculate based on item price * qty
+                                    estimatedCommission += ((item.price * qty) * service.commissionValue) / 100;
                                 } else {
-                                    // Flat rate
-                                    estimatedCommission += service.commissionValue;
+                                    // Flat rate * qty
+                                    estimatedCommission += service.commissionValue * qty;
                                 }
                             } else {
                                 // Fallback or log if service not found (maybe deleted)
-                                // For now, assume 0 or maybe try to match by loose name
+                                // For now, assume 0
                             }
                         }
                     }
