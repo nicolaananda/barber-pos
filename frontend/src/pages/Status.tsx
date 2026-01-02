@@ -134,20 +134,7 @@ export default function StatusPage() {
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white pb-20">
-            {/* Top Navigation / Brand */}
-            <nav className="sticky top-0 z-50 bg-[#FAFAFA]/80 backdrop-blur-xl border-b border-zinc-200/50">
-                <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Scissors className="w-5 h-5 text-zinc-900" />
-                        <span className="font-extrabold tracking-tighter text-xl">STAYCOOL.</span>
-                    </div>
-                    <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-500">
-                        <span className="text-zinc-900">Live Status</span>
-                        <span>Services</span>
-                        <span>Contact</span>
-                    </div>
-                </div>
-            </nav>
+            {/* Navbar Removed */}
 
             <main className="max-w-4xl mx-auto px-4 pt-12 md:pt-20">
                 {/* Hero Section */}
@@ -156,13 +143,12 @@ export default function StatusPage() {
                         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                         Live Booking Board
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-zinc-900">
-                        Book Your <br className="hidden md:block" />
-                        <span className="text-zinc-400">Fresh Cut.</span>
+                    <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-zinc-900 uppercase">
+                        STAYCOOLHAIR <br className="hidden md:block" />
+                        <span className="text-zinc-400">LAB.</span>
                     </h1>
                     <p className="text-zinc-500 max-w-lg mx-auto text-lg leading-relaxed">
-                        Select your preferred barber and time slot below. <br />
-                        Real-time availability updates.
+                        Select your preferred barber and time slot below.
                     </p>
                 </div>
 
