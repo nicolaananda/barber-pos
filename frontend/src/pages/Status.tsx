@@ -4,6 +4,7 @@ import { Coffee, Scissors, Sparkles, BookOpen } from 'lucide-react';
 import BookingModal from '@/components/booking/BookingModal';
 import ServicesModal from '@/components/pos/ServicesModal';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { format } from 'date-fns';
 
 interface Barber {
     id: number;
@@ -67,8 +68,8 @@ export default function StatusPage() {
 
     const fetchBookingsForDate = async (date: Date) => {
         try {
-            // Format date as YYYY-MM-DD
-            const dateStr = date.toISOString().split('T')[0];
+            // Format date as YYYY-MM-DD using local time
+            const dateStr = format(date, 'yyyy-MM-dd');
             const res = await fetch(`${API_BASE_URL}/bookings/date/${dateStr}`);
             if (res.ok) {
                 const data = await res.json();
@@ -81,7 +82,7 @@ export default function StatusPage() {
 
     const fetchOffDaysForDate = async (date: Date) => {
         try {
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = format(date, 'yyyy-MM-dd');
             // Fetch off days for this specific date
             const res = await fetch(`${API_BASE_URL}/offdays?start=${dateStr}&end=${dateStr}`);
             if (res.ok) {
