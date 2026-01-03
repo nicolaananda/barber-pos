@@ -179,7 +179,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md bg-white p-0 overflow-hidden rounded-3xl border-none shadow-2xl gap-0">
+            <DialogContent className="sm:max-w-md bg-white p-0 max-h-[90vh] overflow-y-auto rounded-3xl border-none shadow-2xl gap-0">
                 {/* Header Section */}
                 <div className="bg-zinc-50 border-b border-zinc-100 p-6 flex flex-col items-center justify-center text-center">
                     <DialogTitle className="text-xl font-black text-zinc-900 uppercase tracking-wide">

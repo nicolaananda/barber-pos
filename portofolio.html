@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StayCool POS - Project Portfolio</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-card: #171717;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --accent: #f59e0b; /* Amber-500 */
+            --accent-glow: rgba(245, 158, 11, 0.15);
+            --border: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* HERO SECTION */
+        .hero {
+            padding: 100px 0 60px;
+            text-align: center;
+            background: radial-gradient(circle at top center, rgba(245, 158, 11, 0.05) 0%, rgba(0,0,0,0) 50%);
+        }
+
+        .tagline {
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: inline-block;
+            background: rgba(245, 158, 11, 0.1);
+            padding: 8px 16px;
+            border-radius: 50px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #fff 0%, #999 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-desc {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* SECTIONS */
+        section {
+            padding: 80px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        section:last-child {
+            border-bottom: none;
+        }
+
+        .section-header {
+            margin-bottom: 60px;
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .section-desc {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* GRID */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-color: var(--accent);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: var(--accent);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .card-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* SOLUTION ITEMS */
+        .solution-item {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 60px;
+            margin-bottom: 120px;
+            align-items: center;
+        }
+
+        .solution-item.reverse {
+            grid-template-columns: 1.2fr 1fr;
+        }
+        
+        .solution-item.reverse .text-content {
+            order: 2;
+        }
+        .solution-item.reverse .image-content {
+            order: 1;
+        }
+
+        .solution-number {
+            font-size: 5rem;
+            font-weight: 900;
+            color: rgba(255,255,255,0.03);
+            line-height: 1;
+            margin-bottom: -20px;
+            margin-left: -5px;
+        }
+
+        .solution-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+
+        .solution-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .solution-desc {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .feature-li svg {
+            color: var(--accent);
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        /* IMAGE FRAMES */
+        .screenshot-frame {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px #333;
+            transition: transform 0.5s ease;
+        }
+
+        .screenshot-frame img {
+            width: 100%;
+            display: block;
+        }
+
+        .screenshot-frame:hover {
+            transform: scale(1.02);
+        }
+
+        /* TECH STACK */
+        .tech-pill {
+            background: #262626;
+            padding: 8px 16px;
+            border-radius: 50px;
+            color: #d4d4d4;
+            font-size: 0.9rem;
+            border: 1px solid #404040;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        /* FOOTER */
+        footer {
+            padding: 60px 0;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .grid-2, .grid-3, .solution-item, .solution-item.reverse {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+            .solution-item.reverse .text-content { order: 1; }
+            .solution-item.reverse .image-content { order: 2; }
+            .hero { padding: 60px 0 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HERO -->
+    <header class="hero">
+        <div class="container">
+            <span class="tagline">Full-Stack Development</span>
+            <h1>StayCool Digital Ecosystem</h1>
+            <p class="hero-desc">
+                A comprehensive, high-performance management ecosystem purpose-built for Staycool Hairlab. 
+                Integrating POS, CRM, and Financial Analytics into a seamless "Dark Luxury" experience.
+            </p>
+            <div style="margin-top: 50px; perspective: 1000px;">
+                <div class="screenshot-frame" style="transform: rotateX(5deg) scale(0.9);">
+                    <img src="./dashboard_1766397974797.png" alt="Dashboard Hero">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- SECTION 1: DESCRIPTION -->
+    <section>
+        <div class="container">
+            <div class="grid-2">
+                <div>
+                    <h2 class="section-title">Project Description</h2>
+                    <p style="color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 20px;">
+                        Staycool POS is not just a cashier app; it is the central nervous system for a modern barbershop. 
+                        Developed to replace disparate manual tools, this project unifies every aspect of the business 
+                        lifecycle—from the moment a customer books an appointment to the final financial report generated for the owner.
+                    </p>
+                    <p style="color: var(--text-secondary); font-size: 1.1rem;">
+                        Built with a "Mobile-First" approach for barbers on their feet and a "Data-Rich" dashboard for owners, 
+                        the system ensures operational fluidity and financial accountability.
+                    </p>
+                    <div style="margin-top: 30px;">
+                        <span class="tech-pill">Next.js 14</span>
+                        <span class="tech-pill">TypeScript</span>
+                        <span class="tech-pill">PostgreSQL</span>
+                        <span class="tech-pill">Prisma</span>
+                        <span class="tech-pill">Tailwind CSS</span>
+                        <span class="tech-pill">Docker</span>
+                    </div>
+                </div>
+                <div style="position: relative;">
+                    <!-- Decorative element could go here -->
+                    <div style="background: linear-gradient(45deg, var(--bg-card), var(--bg-dark)); padding: 40px; border-radius: 20px; border: 1px solid var(--border);">
+                        <h3 style="color: var(--accent); margin-bottom: 15px;">Key Metrics</h3>
+                        <div style="display: flex; gap: 30px; margin-bottom: 20px;">
+                            <div>
+                                <div style="font-size: 2.5rem; font-weight: 700; color: #fff;">100%</div>
+                                <div style="font-size: 0.9rem; color: #888;">Digital Transactions</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 2.5rem; font-weight: 700; color: #fff;">0s</div>
+                                <div style="font-size: 0.9rem; color: #888;">Double Booking</div>
+                            </div>
+                        </div>
+                        <p style="color: #666; font-size: 0.9rem;">
+                            "The system transforms how we operate, giving us clarity we never had before."
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: THE CHALLENGE -->
+    <section style="background: #0f0f0f;">
+        <div class="container">
+            <div class="section-header">
+                <span class="tagline">The Problems</span>
+                <h2 class="section-title">The Challenge</h2>
+                <p class="section-desc">
+                    Managing a growing barbershop without a centralized system created critical operational bottlenecks that hindered growth.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-icon">💸</div>
+                    <h3 class="card-title">Revenue Leakage</h3>
+                    <p class="card-text">
+                        Without a tightly integrated cashier system, cash handling errors and "ghost money" (unaccounted discrepancies) were frequent and difficult to trace.
+                    </p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🌪️</div>
+                    <h3 class="card-title">Operational Friction</h3>
+                    <p class="card-text">
+                        Manual booking and checkout processes slowed down service during peak hours, reducing the number of customers that could be served daily.
+                    </p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📉</div>
+                    <h3 class="card-title">Data Blindspots</h3>
+                    <p class="card-text">
+                        The owner lacked real-time visibility into business performance, making it impossible to implemented data-driven strategies for promotions or staffing.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: THE SOLUTION -->
+    <section>
+        <div class="container">
+            <div class="section-header">
+                <span class="tagline">Our Approach</span>
+                <h2 class="section-title">The Solution</h2>
+                <p class="section-desc">
+                    A suite of interconnected modules designed to solve each specific pain point with elegance and efficiency.
+                </p>
+            </div>
+
+            <!-- Solution 1: POS -->
+            <div class="solution-item">
+                <div class="text-content">
+                    <div class="solution-number">01</div>
+                    <div class="solution-badge">Operations</div>
+                    <h3 class="solution-title">High-Performance POS</h3>
+                    <p class="solution-desc">
+                        A seamless point-of-sale interface optimized for speed. Staff can process transactions in seconds with an intuitive touch-friendly UI.
+                    </p>
+                    <ul class="feature-list">
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Rapid 3-tap checkout process</span>
+                        </li>
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Dual Payment (Cash & Dynamic QRIS) support</span>
+                        </li>
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Strict Barber Attribution for accurate commissions</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="image-content">
+                    <div class="screenshot-frame">
+                        <img src="./pos_1766398085835.png" alt="POS System">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Solution 2: Dashboard -->
+            <div class="solution-item reverse">
+                <div class="image-content">
+                    <div class="screenshot-frame">
+                        <img src="./dashboard_1766397974797.png" alt="Analytics Dashboard">
+                    </div>
+                </div>
+                <div class="text-content">
+                    <div class="solution-number">02</div>
+                    <div class="solution-badge">Intelligence</div>
+                    <h3 class="solution-title">Executive Dashboard</h3>
+                    <p class="solution-desc">
+                        The command center for the business owner. Access real-time data from anywhere to monitor store performance, staff activity, and revenue trends.
+                    </p>
+                    <ul class="feature-list">
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Live Revenue Monitoring (Zero Latency)</span>
+                        </li>
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Comprehensive Fraud Detection Logs</span>
+                        </li>
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Visual trends for strategic decision making</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Solution 3: Bookings -->
+            <div class="solution-item">
+                <div class="text-content">
+                    <div class="solution-number">03</div>
+                    <div class="solution-badge">Customer Experience</div>
+                    <h3 class="solution-title">Smart Booking & Queue</h3>
+                    <p class="solution-desc">
+                        A centralized schedule that prevents conflicts and keeps customers informed. The system manages the entire appointment lifecycle.
+                    </p>
+                    <ul class="feature-list">
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Conflict-free scheduling algorithm</span>
+                        </li>
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Live Status Board for waiting room transparency</span>
+                        </li>
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Integrated Customer CRM and history</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="image-content">
+                    <div class="screenshot-frame">
+                        <img src="./bookings_1766398062491.png" alt="Booking System">
+                    </div>
+                </div>
+            </div>
+
+             <!-- Solution 4: Financials -->
+             <div class="solution-item reverse">
+                <div class="image-content">
+                    <div class="screenshot-frame">
+                        <img src="./transactions_1766398006513.png" alt="Financial Reports">
+                    </div>
+                </div>
+                <div class="text-content">
+                    <div class="solution-number">04</div>
+                    <div class="solution-badge">Finance</div>
+                    <h3 class="solution-title">Automated Financials</h3>
+                    <p class="solution-desc">
+                        Your digital accountant. The system automates the boring stuff—calculating profit, matching expenses, and generating salary slips.
+                    </p>
+                    <ul class="feature-list">
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Automated Profit & Loss (P&L) Reports</span>
+                        </li>
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>One-click Payroll generation with commission logic</span>
+                        </li>
+                        <li class="feature-li">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Expense tracking integrated with daily reports</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <p>Designed & Developed by Nicola Ananda for StayCool Hairlab</p>
+            <p style="margin-top: 10px; color: #666;">© 2025 All Rights Reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

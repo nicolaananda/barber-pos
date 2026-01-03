@@ -80,11 +80,20 @@ router.post('/', (req, res, next) => {
             }
         }
 
-        // Check if time slot is already booked
+        // Check if time slot is already booked (Check the whole day)
+        const checkDate = new Date(bookingDate);
+        const startOfDay = new Date(checkDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(checkDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
         const existingBooking = await prisma.booking.findFirst({
             where: {
                 barberId: parseInt(barberId),
-                bookingDate: new Date(bookingDate),
+                bookingDate: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                },
                 timeSlot,
                 status: { in: ['pending', 'confirmed'] }
             }
