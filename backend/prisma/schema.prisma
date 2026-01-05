@@ -16,6 +16,7 @@ model User {
   role            String   @default("staff") // 'owner' | 'staff'
   status          String   @default("active")
   availability    String   @default("available") // 'available' | 'working' | 'offday'
+  defaultOffDay   Int?     // 0=Sunday, 1=Monday, ..., 6=Saturday, null=no recurring off-day
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

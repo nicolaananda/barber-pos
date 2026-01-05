@@ -74,6 +74,18 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                     });
                 }
 
+                // Sort services: Haircut/Cukur first, then others
+                availableServices.sort((a: any, b: any) => {
+                    const aName = a.name.toLowerCase();
+                    const bName = b.name.toLowerCase();
+                    const aIsHaircut = aName.includes('haircut') || aName.includes('cukur');
+                    const bIsHaircut = bName.includes('haircut') || bName.includes('cukur');
+
+                    if (aIsHaircut && !bIsHaircut) return -1;
+                    if (!aIsHaircut && bIsHaircut) return 1;
+                    return 0;
+                });
+
                 setServices(availableServices);
                 // Set default if exists
                 if (availableServices.length > 0) {

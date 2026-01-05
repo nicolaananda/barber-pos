@@ -12,7 +12,8 @@ router.get('/barbers', async (req, res) => {
                 username: true,
                 name: true,
                 role: true,
-                availability: true
+                availability: true,
+                defaultOffDay: true
             }
         });
         res.json(users);
@@ -33,7 +34,8 @@ router.get('/', authenticateToken, async (req, res) => {
                 username: true,
                 name: true,
                 role: true,
-                availability: true
+                availability: true,
+                defaultOffDay: true
             }
         });
         res.json(users);
@@ -68,6 +70,40 @@ router.patch('/:id/availability', authenticateToken, async (req, res) => {
     }
 });
 
+// PATCH /api/users/:id/default-offday - Update recurring weekly off-day
+router.patch('/:id/default-offday', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { defaultOffDay } = req.body;
+
+        // Validate: must be 0-6 or null
+        if (defaultOffDay !== null && defaultOffDay !== undefined) {
+            const day = parseInt(defaultOffDay);
+            if (isNaN(day) || day < 0 || day > 6) {
+                return res.status(400).json({ error: 'Invalid day value. Must be 0-6 (Sunday-Saturday) or null' });
+            }
+        }
+
+        const user = await prisma.user.update({
+            where: { id: parseInt(id) },
+            data: { defaultOffDay: defaultOffDay === null ? null : parseInt(defaultOffDay) },
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                role: true,
+                availability: true,
+                defaultOffDay: true
+            }
+        });
+
+        res.json(user);
+    } catch (error) {
+        console.error('Error updating default off-day:', error);
+        res.status(500).json({ error: 'Failed to update default off-day', details: error.message });
+    }
+});
+
 // Middleware to check if user is owner
 const requireOwner = (req, res, next) => {
     if (req.user.role !== 'owner') {
@@ -94,6 +130,7 @@ router.get('/barbers-list', authenticateToken, requireOwner, async (req, res) =>
                 role: true,
                 status: true,
                 availability: true,
+                defaultOffDay: true,
                 createdAt: true,
                 updatedAt: true,
             },

@@ -11,6 +11,7 @@ interface Barber {
     name: string;
     username: string;
     availability: string;
+    defaultOffDay?: number | null;
 }
 
 interface BookingData {
@@ -119,14 +120,17 @@ export default function StatusPage() {
 
     // Helper function to check if barber is on offday
     const isBarberOffday = (username: string, date: Date) => {
-        // 1. Check Manual Off Days (Database)
+        // 1. Check Manual Off Days from Database (highest priority)
         const manualOff = currentOffDays.find((od: any) => od.user.username === username);
         if (manualOff) return true;
 
-        // 2. Check Regular Off Days (Hardcoded)
-        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-        if (username === 'bagus' && dayOfWeek === 4) return true; // Thursday
-        if (username === 'diva' && dayOfWeek === 2) return true; // Tuesday
+        // 2. Check Recurring Weekly Off Day
+        const barber = barbers.find(b => b.username === username);
+        if (barber?.defaultOffDay !== null && barber?.defaultOffDay !== undefined) {
+            const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+            if (dayOfWeek === barber.defaultOffDay) return true;
+        }
+
         return false;
     };
 
