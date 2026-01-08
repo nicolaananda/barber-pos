@@ -68,9 +68,9 @@ pm2 restart staycool-backend
 nano /root/Work/barber-pos/backend/.env
 
 # Tambahkan (jika belum ada):
-DB_NAME=barber_pos
-DB_USER=root
-DB_PASSWORD=your_mysql_password_here
+DB_NAME=stay_cool
+DB_USER=stay_cool
+DB_PASSWORD=stay_cool
 
 # Save: Ctrl+O, Enter, Ctrl+X
 ```

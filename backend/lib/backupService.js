@@ -67,8 +67,9 @@ class BackupService {
                     return resolve({ success: false, error: mkdirErr.message });
                 }
 
-                // Execute mysqldump
-                const dumpCmd = `mysqldump -u ${DB_USER} ${DB_PASS ? `-p${DB_PASS}` : ''} ${DB_NAME} > ${BACKUP_FILE}`;
+                // Execute mysqldump with proper password handling
+                const passwordArg = DB_PASS ? `-p${DB_PASS}` : '';
+                const dumpCmd = `mysqldump -u ${DB_USER} ${passwordArg} ${DB_NAME} > ${BACKUP_FILE}`;
 
                 exec(dumpCmd, (dumpErr) => {
                     if (dumpErr) {
