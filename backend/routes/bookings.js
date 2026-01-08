@@ -4,6 +4,7 @@ const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 
 const upload = require('../middleware/upload');
+const { validateImageContent } = require('../middleware/upload');
 const whatsappService = require('../lib/whatsapp');
 const { format } = require('date-fns');
 const { id: idLocale } = require('date-fns/locale');
@@ -43,6 +44,19 @@ router.post('/', (req, res, next) => {
         // Handle R2 Upload
         let paymentProof = null;
         if (req.file) {
+            // 🔒 SECURITY: Validate file content to prevent malicious uploads
+            if (!validateImageContent(req.file.buffer)) {
+                console.warn('⚠️ Rejected malicious file upload:', {
+                    filename: req.file.originalname,
+                    mimetype: req.file.mimetype,
+                    size: req.file.size,
+                    ip: req.ip
+                });
+                return res.status(400).json({
+                    error: 'File tidak valid. Hanya gambar asli yang diperbolehkan.'
+                });
+            }
+
             const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
             const ext = path.extname(req.file.originalname);
             const filename = 'proofs/proof-' + uniqueSuffix + ext;

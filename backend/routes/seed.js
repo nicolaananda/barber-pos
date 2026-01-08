@@ -6,13 +6,34 @@ const bcrypt = require('bcryptjs');
 // GET /api/seed
 router.get('/', async (req, res) => {
     try {
-        // Clear existing data
+        // ⚠️ SAFETY CHECK: Prevent accidental data loss in production
+        if (process.env.NODE_ENV === 'production') {
+            return res.status(403).json({
+                error: 'Seed endpoint is disabled in production to prevent data loss',
+                message: 'Use the reset-db.js script manually if you really need to reset the database'
+            });
+        }
+
+        // Clear existing data in correct order (child tables first to avoid foreign key violations)
+        console.log('Clearing database tables...');
+
+        // 1. Delete child tables that reference User
+        await prisma.offDay.deleteMany({});
+        await prisma.booking.deleteMany({});
         await prisma.transaction.deleteMany({});
-        await prisma.expense.deleteMany({});
+        await prisma.payroll.deleteMany({});
+
+        // 2. Delete CashShift (references User via openedBy/closedBy)
         await prisma.cashShift.deleteMany({});
+
+        // 3. Delete independent tables
+        await prisma.expense.deleteMany({});
+        await prisma.capital.deleteMany({});
+        await prisma.customer.deleteMany({});
+
+        // 4. Finally delete parent tables
         await prisma.user.deleteMany({});
         await prisma.service.deleteMany({});
-        await prisma.customer.deleteMany({});
 
         const hashedPassword = await bcrypt.hash('123456', 10);
 

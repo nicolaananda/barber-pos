@@ -17,6 +17,33 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
+// Content Validator - Check file magic bytes to prevent malicious uploads
+const validateImageContent = (buffer) => {
+    // Check file magic bytes (file signatures)
+    const magicBytes = {
+        jpeg: [0xFF, 0xD8, 0xFF],
+        png: [0x89, 0x50, 0x4E, 0x47],
+        gif: [0x47, 0x49, 0x46],
+        webp: [0x52, 0x49, 0x46, 0x46] // RIFF (WebP container)
+    };
+
+    // Check if buffer starts with valid image magic bytes
+    for (const [type, bytes] of Object.entries(magicBytes)) {
+        if (bytes.every((byte, index) => buffer[index] === byte)) {
+            return true;
+        }
+    }
+
+    // Additional check: reject files containing PHP tags
+    const content = buffer.toString('utf8', 0, Math.min(buffer.length, 1024));
+    if (content.includes('<?php') || content.includes('<?=')) {
+        console.warn('⚠️ Blocked malicious file upload attempt (PHP code detected)');
+        return false;
+    }
+
+    return false;
+};
+
 const upload = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
@@ -24,3 +51,4 @@ const upload = multer({
 });
 
 module.exports = upload;
+module.exports.validateImageContent = validateImageContent;

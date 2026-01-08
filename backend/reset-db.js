@@ -7,14 +7,23 @@ async function resetDatabase() {
 
         // 1. Clear all existing data
         console.log('🗑️  Clearing all tables...');
-        // Delete in order to avoid foreign key constraints violations if any (though onDelete: Cascade might handle it, explicit is safer)
-        await prisma.transaction.deleteMany({});
-        await prisma.cashShift.deleteMany({});
-        await prisma.expense.deleteMany({});
+        // Delete in correct order to avoid foreign key constraint violations
+
+        // Delete child tables that reference User first
+        await prisma.offDay.deleteMany({});
         await prisma.booking.deleteMany({});
+        await prisma.transaction.deleteMany({});
         await prisma.payroll.deleteMany({});
+
+        // Delete CashShift (references User via openedBy/closedBy)
+        await prisma.cashShift.deleteMany({});
+
+        // Delete independent tables
+        await prisma.expense.deleteMany({});
+        await prisma.capital.deleteMany({});
         await prisma.customer.deleteMany({});
-        // Delete users and services last
+
+        // Finally delete parent tables
         await prisma.user.deleteMany({});
         await prisma.service.deleteMany({});
 
