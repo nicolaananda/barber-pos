@@ -67,9 +67,8 @@ class BackupService {
                     return resolve({ success: false, error: mkdirErr.message });
                 }
 
-                // Execute mysqldump with proper password handling
-                const passwordArg = DB_PASS ? `-p${DB_PASS}` : '';
-                const dumpCmd = `mysqldump -u ${DB_USER} ${passwordArg} ${DB_NAME} > ${BACKUP_FILE}`;
+                // Execute mysqldump
+                const dumpCmd = `mysqldump -u ${DB_USER} ${DB_PASS ? `-p${DB_PASS}` : ''} ${DB_NAME} > ${BACKUP_FILE}`;
 
                 exec(dumpCmd, (dumpErr) => {
                     if (dumpErr) {
@@ -82,18 +81,70 @@ class BackupService {
                             return resolve({ success: false, error: gzipErr.message });
                         }
 
+                        const compressedFile = `${BACKUP_FILE}.gz`;
+
+                        // Upload to R2 (async, don't wait)
+                        this.uploadToR2(compressedFile).catch(err => {
+                            console.error('⚠️ R2 upload failed (backup still saved locally):', err.message);
+                        });
+
                         // Clean old backups (keep last 50)
                         exec(`ls -t ${BACKUP_DIR}/*.sql.gz | tail -n +51 | xargs rm -f`, (cleanErr) => {
                             // Don't fail on cleanup error
                             resolve({
                                 success: true,
-                                filename: `${BACKUP_FILE}.gz`
+                                filename: compressedFile
                             });
                         });
                     });
                 });
             });
         });
+    }
+
+    /**
+     * Upload backup to R2 cloud storage
+     */
+    async uploadToR2(localFilePath) {
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+
+            // Check if R2 is configured
+            if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID) {
+                console.log('⏭️  R2 not configured, skipping cloud upload');
+                return;
+            }
+
+            const s3Client = new S3Client({
+                region: 'auto',
+                endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+                credentials: {
+                    accessKeyId: process.env.R2_ACCESS_KEY_ID,
+                    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+                },
+            });
+
+            // Read file
+            const fileBuffer = fs.readFileSync(localFilePath);
+            const filename = path.basename(localFilePath);
+            const r2Key = `backups/${filename}`;
+
+            // Upload to R2
+            const command = new PutObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: r2Key,
+                Body: fileBuffer,
+                ContentType: 'application/gzip',
+            });
+
+            await s3Client.send(command);
+            console.log(`☁️  Backup uploaded to R2: ${r2Key}`);
+
+        } catch (error) {
+            throw error;
+        }
     }
 
     /**
