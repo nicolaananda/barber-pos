@@ -101,7 +101,8 @@ export default function StatusPage() {
         const isToday = forDate.toDateString() === now.toDateString();
         const currentHour = now.getHours();
 
-        const OPENING_HOUR = 11;
+        const isFriday = forDate.getDay() === 5;
+        const OPENING_HOUR = isFriday ? 13 : 11;
         const CLOSING_HOUR = 22;
 
         for (let startHour = OPENING_HOUR; startHour < CLOSING_HOUR; startHour++) {
