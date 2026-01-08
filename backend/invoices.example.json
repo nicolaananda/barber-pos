@@ -1,0 +1,39 @@
+[
+  {
+    "invoiceCode": "INV-20260108-001",
+    "barberId": 3,
+    "customerName": "Contoh Customer 1",
+    "customerPhone": "081234567890",
+    "items": [
+      {
+        "name": "Haircut",
+        "price": 40000,
+        "qty": 1
+      }
+    ],
+    "totalAmount": 40000,
+    "paymentMethod": "cash",
+    "date": "2026-01-08T10:00:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-20260108-002",
+    "barberId": 4,
+    "customerName": "Contoh Customer 2",
+    "customerPhone": "081234567891",
+    "items": [
+      {
+        "name": "Haircut by Head Barber",
+        "price": 50000,
+        "qty": 1
+      },
+      {
+        "name": "Beard Trim",
+        "price": 15000,
+        "qty": 1
+      }
+    ],
+    "totalAmount": 65000,
+    "paymentMethod": "qris",
+    "date": "2026-01-08T11:30:00.000Z"
+  }
+]
