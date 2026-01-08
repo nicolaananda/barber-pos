@@ -4,9 +4,10 @@ const prisma = require('../lib/prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const authenticateToken = require('../middleware/auth');
+const { authLimiter } = require('../middleware/rateLimiter');
 
-// POST /api/auth/login
-router.post('/login', async (req, res) => {
+// POST /api/auth/login - with rate limiting
+router.post('/login', authLimiter, async (req, res) => {
     const { username, password } = req.body;
 
     try {

@@ -10,6 +10,7 @@ const { format } = require('date-fns');
 const { id: idLocale } = require('date-fns/locale');
 const path = require('path');
 const { uploadFile } = require('../lib/r2');
+const securityLogger = require('../lib/securityLogger');
 
 // POST /api/bookings - Create new booking
 router.post('/', (req, res, next) => {
@@ -46,6 +47,13 @@ router.post('/', (req, res, next) => {
         if (req.file) {
             // 🔒 SECURITY: Validate file content to prevent malicious uploads
             if (!validateImageContent(req.file.buffer)) {
+                // Log security event
+                securityLogger.logMaliciousUpload(
+                    req.file.originalname,
+                    req.ip || req.connection.remoteAddress,
+                    req.file.mimetype
+                );
+
                 console.warn('⚠️ Rejected malicious file upload:', {
                     filename: req.file.originalname,
                     mimetype: req.file.mimetype,

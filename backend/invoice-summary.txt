@@ -1,0 +1,66 @@
+
+Invoice Summary from R2 Bucket
+================================
+
+Total invoices in R2: 48
+Existing in database: 0
+Missing from database: 48
+
+Missing Invoice Codes:
+- INV-260101-001
+- INV-260101-002
+- INV-260101-004
+- INV-260102-012
+- INV-260102-013
+- INV-260103-001
+- INV-260103-004
+- INV-260103-005
+- INV-260103-006
+- INV-260103-007
+- INV-260103-008
+- INV-260103-010
+- INV-260103-011
+- INV-260103-012
+- INV-260103-013
+- INV-260103-016
+- INV-260104-001
+- INV-260104-002
+- INV-260104-003
+- INV-260104-004
+- INV-260104-006
+- INV-260104-008
+- INV-260104-009
+- INV-260105-001
+- INV-260105-002
+- INV-260105-008
+- INV-260105-009
+- INV-260105-010
+- INV-260105-011
+- INV-260105-012
+- INV-260105-013
+- INV-260106-001
+- INV-260106-002
+- INV-260106-003
+- INV-260106-004
+- INV-260106-005
+- INV-260106-006
+- INV-260106-007
+- INV-260107-001
+- INV-260107-002
+- INV-260107-004
+- INV-260107-005
+- INV-260107-006
+- INV-260107-007
+- INV-260107-008
+- INV-260107-009
+- INV-260107-011
+- INV-260107-012
+
+Files Created:
+- invoices-from-r2.json (existing transactions as reference)
+- invoice-summary.txt (this file)
+
+Next Steps:
+1. Check your records for the missing invoices
+2. Add them to invoices.json
+3. Run: node restore-transactions.js

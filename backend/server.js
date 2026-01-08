@@ -17,6 +17,9 @@ const transactionsRoutes = require('./routes/transactions');
 const seedRoutes = require('./routes/seed');
 const bookingsRoutes = require('./routes/bookings');
 
+// Rate limiting middleware
+const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -33,6 +36,9 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
+
+// Apply rate limiting to all API routes
+app.use('/api/', apiLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);

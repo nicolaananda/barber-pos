@@ -6,6 +6,14 @@ const bcrypt = require('bcryptjs');
 // GET /api/seed
 router.get('/', async (req, res) => {
     try {
+        // 🔒 SECURITY: IP Whitelist (optional - uncomment to enable)
+        // const allowedIPs = ['127.0.0.1', '::1', 'YOUR_IP_HERE'];
+        // const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+        // if (!allowedIPs.includes(clientIP)) {
+        //     console.warn(`⚠️ Unauthorized seed attempt from IP: ${clientIP}`);
+        //     return res.status(403).json({ error: 'Access denied - IP not whitelisted' });
+        // }
+
         // ⚠️ SAFETY CHECK: Prevent accidental data loss in production
         if (process.env.NODE_ENV === 'production') {
             return res.status(403).json({

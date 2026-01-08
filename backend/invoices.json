@@ -1,0 +1,488 @@
+[
+  {
+    "invoiceCode": "INV-260101-001",
+    "barberId": 3,
+    "customerName": "Nicola",
+    "customerPhone": null,
+    "items": [{"name": "Cukur", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "cash",
+    "date": "2026-01-01T07:51:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260101-002",
+    "barberId": 4,
+    "customerName": "Dipa",
+    "customerPhone": null,
+    "items": [{"name": "Haircut", "price": 40000, "qty": 1}],
+    "totalAmount": 40000,
+    "paymentMethod": "cash",
+    "date": "2026-01-01T13:06:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260101-004",
+    "barberId": 3,
+    "customerName": "Budi",
+    "customerPhone": null,
+    "items": [
+      {"name": "Regular Cut", "price": 40000, "qty": 2},
+      {"name": "Shaving", "price": 20000, "qty": 2}
+    ],
+    "totalAmount": 120000,
+    "paymentMethod": "qris",
+    "date": "2026-01-01T17:50:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260102-012",
+    "barberId": 4,
+    "customerName": "Mas teguh",
+    "customerPhone": null,
+    "items": [{"name": "Haircut", "price": 40000, "qty": 1}],
+    "totalAmount": 40000,
+    "paymentMethod": "qris",
+    "date": "2026-01-02T15:22:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260102-013",
+    "barberId": 3,
+    "customerName": "Mas teguh",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-02T15:23:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260103-001",
+    "barberId": 3,
+    "customerName": "Oi",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "cash",
+    "date": "2026-01-03T05:15:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260103-004",
+    "barberId": 3,
+    "customerName": "Olion",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-03T06:40:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260103-005",
+    "barberId": 4,
+    "customerName": "kholis",
+    "customerPhone": null,
+    "items": [{"name": "Haircut", "price": 40000, "qty": 1}],
+    "totalAmount": 40000,
+    "paymentMethod": "cash",
+    "date": "2026-01-03T07:05:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260103-006",
+    "barberId": 3,
+    "customerName": "Daffa pratama",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-03T07:47:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260103-007",
+    "barberId": 3,
+    "customerName": "Jimmy",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-03T09:01:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260103-008",
+    "barberId": 4,
+    "customerName": "Bagas Triyo Cahyono",
+    "customerPhone": null,
+    "items": [{"name": "Haircut", "price": 40000, "qty": 1}],
+    "totalAmount": 40000,
+    "paymentMethod": "qris",
+    "date": "2026-01-03T09:11:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260103-010",
+    "barberId": 3,
+    "customerName": "Yoga cfc",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-03T09:47:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260103-011",
+    "barberId": 3,
+    "customerName": "Nico Danian Aji Pratama",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-03T10:51:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260103-012",
+    "barberId": 3,
+    "customerName": "DEBAT SENDY ASMORO",
+    "customerPhone": null,
+    "items": [
+      {"name": "Haircut by Head Barber", "price": 50000, "qty": 1},
+      {"name": "Toning [Semir Hitam]", "price": 40000, "qty": 1}
+    ],
+    "totalAmount": 90000,
+    "paymentMethod": "qris",
+    "date": "2026-01-03T12:17:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260103-013",
+    "barberId": 3,
+    "customerName": "Nizar",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "cash",
+    "date": "2026-01-03T14:54:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260103-016",
+    "barberId": 3,
+    "customerName": "Mochammad Rafly",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "cash",
+    "date": "2026-01-03T14:59:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260104-001",
+    "barberId": 3,
+    "customerName": "Farros",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-04T05:20:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260104-002",
+    "barberId": 4,
+    "customerName": "Gon",
+    "customerPhone": null,
+    "items": [{"name": "Haircut", "price": 40000, "qty": 1}],
+    "totalAmount": 40000,
+    "paymentMethod": "cash",
+    "date": "2026-01-04T06:07:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260104-003",
+    "barberId": 3,
+    "customerName": "Randa",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-04T06:08:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260104-004",
+    "barberId": 3,
+    "customerName": "Fadhil alfito",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-04T08:25:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260104-006",
+    "barberId": 3,
+    "customerName": "Al zakaria",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-04T08:37:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260104-008",
+    "barberId": 3,
+    "customerName": "Bora",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-04T10:22:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260104-009",
+    "barberId": 3,
+    "customerName": "Senna",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-04T13:42:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260105-001",
+    "barberId": 3,
+    "customerName": "daniel alfredo",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-05T05:44:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260105-002",
+    "barberId": 3,
+    "customerName": "Dedy",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "cash",
+    "date": "2026-01-05T06:15:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260105-008",
+    "barberId": 3,
+    "customerName": "RIZAL FAHMI",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-05T08:56:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260105-009",
+    "barberId": 3,
+    "customerName": "Fariz",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-05T10:23:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260105-010",
+    "barberId": 4,
+    "customerName": "Akbar Maulana",
+    "customerPhone": null,
+    "items": [{"name": "Haircut", "price": 40000, "qty": 1}],
+    "totalAmount": 40000,
+    "paymentMethod": "qris",
+    "date": "2026-01-05T10:24:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260105-011",
+    "barberId": 4,
+    "customerName": "arfan",
+    "customerPhone": null,
+    "items": [{"name": "Haircut", "price": 40000, "qty": 1}],
+    "totalAmount": 40000,
+    "paymentMethod": "qris",
+    "date": "2026-01-05T11:29:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260105-012",
+    "barberId": 3,
+    "customerName": "iyes",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-05T11:57:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260105-013",
+    "barberId": 3,
+    "customerName": "Duta",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-05T15:07:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260106-001",
+    "barberId": 4,
+    "customerName": "rizal",
+    "customerPhone": null,
+    "items": [{"name": "Haircut", "price": 40000, "qty": 1}],
+    "totalAmount": 40000,
+    "paymentMethod": "cash",
+    "date": "2026-01-06T06:23:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260106-002",
+    "barberId": 3,
+    "customerName": "nanda abrar",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-06T06:36:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260106-003",
+    "barberId": 3,
+    "customerName": "Bagus sajiwo",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-06T07:25:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260106-004",
+    "barberId": 4,
+    "customerName": "Amri",
+    "customerPhone": null,
+    "items": [{"name": "Haircut", "price": 40000, "qty": 1}],
+    "totalAmount": 40000,
+    "paymentMethod": "qris",
+    "date": "2026-01-06T07:29:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260106-005",
+    "barberId": 3,
+    "customerName": "Alfian sakti",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-06T10:19:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260106-006",
+    "barberId": 3,
+    "customerName": "Dul",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "cash",
+    "date": "2026-01-06T12:01:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260106-007",
+    "barberId": 3,
+    "customerName": "miko",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "cash",
+    "date": "2026-01-06T12:51:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260107-001",
+    "barberId": 3,
+    "customerName": "rafa",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "cash",
+    "date": "2026-01-07T08:11:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260107-002",
+    "barberId": 3,
+    "customerName": "Rendra G. Adi. W",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "cash",
+    "date": "2026-01-07T08:55:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260107-004",
+    "barberId": 3,
+    "customerName": "Yudha ardian",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-07T11:01:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260107-005",
+    "barberId": 3,
+    "customerName": "Yogi",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "cash",
+    "date": "2026-01-07T11:03:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260107-006",
+    "barberId": 3,
+    "customerName": "Rayesss",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-07T11:03:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260107-007",
+    "barberId": 3,
+    "customerName": "Dian",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-07T12:05:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260107-008",
+    "barberId": 4,
+    "customerName": "Arifin",
+    "customerPhone": null,
+    "items": [{"name": "Haircut", "price": 40000, "qty": 1}],
+    "totalAmount": 40000,
+    "paymentMethod": "qris",
+    "date": "2026-01-07T12:15:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260107-009",
+    "barberId": 3,
+    "customerName": "ali",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-07T13:37:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260107-011",
+    "barberId": 3,
+    "customerName": "yolo",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-07T14:32:00.000Z"
+  },
+  {
+    "invoiceCode": "INV-260107-012",
+    "barberId": 3,
+    "customerName": "Ansyarir",
+    "customerPhone": null,
+    "items": [{"name": "Haircut by Head Barber", "price": 50000, "qty": 1}],
+    "totalAmount": 50000,
+    "paymentMethod": "qris",
+    "date": "2026-01-07T15:18:00.000Z"
+  }
+]
