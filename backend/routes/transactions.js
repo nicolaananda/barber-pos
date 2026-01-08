@@ -4,6 +4,7 @@ const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const { format } = require('date-fns');
 const whatsappService = require('../lib/whatsapp');
+const backupService = require('../lib/backupService');
 
 // POST /api/transactions
 router.post('/', authenticateToken, async (req, res) => {
@@ -63,6 +64,12 @@ router.post('/', authenticateToken, async (req, res) => {
                 },
             });
         }
+
+        // 🔒 AUTOMATIC BACKUP: Trigger backup after transaction
+        backupService.backupAfterTransaction(transaction).catch(err => {
+            console.error('Background backup error:', err);
+            // Don't fail the request if backup fails
+        });
 
         res.status(201).json(transaction);
     } catch (error) {
