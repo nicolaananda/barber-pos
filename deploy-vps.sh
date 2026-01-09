@@ -10,7 +10,7 @@ git pull origin main
 # 2. Install dependencies
 echo "📦 Installing dependencies..."
 cd backend && npm install
-cd ../frontend && npm install
+cd ../frontend && npm install && npm run build
 cd ..
 
 # 3. Run database migration

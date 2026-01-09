@@ -390,4 +390,71 @@ router.get('/barber/:barberId', authenticateToken, async (req, res) => {
     }
 });
 
+// GET /api/bookings/summary - Quick summary for dashboard
+router.get('/summary', authenticateToken, async (req, res) => {
+    try {
+        const now = new Date();
+        const twoHoursLater = new Date(now.getTime() + (2 * 60 * 60 * 1000));
+
+        // Pending bookings
+        const pendingBookings = await prisma.booking.findMany({
+            where: {
+                status: 'pending'
+            },
+            include: {
+                barber: {
+                    select: { name: true }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            take: 5
+        });
+
+        // Upcoming bookings (next 2 hours)
+        const upcomingBookings = await prisma.booking.findMany({
+            where: {
+                status: 'confirmed',
+                bookingDate: {
+                    gte: now,
+                    lte: twoHoursLater
+                }
+            },
+            include: {
+                barber: {
+                    select: { name: true }
+                }
+            },
+            orderBy: {
+                bookingDate: 'asc'
+            },
+            take: 5
+        });
+
+        res.json({
+            pending: pendingBookings.map(b => ({
+                id: b.id,
+                customerName: b.customerName,
+                barberName: b.barber.name,
+                timeSlot: b.timeSlot,
+                bookingDate: b.bookingDate,
+                serviceName: b.serviceName,
+                createdAt: b.createdAt
+            })),
+            upcoming: upcomingBookings.map(b => ({
+                id: b.id,
+                customerName: b.customerName,
+                barberName: b.barber.name,
+                timeSlot: b.timeSlot,
+                bookingDate: b.bookingDate,
+                serviceName: b.serviceName
+            }))
+        });
+    } catch (error) {
+        console.error('Error fetching booking summary:', error);
+        res.status(500).json({ error: 'Failed to fetch booking summary' });
+    }
+});
+
 module.exports = router;

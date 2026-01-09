@@ -69,6 +69,7 @@ router.get('/daily', authenticateToken, async (req, res) => {
                 id: t.id,
                 invoiceCode: t.invoiceCode,
                 time: t.date,
+                customerName: t.customerName || 'Walk-in',
                 barberName: t.barber.name,
                 totalAmount: t.totalAmount,
                 paymentMethod: t.paymentMethod,

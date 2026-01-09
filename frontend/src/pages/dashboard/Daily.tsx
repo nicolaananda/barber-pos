@@ -39,6 +39,7 @@ interface Transaction {
     id: number;
     invoiceCode: string;
     time: string;
+    customerName: string;
     barberName: string;
     totalAmount: number;
     paymentMethod: string;
@@ -307,6 +308,7 @@ export default function DailyPage() {
                                 <tr>
                                     <th className="p-4">Time</th>
                                     <th className="p-4">Invoice</th>
+                                    <th className="p-4">Customer</th>
                                     <th className="p-4">Barber</th>
                                     <th className="p-4 hidden md:table-cell">Details</th>
                                     <th className="p-4 text-right">Amount</th>
@@ -317,7 +319,7 @@ export default function DailyPage() {
                             <tbody className="divide-y divide-zinc-100">
                                 {data.recentTransactions.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="p-8 text-center text-zinc-400 font-medium">
+                                        <td colSpan={8} className="p-8 text-center text-zinc-400 font-medium">
                                             No transactions found for today.
                                         </td>
                                     </tr>
@@ -328,6 +330,12 @@ export default function DailyPage() {
                                                 {format(new Date(tx.time), 'HH:mm')}
                                             </td>
                                             <td className="p-4 font-bold text-zinc-900 font-mono tracking-tight">{tx.invoiceCode}</td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <User className="w-4 h-4 text-zinc-400" />
+                                                    <span className="font-medium text-zinc-700">{tx.customerName}</span>
+                                                </div>
+                                            </td>
                                             <td className="p-4 flex items-center gap-2">
                                                 <div className="w-6 h-6 rounded-full bg-zinc-900 flex items-center justify-center text-[10px] font-bold text-white">
                                                     {tx.barberName.charAt(0)}

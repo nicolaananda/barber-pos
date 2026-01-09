@@ -27,17 +27,27 @@ interface DashboardData {
 import { API_BASE_URL } from '@/lib/api';
 
 export function DashboardHome() {
-    const navigate = useNavigate(); // Replaces useRouter
+    const navigate = useNavigate();
     const [data, setData] = useState<DashboardData | null>(null);
+    const [bookingSummary, setBookingSummary] = useState<{ pending: any[]; upcoming: any[] } | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/dashboard/stats`);
-                if (res.ok) {
-                    const json = await res.json();
+                const token = localStorage.getItem('token');
+                const [statsRes, bookingsRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/dashboard/stats`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API_BASE_URL}/bookings/summary`, { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+
+                if (statsRes.ok) {
+                    const json = await statsRes.json();
                     setData(json);
+                }
+                if (bookingsRes.ok) {
+                    const json = await bookingsRes.json();
+                    setBookingSummary(json);
                 }
             } catch (error) {
                 console.error('Failed to fetch dashboard data', error);
@@ -49,7 +59,11 @@ export function DashboardHome() {
     }, []);
 
     if (loading) {
-        return <div className="p-8 text-center animate-pulse">Loading Dashboard...</div>;
+        return (
+            <div className="flex justify-center items-center h-[50vh]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900"></div>
+            </div>
+        );
     }
 
     if (!data) return <div className="p-8 text-center text-red-500">Failed to load data.</div>;
@@ -57,7 +71,7 @@ export function DashboardHome() {
     const { stats, chartData, recentActivity } = data;
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700 p-8">
+        <div className="space-y-8 animate-in fade-in duration-700 p-8 pb-20">
             <div className="flex items-center justify-between space-y-2">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight text-foreground">
@@ -78,23 +92,93 @@ export function DashboardHome() {
                 </div>
             </div>
 
+            {/* Quick Actions / Booking Summary */}
+            {bookingSummary && (
+                <div className="grid gap-4 md:grid-cols-2">
+                    <Card className="bg-amber-50/50 border-amber-200">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-bold text-amber-900 uppercase tracking-wider">
+                                Pending Bookings
+                            </CardTitle>
+                            <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded-full border border-amber-200">
+                                {bookingSummary.pending.length} Waiting
+                            </span>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {bookingSummary.pending.length === 0 ? (
+                                    <p className="text-sm text-amber-700/60 italic">No pending bookings.</p>
+                                ) : (
+                                    bookingSummary.pending.map((booking: any) => (
+                                        <div key={booking.id} className="bg-white p-3 rounded-md border border-amber-100 shadow-sm flex justify-between items-center group hover:border-amber-300 transition-all cursor-pointer" onClick={() => navigate('/dashboard/bookings')}>
+                                            <div>
+                                                <p className="font-semibold text-zinc-900 text-sm">{booking.customerName}</p>
+                                                <p className="text-xs text-zinc-500">{booking.serviceName} • {booking.timeSlot}</p>
+                                            </div>
+                                            <Button size="sm" variant="outline" className="h-7 text-xs border-amber-300 text-amber-700 hover:bg-amber-50">
+                                                Review
+                                            </Button>
+                                        </div>
+                                    ))
+                                )}
+                                {bookingSummary.pending.length > 0 && (
+                                    <Button variant="link" className="px-0 text-amber-800 text-xs w-full mt-2 h-auto" onClick={() => navigate('/dashboard/bookings')}>
+                                        View All Pending Bookings &rarr;
+                                    </Button>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-emerald-50/50 border-emerald-200">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-bold text-emerald-900 uppercase tracking-wider">
+                                Upcoming Customers
+                            </CardTitle>
+                            <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-full border border-emerald-200">
+                                Next 2 Hours
+                            </span>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {bookingSummary.upcoming.length === 0 ? (
+                                    <p className="text-sm text-emerald-700/60 italic">No upcoming bookings soon.</p>
+                                ) : (
+                                    bookingSummary.upcoming.map((booking: any) => (
+                                        <div key={booking.id} className="bg-white p-3 rounded-md border border-emerald-100 shadow-sm flex justify-between items-center">
+                                            <div>
+                                                <p className="font-semibold text-zinc-900 text-sm">{booking.customerName}</p>
+                                                <p className="text-xs text-zinc-500">{booking.timeSlot} w/ {booking.barberName}</p>
+                                            </div>
+                                            <div className="text-xs font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
+                                                CONFIRMED
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-                <Card className="bg-card border-l-4 border-l-primary shadow-md hover:shadow-lg transition-shadow">
+                <Card className="bg-card border-zinc-200 shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                             Total Revenue
                         </CardTitle>
-                        <CreditCard className="h-4 w-4 text-primary" />
+                        <CreditCard className="h-4 w-4 text-zinc-900" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-foreground">
+                        <div className="text-2xl font-black text-foreground">
                             IDR {stats.totalRevenue.toLocaleString('id-ID')}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             <span
                                 className={
                                     Number(stats.revenueGrowth) > 0
-                                        ? 'text-zinc-900 font-bold'
+                                        ? 'text-emerald-600 font-bold'
                                         : 'text-zinc-500'
                                 }
                             >
@@ -105,15 +189,15 @@ export function DashboardHome() {
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="bg-card border-border shadow-md hover:shadow-lg transition-shadow">
+                <Card className="bg-card border-zinc-200 shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                             Transactions
                         </CardTitle>
-                        <Receipt className="h-4 w-4 text-primary" />
+                        <Receipt className="h-4 w-4 text-zinc-900" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-foreground">
+                        <div className="text-2xl font-black text-foreground">
                             {stats.transactionCount}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -124,9 +208,9 @@ export function DashboardHome() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4 bg-card border-border shadow-lg">
+                <Card className="col-span-4 bg-card border-zinc-200 shadow-sm">
                     <CardHeader>
-                        <CardTitle className="text-foreground">
+                        <CardTitle className="text-foreground font-bold">
                             Weekly Revenue Overview
                         </CardTitle>
                     </CardHeader>
@@ -154,6 +238,7 @@ export function DashboardHome() {
                                         border: '1px solid #e4e4e7',
                                         borderRadius: '8px',
                                         color: '#18181b',
+                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                                     }}
                                     formatter={(value: number) => [
                                         `IDR ${value.toLocaleString('id-ID')}`,
@@ -166,9 +251,9 @@ export function DashboardHome() {
                         </ResponsiveContainer>
                     </CardContent>
                 </Card>
-                <Card className="col-span-3 bg-card border-border shadow-lg">
+                <Card className="col-span-3 bg-card border-zinc-200 shadow-sm">
                     <CardHeader>
-                        <CardTitle className="text-foreground">Recent Activity</CardTitle>
+                        <CardTitle className="text-foreground font-bold">Recent Activity</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-8">
@@ -182,7 +267,7 @@ export function DashboardHome() {
                                         className="flex items-center group cursor-default"
                                         key={tx.id}
                                     >
-                                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 group-hover:border-primary/50 transition-colors">
+                                        <div className="h-9 w-9 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-900 font-bold border border-zinc-200 group-hover:bg-zinc-200 transition-colors text-xs">
                                             {tx.barberName[0]}
                                         </div>
                                         <div className="ml-4 space-y-1">
@@ -193,7 +278,7 @@ export function DashboardHome() {
                                                 {tx.serviceName}
                                             </p>
                                         </div>
-                                        <div className="ml-auto font-mono font-medium text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded text-xs border border-zinc-200">
+                                        <div className="ml-auto font-mono font-medium text-zinc-900 bg-zinc-50 px-2 py-0.5 rounded text-xs border border-zinc-100">
                                             +IDR {tx.amount.toLocaleString('id-ID')}
                                         </div>
                                     </div>
