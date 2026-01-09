@@ -413,23 +413,30 @@ router.get('/summary', authenticateToken, async (req, res) => {
         });
 
         // Upcoming bookings (next 2 hours)
+        // Upcoming bookings (Today's confirmed bookings)
+        const today = new Date();
+        const startOfDay = new Date(today);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999);
+
         const upcomingBookings = await prisma.booking.findMany({
             where: {
                 status: 'confirmed',
                 bookingDate: {
-                    gte: now,
-                    lte: twoHoursLater
+                    gte: startOfDay,
+                    lte: endOfDay
                 }
             },
             include: {
                 barber: {
-                    select: { name: true }
+                    select: { id: true, name: true, username: true }
                 }
             },
             orderBy: {
                 bookingDate: 'asc'
-            },
-            take: 5
+            }
+            // Removed take: 5 to show all today's bookings
         });
 
         res.json({
@@ -445,10 +452,15 @@ router.get('/summary', authenticateToken, async (req, res) => {
             upcoming: upcomingBookings.map(b => ({
                 id: b.id,
                 customerName: b.customerName,
+                customerPhone: b.customerPhone,
+                barberId: b.barberId,
                 barberName: b.barber.name,
+                barberUsername: b.barber.username,
                 timeSlot: b.timeSlot,
                 bookingDate: b.bookingDate,
-                serviceName: b.serviceName
+                serviceId: b.serviceId,
+                serviceName: b.serviceName,
+                servicePrice: b.servicePrice
             }))
         });
     } catch (error) {

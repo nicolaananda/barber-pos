@@ -15,6 +15,10 @@ export interface PosState {
     customerPhone: string;
     activeShift: { id: string; status: 'open' | 'closed' } | null;
 
+    bookingId: number | null;
+    setBookingId: (id: number | null) => void;
+
+    // ... existing actions ...
     setBarber: (barber: { id: string; name: string; username: string } | null) => void;
     addToCart: (item: CartItem) => void;
     removeFromCart: (itemId: string) => void;
@@ -32,8 +36,10 @@ export const usePosStore = create<PosState>()(
             customerName: '',
             customerPhone: '',
             activeShift: null,
+            bookingId: null,
 
             setBarber: (barber) => set({ selectedBarber: barber }),
+            setBookingId: (id) => set({ bookingId: id }),
 
             addToCart: (item) =>
                 set((state) => {
@@ -62,7 +68,7 @@ export const usePosStore = create<PosState>()(
                     }),
                 })),
 
-            clearCart: () => set({ cart: [], selectedBarber: null, customerName: '', customerPhone: '' }),
+            clearCart: () => set({ cart: [], selectedBarber: null, customerName: '', customerPhone: '', bookingId: null }),
 
             setCustomerInfo: (name, phone) => set({ customerName: name, customerPhone: phone }),
 

@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export default function CheckoutModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-    const { cart, selectedBarber, customerName, customerPhone, setCustomerInfo, clearCart } = usePosStore();
+    const { cart, selectedBarber, customerName, customerPhone, setCustomerInfo, clearCart, bookingId } = usePosStore();
     const totalAmount = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris'>('cash');
@@ -110,6 +110,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
                     paymentMethod,
                     customerName,
                     customerPhone,
+                    bookingId,
                 }),
             });
 

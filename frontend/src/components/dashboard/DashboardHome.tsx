@@ -133,26 +133,35 @@ export function DashboardHome() {
                     <Card className="bg-emerald-50/50 border-emerald-200">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-bold text-emerald-900 uppercase tracking-wider">
-                                Upcoming Customers
+                                Today's Appointments
                             </CardTitle>
                             <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-full border border-emerald-200">
-                                Next 2 Hours
+                                {bookingSummary.upcoming.length} Scheduled
                             </span>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-3">
                                 {bookingSummary.upcoming.length === 0 ? (
-                                    <p className="text-sm text-emerald-700/60 italic">No upcoming bookings soon.</p>
+                                    <p className="text-sm text-emerald-700/60 italic">No appointments for today.</p>
                                 ) : (
                                     bookingSummary.upcoming.map((booking: any) => (
-                                        <div key={booking.id} className="bg-white p-3 rounded-md border border-emerald-100 shadow-sm flex justify-between items-center">
+                                        <div
+                                            key={booking.id}
+                                            className="bg-white p-3 rounded-md border border-emerald-100 shadow-sm flex justify-between items-center group hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer"
+                                            onClick={() => navigate('/pos', { state: { booking } })}
+                                        >
                                             <div>
-                                                <p className="font-semibold text-zinc-900 text-sm">{booking.customerName}</p>
-                                                <p className="text-xs text-zinc-500">{booking.timeSlot} w/ {booking.barberName}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-semibold text-zinc-900 text-sm">{booking.customerName}</p>
+                                                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1 rounded font-bold">{booking.timeSlot}</span>
+                                                </div>
+                                                <p className="text-xs text-zinc-500 mt-0.5">
+                                                    {booking.serviceName} w/ {booking.barberName}
+                                                </p>
                                             </div>
-                                            <div className="text-xs font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-                                                CONFIRMED
-                                            </div>
+                                            <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                                Process
+                                            </Button>
                                         </div>
                                     ))
                                 )}

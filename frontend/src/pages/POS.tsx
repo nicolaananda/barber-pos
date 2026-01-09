@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { API_BASE_URL } from '@/lib/api';
 import { usePosStore } from '@/lib/store';
@@ -23,7 +23,8 @@ import { cn } from '@/lib/utils';
 export default function PosPage() {
     const { user, logout, refreshUser } = useAuth();
     const navigate = useNavigate();
-    const { activeShift, setActiveShift, selectedBarber } = usePosStore();
+    const location = useLocation();
+    const { activeShift, setActiveShift, selectedBarber, setCustomerInfo, setBarber, addToCart, setBookingId, clearCart } = usePosStore();
     const [loading, setLoading] = useState(true);
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
@@ -36,6 +37,23 @@ export default function PosPage() {
     useEffect(() => {
         // Auth check handled by ProtectedRoute mostly, but role check valid here
     }, []);
+
+    useEffect(() => {
+        const state = location.state as any;
+        if (state?.booking) {
+            const b = state.booking;
+            clearCart();
+            setCustomerInfo(b.customerName, b.customerPhone || '');
+            setBookingId(b.id);
+            if (b.barberId) {
+                setBarber({ id: String(b.barberId), name: b.barberName, username: b.barberUsername || '' });
+            }
+            if (b.serviceId && b.serviceName) {
+                addToCart({ id: String(b.serviceId), name: b.serviceName, price: b.servicePrice || 0, qty: 1 });
+            }
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, clearCart, setCustomerInfo, setBookingId, setBarber, addToCart, navigate]);
 
     useEffect(() => {
         const checkShift = async () => {

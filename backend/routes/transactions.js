@@ -55,6 +55,19 @@ router.post('/', authenticateToken, async (req, res) => {
             },
         });
 
+        // Auto-complete booking if bookingId is provided
+        if (req.body.bookingId) {
+            try {
+                await prisma.booking.update({
+                    where: { id: parseInt(req.body.bookingId) },
+                    data: { status: 'completed' }
+                });
+                console.log(`[Auto] Booking #${req.body.bookingId} marked as completed.`);
+            } catch (err) {
+                console.error(`Failed to mark booking #${req.body.bookingId} as completed:`, err);
+            }
+        }
+
         // Update Shift Revenue if active
         if (activeShift) {
             await prisma.cashShift.update({
