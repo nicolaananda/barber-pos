@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ArrowRight, ArrowLeft, UploadCloud, Scissors, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -172,16 +173,36 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
             setStep(1);
             onOpenChange(false);
 
-            // Show success notification
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('✅ Booking Berhasil!', {
-                    body: `${customerName} - ${timeSlot.label} dengan ${barber.name}. Konfirmasi akan dikirim via WhatsApp.`,
-                    icon: '/logo.jpg'
-                });
-            }
-
-            // Show alert as fallback
-            alert(`✅ Booking berhasil dibuat!\n\nNama: ${customerName}\nBarber: ${barber.name}\nWaktu: ${timeSlot.label} WIB\n\nKonfirmasi akan dikirim via WhatsApp.`);
+            // Show premium toast notification
+            toast.success('Booking Berhasil Dibuat! ✨', {
+                description: (
+                    <div className="space-y-2 mt-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-zinc-400">Nama:</span>
+                            <span className="font-bold text-zinc-900">{customerName}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-zinc-400">Barber:</span>
+                            <span className="font-bold text-zinc-900">{barber.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-zinc-400">Waktu:</span>
+                            <span className="font-bold text-zinc-900">{timeSlot.label} WIB</span>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-zinc-100">
+                            <p className="text-xs text-zinc-500">
+                                💬 Konfirmasi akan dikirim via WhatsApp dalam beberapa saat.
+                            </p>
+                        </div>
+                    </div>
+                ),
+                duration: 6000,
+                classNames: {
+                    toast: 'bg-white border-zinc-200',
+                    title: 'text-zinc-900 font-bold',
+                    description: 'text-zinc-600',
+                },
+            });
 
             if (onSuccess) onSuccess();
         } catch (err: any) {
