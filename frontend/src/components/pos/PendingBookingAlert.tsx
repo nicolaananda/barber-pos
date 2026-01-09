@@ -8,9 +8,9 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
-    DialogFooter
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface Booking {
     id: number;
@@ -24,18 +24,41 @@ interface Booking {
     paymentProof: string | null;
 }
 
-export default function PendingBookingAlert() {
+interface PendingBookingAlertProps {
+    className?: string;
+}
+
+export default function PendingBookingAlert({ className }: PendingBookingAlertProps) {
     const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const lastCountRef = useRef(0);
 
-    // Sound effect
+    // Sound effect (Synthesized for reliability)
     const playSound = () => {
-        // Simple distinct "ping" sound
-        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-        audio.volume = 0.5;
-        audio.play().catch(e => console.log('Audio play failed', e));
+        try {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AudioContext) return;
+
+            const ctx = new AudioContext();
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(500, ctx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
+
+            gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            oscillator.start();
+            oscillator.stop(ctx.currentTime + 0.5);
+        } catch (error) {
+            console.error("Audio play failed", error);
+        }
     };
 
     const fetchPendingBookings = async () => {
@@ -107,7 +130,7 @@ export default function PendingBookingAlert() {
     return (
         <>
             {/* Floating Alert Button (Toast-like) */}
-            <div className="fixed bottom-24 left-4 md:bottom-8 md:left-8 z-50">
+            <div className={cn("fixed bottom-24 left-4 md:bottom-8 md:left-8 z-50", className)}>
                 <Button
                     onClick={() => {
                         setSelectedBooking(pendingBookings[0]); // Open first pending
