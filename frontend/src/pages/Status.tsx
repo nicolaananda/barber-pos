@@ -33,6 +33,21 @@ export default function StatusPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentOffDays, setCurrentOffDays] = useState<any[]>([]);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    // Monitor network status
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -139,7 +154,12 @@ export default function StatusPage() {
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white pb-20">
-            {/* Navbar Removed */}
+            {/* Offline Warning Banner */}
+            {!isOnline && (
+                <div className="bg-red-500 text-white text-center py-2 px-4 text-sm font-semibold sticky top-0 z-50">
+                    ⚠️ Tidak ada koneksi internet. Beberapa fitur mungkin tidak tersedia.
+                </div>
+            )}
 
             <main className="max-w-4xl mx-auto px-4 pt-12 md:pt-20">
                 {/* Hero Section */}

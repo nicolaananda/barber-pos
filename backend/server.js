@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 require('dotenv').config();
 
@@ -25,6 +26,19 @@ const PORT = process.env.PORT || 3001;
 
 // Trust proxy - required for rate limiting behind reverse proxy
 app.set('trust proxy', true);
+
+// 🔒 SECURITY: Helmet for security headers
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https:"],
+        }
+    },
+    crossOriginEmbedderPolicy: false, // Allow external resources
+}));
 
 // Middleware
 // Middleware

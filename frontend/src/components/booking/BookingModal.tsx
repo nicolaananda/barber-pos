@@ -122,8 +122,15 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
     const handleNextStep = () => {
         setError('');
         if (!customerName.trim()) return setError('Nama harus diisi');
+        if (customerName.trim().length < 2) return setError('Nama minimal 2 karakter');
         if (!customerPhone.trim()) return setError('Nomor WhatsApp harus diisi');
-        if (!/^08\d{8,11}$/.test(customerPhone)) return setError('Nomor WhatsApp tidak valid (08xxx)');
+
+        // Strict Indonesian phone validation
+        const phonePattern = /^08\d{8,11}$/;
+        if (!phonePattern.test(customerPhone.trim())) {
+            return setError('Nomor WhatsApp tidak valid. Format: 08xxxxxxxxxx');
+        }
+
         if (!selectedServiceId) return setError('Pilih layanan');
 
         setStep(2);
@@ -157,7 +164,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                 throw new Error(data.error || 'Gagal membuat booking');
             }
 
-            // Success
+            // Success - Clear form
             setCustomerName('');
             setCustomerPhone('');
             setPaymentProof(null);
@@ -165,16 +172,20 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
             setStep(1);
             onOpenChange(false);
 
+            // Show success notification
             if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('Booking Berhasil!', {
-                    body: `${customerName} telah booking ${timeSlot.label} dengan ${barber.name}`,
+                new Notification('✅ Booking Berhasil!', {
+                    body: `${customerName} - ${timeSlot.label} dengan ${barber.name}. Konfirmasi akan dikirim via WhatsApp.`,
                     icon: '/logo.jpg'
                 });
             }
 
+            // Show alert as fallback
+            alert(`✅ Booking berhasil dibuat!\n\nNama: ${customerName}\nBarber: ${barber.name}\nWaktu: ${timeSlot.label} WIB\n\nKonfirmasi akan dikirim via WhatsApp.`);
+
             if (onSuccess) onSuccess();
         } catch (err: any) {
-            setError(err.message || 'Terjadi kesalahan');
+            setError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
         } finally {
             setIsSubmitting(false);
         }

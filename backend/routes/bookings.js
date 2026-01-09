@@ -11,6 +11,7 @@ const { id: idLocale } = require('date-fns/locale');
 const path = require('path');
 const { uploadFile } = require('../lib/r2');
 const securityLogger = require('../lib/securityLogger');
+const { sanitizeText, sanitizePhone, isValidIndonesianPhone } = require('../lib/sanitizer');
 
 // POST /api/bookings - Create new booking
 router.post('/', (req, res, next) => {
@@ -89,6 +90,21 @@ router.post('/', (req, res, next) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
+        // 🔒 SECURITY: Sanitize inputs to prevent XSS
+        const sanitizedName = sanitizeText(customerName);
+        const sanitizedPhone = sanitizePhone(customerPhone);
+
+        // Validate sanitized inputs
+        if (!sanitizedName || sanitizedName.length < 2) {
+            return res.status(400).json({ error: 'Nama tidak valid (minimal 2 karakter)' });
+        }
+
+        if (!sanitizedPhone || !isValidIndonesianPhone(sanitizedPhone)) {
+            return res.status(400).json({
+                error: 'Nomor WhatsApp tidak valid. Gunakan format Indonesia (08xx) dengan operator valid.'
+            });
+        }
+
         // Enforce business hours: 11:00 - 22:00 (last slot 21:00-22:00)
         const timeMatch = typeof timeSlot === 'string' ? timeSlot.match(/^(\d{2}):\d{2}\s*-\s*(\d{2}):\d{2}$/) : null;
         if (timeMatch) {
@@ -128,8 +144,8 @@ router.post('/', (req, res, next) => {
         const booking = await prisma.booking.create({
             data: {
                 barberId: parseInt(barberId),
-                customerName,
-                customerPhone,
+                customerName: sanitizedName,
+                customerPhone: sanitizedPhone,
                 bookingDate: new Date(bookingDate),
                 timeSlot,
                 serviceId: serviceId ? parseInt(serviceId) : null,

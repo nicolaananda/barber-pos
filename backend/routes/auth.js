@@ -30,10 +30,16 @@ router.post('/login', authLimiter, async (req, res) => {
         }
 
         // Create JWT
+        // 🔒 SECURITY: No fallback for JWT_SECRET - fail fast if not configured
+        if (!process.env.JWT_SECRET) {
+            console.error('❌ CRITICAL: JWT_SECRET not configured in environment');
+            return res.status(500).json({ error: 'Server configuration error' });
+        }
+
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role, name: user.name },
-            process.env.JWT_SECRET || 'secret',
-            { expiresIn: '24h' }
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' } // 7 days for better UX
         );
 
         res.json({
