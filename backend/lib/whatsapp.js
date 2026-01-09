@@ -78,44 +78,74 @@ function generateInvoiceMessage(transaction, barberName) {
 }
 
 /**
- * Send WhatsApp text message via Go-WA API
+ * 🔄 Retry helper with exponential backoff
+ */
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const result = await fn();
+            if (result.success) return result;
+
+            // If not success but not last attempt, retry
+            if (attempt < maxRetries) {
+                const delay = baseDelay * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+                console.log(`[Retry ${attempt}/${maxRetries}] Waiting ${delay}ms before retry...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+
+            // Last attempt failed
+            return result;
+        } catch (error) {
+            if (attempt === maxRetries) {
+                return { success: false, error: error.message };
+            }
+
+            const delay = baseDelay * Math.pow(2, attempt - 1);
+            console.log(`[Retry ${attempt}/${maxRetries}] Error: ${error.message}. Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+}
+
+/**
+ * Send WhatsApp text message via Go-WA API (with retry)
  */
 async function sendWhatsAppMessage(phoneNumber, message) {
-    try {
-        const formattedPhone = formatPhoneNumber(phoneNumber);
-        if (!formattedPhone) throw new Error('Invalid phone number');
+    return retryWithBackoff(async () => {
+        try {
+            const formattedPhone = formatPhoneNumber(phoneNumber);
+            if (!formattedPhone) throw new Error('Invalid phone number');
 
-        // Go-WA expects user ID (e.g. 628x@s.whatsapp.net) or just number?
-        // Usually implementation accepts number string.
-        // Let's try sending just phone number in 'phone' field.
-        const payload = {
-            phone: formattedPhone,
-            message: message
-        };
+            const payload = {
+                phone: formattedPhone,
+                message: message
+            };
 
-        console.log('Sending WA Message:', { url: `${WA_GATEWAY_URL}/send/message`, payload });
+            console.log('Sending WA Message:', { url: `${WA_GATEWAY_URL}/send/message`, payload });
 
-        const response = await fetch(`${WA_GATEWAY_URL}/send/message`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Device-Id': WA_DEVICE_ID,
-                ...getAuthHeader()
-            },
-            body: JSON.stringify(payload)
-        });
+            const response = await fetch(`${WA_GATEWAY_URL}/send/message`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Device-Id': WA_DEVICE_ID,
+                    ...getAuthHeader()
+                },
+                body: JSON.stringify(payload)
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (!response.ok) {
-            throw new Error(data.message || data.error || 'Failed to send message');
+            if (!response.ok) {
+                throw new Error(data.message || data.error || 'Failed to send message');
+            }
+
+            return { success: true, data };
+        } catch (error) {
+            console.error('WhatsApp Send Error:', error.message);
+            throw error; // Let retry handler catch it
         }
-
-        return { success: true, data };
-    } catch (error) {
-        console.error('WhatsApp Send Error:', error.message);
-        return { success: false, error: error.message };
-    }
+    }, 3, 1000); // 3 retries, starting with 1 second delay
 }
 
 /**

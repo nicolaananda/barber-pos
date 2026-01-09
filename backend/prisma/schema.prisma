@@ -58,6 +58,9 @@ model Customer {
   lastVisit   DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // ⚡ Performance index
+  @@index([lastVisit])  // Recent customer analysis
 }
 
 model CashShift {
@@ -90,6 +93,11 @@ model Transaction {
 
   // Relations
   barber User @relation(fields: [barberId], references: [id])
+
+  // ⚡ Performance indexes
+  @@index([barberId, date])  // Barber performance reports
+  @@index([date])             // Daily/monthly reports
+  @@index([customerPhone])    // Customer history lookup
 }
 
 model Expense {
@@ -129,6 +137,12 @@ model Booking {
   paymentProof  String?  // URL/Path to uploaded evidence
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  // ⚡ Performance indexes for common queries
+  @@index([barberId, bookingDate, status]) // Most frequent query pattern
+  @@index([customerPhone])                  // Customer lookup
+  @@index([status, bookingDate])            // Status filtering with date
+  @@index([bookingDate])                    // Date-based queries
 }
 
 model Capital {

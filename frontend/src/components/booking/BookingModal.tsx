@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ArrowRight, ArrowLeft, UploadCloud, Scissors, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import imageCompression from 'browser-image-compression';
 import { cn } from '@/lib/utils';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -107,16 +108,52 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
         setSelectedService(service || null);
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setError("Hanya file gambar yang diperbolehkan");
+                return;
+            }
+
             if (file.size > 5 * 1024 * 1024) {
                 setError("File terlalu besar (Maks 5MB)");
                 return;
             }
-            setPaymentProof(file);
-            setPreviewUrl(URL.createObjectURL(file));
-            setError('');
+
+            try {
+                // Show compression toast
+                toast.loading('Mengompres gambar...', { id: 'compress' });
+
+                // ⚡ AUTO-COMPRESS before upload
+                const options = {
+                    maxSizeMB: 0.2,          // Target 200KB
+                    maxWidthOrHeight: 1920,  // Max dimension
+                    useWebWorker: true,
+                    fileType: 'image/jpeg',  // Convert all to JPEG
+                };
+
+                const compressedFile = await imageCompression(file, options);
+
+                // Calculate compression ratio
+                const ratio = ((1 - compressedFile.size / file.size) * 100).toFixed(0);
+
+                toast.success(`Gambar dikompres ${ratio}% ✨`, {
+                    id: 'compress',
+                    description: `${(file.size / 1024 / 1024).toFixed(1)}MB → ${(compressedFile.size / 1024).toFixed(0)}KB`
+                });
+
+                setPaymentProof(compressedFile);
+                setPreviewUrl(URL.createObjectURL(compressedFile));
+                setError('');
+            } catch (error) {
+                toast.error('Gagal mengompres gambar', { id: 'compress' });
+                console.error('Compression error:', error);
+                setError('Gagal memproses gambar');
+            }
         }
     };
 
