@@ -34,11 +34,6 @@ else
     echo "⚠️ Directory $TARGET_2 not found, skipping..."
 fi
 
-# 4. Run database migration
-echo "⚡ Running database migration..."
-cd backend
-mysql -u stay_cool -p stay_cool < migrations/add_performance_indexes.sql
-cd ..
 
 # 4. Restart PM2
 echo "🔄 Restarting backend..."
