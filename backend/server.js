@@ -23,6 +23,9 @@ const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy - required for rate limiting behind reverse proxy
+app.set('trust proxy', true);
+
 // Middleware
 // Middleware
 app.use(cors({
