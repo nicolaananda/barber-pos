@@ -124,7 +124,7 @@ export default function PosPage() {
     if (loading) return <div className="p-8 text-center">Loading...</div>;
 
     return (
-        <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-zinc-50 text-zinc-900 font-sans selection:bg-zinc-200">
+        <div className="flex flex-col md:flex-row h-screen supports-[height:100dvh]:h-[100dvh] overflow-hidden bg-zinc-50 text-zinc-900 font-sans selection:bg-zinc-200">
             {/* Main Interactive Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 {/* Header */}
