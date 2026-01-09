@@ -4,13 +4,15 @@ const path = require('path');
 // Storage Configuration - Use Memory Storage for R2 Uploads
 const storage = multer.memoryStorage();
 
-// File Filter (Images Only)
+// File Filter (Images Only) - Lenient for compressed images
 const fileFilter = (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
 
-    if (extname && mimetype) {
+    // Allow if extension is valid OR mimetype is valid
+    // This handles compressed images where mimetype might be missing
+    if (extname || mimetype) {
         return cb(null, true);
     } else {
         cb(new Error('Only images are allowed!'));
