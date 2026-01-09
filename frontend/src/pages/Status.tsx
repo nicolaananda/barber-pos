@@ -5,6 +5,7 @@ import BookingModal from '@/components/booking/BookingModal';
 import ServicesModal from '@/components/pos/ServicesModal';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { format } from 'date-fns';
+import { VersionFooter } from '@/components/VersionFooter';
 
 interface Barber {
     id: number;
@@ -366,7 +367,7 @@ export default function StatusPage() {
                     <p className="text-zinc-400 text-sm mb-6">
                         &copy; {new Date().getFullYear()} Staycool Hairlab. All rights reserved.
                     </p>
-                    <div className="flex justify-center gap-6">
+                    <div className="flex justify-center gap-6 mb-6">
                         <a
                             href="https://maps.app.goo.gl/AitnhHiAY3Ka9fAM9"
                             target="_blank"
@@ -393,6 +394,7 @@ export default function StatusPage() {
                             <MessageCircle className="w-5 h-5" />
                         </a>
                     </div>
+                    <VersionFooter />
                 </footer>
             </main>
 

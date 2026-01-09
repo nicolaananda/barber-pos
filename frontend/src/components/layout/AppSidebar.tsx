@@ -15,6 +15,7 @@ import {
     LineChart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { VersionFooter } from '@/components/VersionFooter';
 
 export function AppSidebar() {
     const { user, logout } = useAuth();
@@ -102,12 +103,13 @@ export function AppSidebar() {
                 </div>
                 <Button
                     variant="ghost"
-                    className="w-full justify-start gap-3 text-zinc-500 hover:text-red-600 hover:bg-red-50"
+                    className="w-full justify-start gap-3 text-zinc-500 hover:text-red-600 hover:bg-red-50 mb-3"
                     onClick={logout}
                 >
                     <LogOut className="w-4 h-4" />
                     Logout
                 </Button>
+                <VersionFooter compact className="text-center pt-3 border-t border-zinc-100" />
             </div>
         </div>
     );

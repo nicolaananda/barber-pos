@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 7781",
+    "prebuild": "node generate-version.cjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
