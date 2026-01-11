@@ -433,9 +433,10 @@ router.get('/summary', authenticateToken, async (req, res) => {
                     select: { id: true, name: true, username: true }
                 }
             },
-            orderBy: {
-                bookingDate: 'asc'
-            }
+            orderBy: [
+                { bookingDate: 'asc' },
+                { timeSlot: 'asc' }
+            ]
             // Removed take: 5 to show all today's bookings
         });
 
