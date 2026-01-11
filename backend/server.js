@@ -57,6 +57,15 @@ app.use(express.json());
 // Apply rate limiting to all API routes
 app.use('/api/', apiLimiter);
 
+// Debug IP Logging - To verify if all users differ or share IP
+app.use((req, res, next) => {
+    // Only log API requests to avoid noise
+    if (req.url.startsWith('/api')) {
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - IP: ${req.ip}`);
+    }
+    next();
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/customers', customersRoutes);
