@@ -262,7 +262,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md bg-white p-0 max-h-[90vh] overflow-y-auto rounded-3xl border-none shadow-2xl gap-0">
                 {/* Header Section */}
-                <div className="bg-zinc-50 border-b border-zinc-100 p-6 flex flex-col items-center justify-center text-center">
+                <div className="bg-zinc-50 border-b border-zinc-100 p-4 flex flex-col items-center justify-center text-center">
                     <DialogTitle className="text-xl font-black text-zinc-900 uppercase tracking-wide">
                         {step === 1 ? 'Booking Details' : 'Payment Verification'}
                     </DialogTitle>
@@ -273,7 +273,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6">
+                <form onSubmit={handleSubmit} className="p-4">
                     {step === 1 && (
                         <div className="space-y-6 animate-in slide-in-from-left-4 fade-in duration-300">
                             {/* Inputs Group */}
@@ -382,65 +382,63 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                     )}
 
                     {step === 2 && (
-                        <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
-                            <div className="bg-zinc-50 p-6 rounded-3xl flex flex-col items-center border border-zinc-100 text-center">
-                                <div className="w-12 h-12 rounded-full bg-white border border-zinc-100 flex items-center justify-center mb-4 shadow-sm">
-                                    <UploadCloud className="w-6 h-6 text-zinc-900" />
-                                </div>
-                                <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wide mb-1">Payment Verification</h3>
-                                <p className="text-xs text-zinc-500 mb-6 max-w-[200px]">
-                                    Scan QRIS dibawah dan upload bukti pembayaran.
-                                </p>
-
-                                <div className="relative group cursor-pointer">
-                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-zinc-200 to-zinc-400 rounded-xl blur opacity-30 group-hover:opacity-60 transition duration-1000"></div>
-                                    <div className="relative bg-white p-2 rounded-xl border border-zinc-100">
+                        <div className="space-y-4 animate-in slide-in-from-right-4 fade-in duration-300">
+                            {/* Grid Layout for Compactness */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Left Col: QRIS */}
+                                <div className="bg-zinc-50 p-3 rounded-2xl flex flex-col items-center justify-center border border-zinc-100 text-center h-full">
+                                    <div className="relative group cursor-pointer bg-white p-1.5 rounded-xl border border-zinc-100 shadow-sm mb-2">
                                         <img
                                             src={QRIS_IMAGE}
                                             alt="QRIS Code"
-                                            className="w-40 h-40 object-cover rounded-lg"
+                                            className="w-28 h-28 object-cover rounded-lg"
                                         />
                                     </div>
+                                    <p className="text-[10px] text-zinc-500 leading-tight">
+                                        Scan QRIS & Upload Bukti
+                                    </p>
                                 </div>
 
-                                <div className="mt-4 inline-flex flex-col items-center">
-                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Total Payment</span>
-                                    <span className="text-xl font-black text-zinc-900">{selectedService ? formatRp(selectedService.price) : '-'}</span>
-                                </div>
-                            </div>
+                                {/* Right Col: Details & Upload */}
+                                <div className="flex flex-col gap-3">
+                                    {/* Total Payment Card */}
+                                    <div className="bg-zinc-50 p-3 rounded-2xl border border-zinc-100 flex flex-col items-center justify-center text-center">
+                                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Total</span>
+                                        <span className="text-xl font-black text-zinc-900">{selectedService ? formatRp(selectedService.price) : '-'}</span>
+                                    </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 pl-1">Bukti Transfer</Label>
-                                <Label
-                                    htmlFor="proof"
-                                    className={cn(
-                                        "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl cursor-pointer transition-all overflow-hidden relative group",
-                                        previewUrl
-                                            ? "border-zinc-900 bg-white"
-                                            : "border-zinc-200 bg-zinc-50 hover:bg-zinc-100 hover:border-zinc-300"
-                                    )}
-                                >
-                                    {previewUrl ? (
-                                        <div className="relative w-full h-full p-2">
-                                            <img src={previewUrl} alt="Preview" className="w-full h-full object-contain rounded-lg" />
-                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <span className="text-white text-xs font-bold bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">Ganti File</span>
+                                    {/* Compact Upload Area */}
+                                    <Label
+                                        htmlFor="proof"
+                                        className={cn(
+                                            "flex flex-col items-center justify-center w-full flex-1 min-h-[80px] border-2 border-dashed rounded-2xl cursor-pointer transition-all overflow-hidden relative group",
+                                            previewUrl
+                                                ? "border-zinc-900 bg-white"
+                                                : "border-zinc-200 bg-zinc-50 hover:bg-zinc-100 hover:border-zinc-300"
+                                        )}
+                                    >
+                                        {previewUrl ? (
+                                            <div className="relative w-full h-full p-1">
+                                                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover rounded-xl" />
+                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
+                                                    <UploadCloud className="w-5 h-5 text-white" />
+                                                </div>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center text-zinc-400 group-hover:text-zinc-600">
-                                            <UploadCloud className="w-8 h-8 mb-2" />
-                                            <p className="text-xs font-medium">Tap to upload</p>
-                                        </div>
-                                    )}
-                                    <Input
-                                        id="proof"
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={handleFileChange}
-                                    />
-                                </Label>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center text-zinc-400 group-hover:text-zinc-600">
+                                                <UploadCloud className="w-5 h-5 mb-1" />
+                                                <p className="text-[10px] font-medium text-center leading-tight">Tap to<br />Upload</p>
+                                            </div>
+                                        )}
+                                        <Input
+                                            id="proof"
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleFileChange}
+                                        />
+                                    </Label>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -453,7 +451,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                     )}
 
                     {/* Footer Actions */}
-                    <div className="flex gap-3 mt-8">
+                    <div className="flex gap-3 mt-5">
                         {step === 1 ? (
                             <>
                                 <Button
