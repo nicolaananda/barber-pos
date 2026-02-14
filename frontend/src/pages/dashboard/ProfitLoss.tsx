@@ -60,9 +60,11 @@ export default function ProfitLossPage() {
         description: '',
         date: format(new Date(), 'yyyy-MM-dd')
     });
+    const [totalBalanceAll, setTotalBalanceAll] = useState<any>(null);
 
     useEffect(() => {
         fetchData();
+        fetchTotalBalanceAll();
     }, []);
 
     const fetchData = async () => {
@@ -71,12 +73,12 @@ export default function ProfitLossPage() {
             const token = localStorage.getItem('token');
             const query = new URLSearchParams({ startDate, endDate }).toString();
 
-            // Parallel fetch
+            // Parallel fetch - capital history without date filter to show all records
             const [plRes, capitalRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/dashboard/profit-loss?${query}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch(`${API_BASE_URL}/capital?${query}`, {
+                fetch(`${API_BASE_URL}/capital`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 })
             ]);
@@ -92,6 +94,20 @@ export default function ProfitLossPage() {
             console.error(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchTotalBalanceAll = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/dashboard/total-balance-all`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to fetch total balance');
+            const data = await res.json();
+            setTotalBalanceAll(data);
+        } catch (error) {
+            console.error(error);
         }
     };
 
@@ -265,20 +281,23 @@ export default function ProfitLossPage() {
 
             {data && (
                 <>
-                    {/* Main Stats Cards */}
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                        <Card className="border-zinc-200 shadow-sm bg-white">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-bold text-blue-600 uppercase tracking-wide">Capital Injections</CardTitle>
-                                <Landmark className="h-4 w-4 text-blue-600" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-black text-zinc-900">
-                                    IDR {data.summary.totalCapital?.toLocaleString('id-ID') || '0'}
-                                </div>
-                                <p className="text-xs text-zinc-500 mt-1">Suntikan Dana</p>
-                            </CardContent>
-                        </Card>
+                    {/* Main Stats Cards - Dynamic Grid */}
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                        {/* Only show Capital Injections if > 0 */}
+                        {(data.summary.totalCapital || 0) > 0 && (
+                            <Card className="border-zinc-200 shadow-sm bg-white">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-bold text-blue-600 uppercase tracking-wide">Capital Injections</CardTitle>
+                                    <Landmark className="h-4 w-4 text-blue-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-black text-zinc-900">
+                                        IDR {data.summary.totalCapital?.toLocaleString('id-ID') || '0'}
+                                    </div>
+                                    <p className="text-xs text-zinc-500 mt-1">Suntikan Dana</p>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         <Card className="border-emerald-100 bg-emerald-50/50 shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -319,18 +338,36 @@ export default function ProfitLossPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-zinc-900 bg-zinc-900 shadow-sm text-white">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-bold text-zinc-300 uppercase tracking-wide">Total Balance</CardTitle>
-                                <DollarSign className="h-4 w-4 text-yellow-400" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-black text-white">
-                                    IDR {((data.summary.totalCapital || 0) + data.summary.netProfit).toLocaleString('id-ID')}
-                                </div>
-                                <p className="text-xs text-zinc-400 mt-1">Capital + Net Profit</p>
-                            </CardContent>
-                        </Card>
+                        {/* Only show Total Balance if there is capital, otherwise it's just Net Profit */}
+                        {data.summary.totalCapital > 0 && (
+                            <Card className="border-zinc-900 bg-zinc-900 shadow-sm text-white">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-bold text-zinc-300 uppercase tracking-wide">Total Balance</CardTitle>
+                                    <DollarSign className="h-4 w-4 text-yellow-400" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-black text-white">
+                                        IDR {((data.summary.totalCapital || 0) + data.summary.netProfit).toLocaleString('id-ID')}
+                                    </div>
+                                    <p className="text-xs text-zinc-400 mt-1">Capital + Net Profit</p>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {totalBalanceAll && (
+                            <Card className="border-zinc-900 bg-black shadow-lg text-white ring-1 ring-zinc-800">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-bold text-zinc-300 uppercase tracking-wide">Total Balance All</CardTitle>
+                                    <DollarSign className="h-4 w-4 text-white" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-black text-white">
+                                        IDR {totalBalanceAll.totalBalance.toLocaleString('id-ID')}
+                                    </div>
+                                    <p className="text-xs text-zinc-400 mt-1">Lifetime</p>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
@@ -389,7 +426,7 @@ export default function ProfitLossPage() {
                     <Card className="border-zinc-200 shadow-sm bg-white">
                         <CardHeader>
                             <CardTitle className="text-base font-bold text-zinc-900 flex items-center gap-2">
-                                Capital Injections / History Funds
+                                Capital Injections / History Funds <span className="text-xs font-normal text-purple-600">(All Records)</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent>

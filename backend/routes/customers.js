@@ -9,10 +9,9 @@ router.get('/', authenticateToken, async (req, res) => {
         const { q } = req.query;
 
         if (!q) {
-            // Return top 10 most recent
+            // Return all customers, ordered by most recent
             const customers = await prisma.customer.findMany({
                 orderBy: { updatedAt: 'desc' },
-                take: 10,
             });
             return res.json(customers);
         }

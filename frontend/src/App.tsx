@@ -15,6 +15,7 @@ import PosPage from './pages/POS';
 import SchedulePage from './pages/dashboard/Schedule';
 import StatusPage from './pages/Status';
 import ProfitLossPage from './pages/dashboard/ProfitLoss';
+import AnalyticsPage from './pages/dashboard/Analytics';
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
@@ -67,6 +68,7 @@ export default function App() {
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="barbers" element={<BarbersPage />} />
             <Route path="schedule" element={<SchedulePage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
           </Route>
           <Route
             path="/pos"

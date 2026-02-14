@@ -310,4 +310,42 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
     }
 });
 
+// GET /api/dashboard/total-balance-all
+// Returns lifetime total balance (all capital + all revenue - all expenses)
+router.get('/total-balance-all', authenticateToken, async (req, res) => {
+    try {
+        // Get all-time capital injections
+        const capitalAgg = await prisma.capital.aggregate({
+            _sum: { amount: true },
+        });
+        const totalCapital = capitalAgg._sum.amount || 0;
+
+        // Get all-time revenue
+        const revenueAgg = await prisma.transaction.aggregate({
+            _sum: { totalAmount: true },
+        });
+        const totalRevenue = revenueAgg._sum.totalAmount || 0;
+
+        // Get all-time expenses
+        const expensesAgg = await prisma.expense.aggregate({
+            _sum: { amount: true },
+        });
+        const totalExpenses = expensesAgg._sum.amount || 0;
+
+        // Calculate total balance
+        const totalBalance = totalCapital + totalRevenue - totalExpenses;
+
+        res.json({
+            totalCapital,
+            totalRevenue,
+            totalExpenses,
+            totalBalance
+        });
+
+    } catch (error) {
+        console.error('Total Balance All Error:', error);
+        res.status(500).json({ error: 'Failed to calculate total balance' });
+    }
+});
+
 module.exports = router;

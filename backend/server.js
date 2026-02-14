@@ -17,6 +17,7 @@ const shiftsRoutes = require('./routes/shifts');
 const transactionsRoutes = require('./routes/transactions');
 const seedRoutes = require('./routes/seed');
 const bookingsRoutes = require('./routes/bookings');
+const analyticsRoutes = require('./routes/analytics');
 
 // Rate limiting middleware
 const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
@@ -48,7 +49,8 @@ app.use(cors({
         'https://www.staycoolhairlab.id',
         'https://pos.staycoolhairlab.id',
         'http://localhost:5173',
-        'http://localhost:3000'
+        'http://localhost:3000',
+        'http://localhost:7781'
     ],
     credentials: true
 }));
@@ -81,6 +83,7 @@ app.use('/api/capital', capitalRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/offdays', require('./routes/offdays'));
+app.use('/api/analytics', analyticsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

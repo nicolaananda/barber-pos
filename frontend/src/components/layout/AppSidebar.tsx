@@ -12,7 +12,8 @@ import {
     Calendar,
     DollarSign,
     UserCog,
-    LineChart
+    LineChart,
+    BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VersionFooter } from '@/components/VersionFooter';
@@ -31,6 +32,7 @@ export function AppSidebar() {
         { name: 'Expenses', href: '/dashboard/expenses', icon: Wallet },
         { name: 'Payroll', href: '/dashboard/payroll', icon: DollarSign },
         { name: 'Bookings', href: '/dashboard/bookings', icon: Calendar },
+        { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
         ...(user?.role === 'owner' ? [
             { name: 'Barbers', href: '/dashboard/barbers', icon: UserCog },
             { name: 'Schedule', href: '/dashboard/schedule', icon: CalendarClock }

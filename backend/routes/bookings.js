@@ -270,7 +270,11 @@ router.get('/', authenticateToken, async (req, res) => {
         }
 
         if (status) {
-            where.status = status;
+            if (status === 'active') {
+                where.status = { in: ['pending', 'confirmed'] };
+            } else {
+                where.status = status;
+            }
         }
 
         const bookings = await prisma.booking.findMany({

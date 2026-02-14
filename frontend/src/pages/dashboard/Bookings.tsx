@@ -28,7 +28,7 @@ interface Booking {
 export default function BookingsPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [filterStatus, setFilterStatus] = useState<string>('active');
     const [filterDate, setFilterDate] = useState<string>('');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
