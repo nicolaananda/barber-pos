@@ -113,47 +113,55 @@ export default function ProfitMarginChart({ startDate, endDate }: ProfitMarginCh
     return (
         <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="group bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-zinc-500">Total Revenue</p>
-                            <p className="text-2xl font-bold text-zinc-900 mt-2">{formatCurrency(data.overall.totalRevenue)}</p>
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-zinc-500 mb-1">Total Revenue</p>
+                            <p className="text-2xl font-bold text-zinc-900 tracking-tight break-words">
+                                {formatCurrency(data.overall.totalRevenue)}
+                            </p>
                         </div>
-                        <div className="h-12 w-12 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center group-hover:bg-zinc-100 transition-colors">
+                        <div className="h-12 w-12 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center shrink-0 group-hover:bg-zinc-100 transition-colors">
                             <DollarSign className="w-6 h-6 text-zinc-400 group-hover:text-zinc-600" />
                         </div>
                     </div>
                 </div>
                 <div className="group bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-zinc-500">Gross Profit</p>
-                            <p className="text-2xl font-bold text-zinc-900 mt-2">{formatCurrency(data.overall.grossProfit)}</p>
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-zinc-500 mb-1">Gross Profit</p>
+                            <p className="text-2xl font-bold text-zinc-900 tracking-tight break-words">
+                                {formatCurrency(data.overall.grossProfit)}
+                            </p>
                         </div>
-                        <div className="h-12 w-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                        <div className="h-12 w-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
                             <TrendingUp className="w-6 h-6 text-emerald-600" />
                         </div>
                     </div>
                 </div>
                 <div className="group bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-zinc-500">Margin</p>
-                            <p className="text-2xl font-bold text-zinc-900 mt-2">{data.overall.grossMargin.toFixed(1)}%</p>
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-zinc-500 mb-1">Margin</p>
+                            <p className="text-2xl font-bold text-zinc-900 tracking-tight break-words">
+                                {data.overall.grossMargin.toFixed(1)}%
+                            </p>
                         </div>
-                        <div className="h-12 w-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                        <div className="h-12 w-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
                             <span className="text-sm font-bold text-blue-600">%</span>
                         </div>
                     </div>
                 </div>
                 <div className="group bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-zinc-500">Total Expenses</p>
-                            <p className="text-2xl font-bold text-zinc-900 mt-2">{formatCurrency(data.overall.totalExpenses)}</p>
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-zinc-500 mb-1">Total Expenses</p>
+                            <p className="text-2xl font-bold text-zinc-900 tracking-tight break-words">
+                                {formatCurrency(data.overall.totalExpenses)}
+                            </p>
                         </div>
-                        <div className="h-12 w-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                        <div className="h-12 w-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0 group-hover:bg-red-100 transition-colors">
                             <TrendingDown className="w-6 h-6 text-red-600" />
                         </div>
                     </div>
@@ -248,7 +256,7 @@ export default function ProfitMarginChart({ startDate, endDate }: ProfitMarginCh
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-200">
-                            {activeChartData.map((item, index) => (
+                            {activeChartData.filter(item => item.revenue > 0).map((item, index) => (
                                 <tr key={index} className="hover:bg-zinc-50 transition-colors">
                                     <td className="py-3 px-6 text-zinc-900 font-medium">{item.name}</td>
                                     <td className="py-3 px-6 text-right text-zinc-900">{formatCurrency(item.revenue)}</td>

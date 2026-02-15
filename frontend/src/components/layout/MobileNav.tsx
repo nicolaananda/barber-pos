@@ -16,7 +16,7 @@ export function MobileNav() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 border-r border-border w-72">
-                <AppSidebar />
+                <AppSidebar defaultCollapsed={false} className="h-full m-0 border-none shadow-none rounded-none" />
             </SheetContent>
         </Sheet>
     );

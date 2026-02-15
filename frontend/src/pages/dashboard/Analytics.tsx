@@ -44,7 +44,7 @@ export default function Analytics() {
                 return (
                     <div className="space-y-6">
                         <AIInsights />
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="flex flex-col gap-6">
                             <ProfitMarginChart startDate={dateRange.startDate} endDate={dateRange.endDate} />
                             <PeakHoursHeatmap startDate={dateRange.startDate} endDate={dateRange.endDate} />
                         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -209,6 +210,14 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
             setPreviewUrl(null);
             setStep(1);
             onOpenChange(false);
+
+            // 🎉 Confetti Explosion!
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#18181b', '#f4f4f5', '#22c55e'] // Black, White, Green
+            });
 
             // Show premium toast notification
             toast.success('Booking Berhasil Dibuat! ✨', {

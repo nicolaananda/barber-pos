@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -13,14 +14,24 @@ import {
     DollarSign,
     UserCog,
     LineChart,
-    BarChart3
+    BarChart3,
+    ChevronLeft,
+    ChevronRight,
+    Monitor
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VersionFooter } from '@/components/VersionFooter';
 
-export function AppSidebar() {
+
+interface AppSidebarProps {
+    defaultCollapsed?: boolean;
+    className?: string; // Allow external className prop
+}
+
+export function AppSidebar({ defaultCollapsed = true, className }: AppSidebarProps) {
     const { user, logout } = useAuth();
     const location = useLocation();
+    const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
     const navigation = [
         { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
@@ -40,79 +51,124 @@ export function AppSidebar() {
     ];
 
     return (
-        <div className="flex flex-col h-full bg-white border-r border-zinc-200 w-64">
-            <div className="p-6 border-b border-zinc-100 space-y-4">
-                <div className="flex items-center gap-3">
-                    <img
-                        src="/logo.jpg"
-                        alt="Logo"
-                        className="w-10 h-10 rounded-full object-cover border border-zinc-200 grayscale"
-                    />
-                    <div>
-                        <h1 className="font-bold tracking-widest uppercase text-zinc-900">Staycool</h1>
-                        <p className="text-xs text-zinc-500 tracking-wider">Management</p>
-                    </div>
-                </div>
-                <Link to="/pos">
-                    <Button className="w-full font-bold shadow-md bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-[0.98]">
-                        Launch POS Station
-                    </Button>
-                </Link>
+        <aside
+            className={cn(
+                "relative transition-all duration-300 ease-in-out m-4 h-[calc(100vh-2rem)]",
+                isCollapsed ? "w-20" : "w-64",
+                className
+            )}
+        >
+            {/* Liquid Glass Background Effect (CSS) */}
+            <div className="absolute inset-0 z-0 rounded-2xl overflow-hidden border border-white/40 shadow-sm">
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-xl"></div>
+
+                {/* Subtle gradient for "liquid" feel */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-white/10 opacity-50"></div>
+
+                {/* Noise texture for premium feel */}
+                <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }}></div>
             </div>
 
-            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                {navigation.map((item) => {
-                    const isActive = location.pathname === item.href;
-                    return (
-                        <Link key={item.name} to={item.href}>
-                            <div className={cn(
-                                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
-                                isActive
-                                    ? "bg-zinc-100 text-zinc-900 font-bold shadow-sm"
-                                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
-                            )}>
-                                <item.icon className={cn("w-5 h-5", isActive ? "text-zinc-900" : "text-zinc-400")} />
-                                <span>{item.name}</span>
+            {/* Toggle Button - Moved outside to separate clipping context */}
+            <Button
+                variant="ghost"
+                size="icon"
+                className="absolute -right-3 top-6 h-6 w-6 rounded-full border border-zinc-300 bg-white shadow-md hover:bg-zinc-100 z-50 p-0 text-zinc-600 hover:text-zinc-900"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+            >
+                {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+            </Button>
+
+            {/* Content Wrapper */}
+            <div className="relative z-10 flex flex-col h-full rounded-2xl overflow-hidden">
+
+                <div className={cn("p-6 border-b border-white/20 space-y-4", isCollapsed && "px-2 py-6")}>
+                    <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
+                        <img
+                            src="/logo.jpg"
+                            alt="Logo"
+                            className="w-10 h-10 rounded-full object-cover border border-white/50 grayscale shadow-sm"
+                        />
+                        {!isCollapsed && (
+                            <div className="overflow-hidden whitespace-nowrap">
+                                <h1 className="font-bold tracking-widest uppercase text-zinc-900 transition-opacity duration-300">Staycool</h1>
+                                <p className="text-xs text-zinc-500 tracking-wider transition-opacity duration-300">Management</p>
                             </div>
-                        </Link>
-                    );
-                })}
-            </nav>
-
-            <div className="p-4 border-t border-zinc-100 bg-white">
-                <div className="flex items-center gap-3 mb-4 px-2">
-                    {user?.username === 'bagus' ? (
-                        <img
-                            src="/bagus.webp"
-                            alt="Profile"
-                            className="w-8 h-8 rounded-full object-cover border border-zinc-200"
-                        />
-                    ) : user?.username === 'diva' ? (
-                        <img
-                            src="/profil_diva.webp"
-                            alt="Profile"
-                            className="w-8 h-8 rounded-full object-cover border border-zinc-200"
-                        />
-                    ) : (
-                        <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-900 font-bold border border-zinc-200">
-                            {user?.name?.charAt(0) || 'U'}
-                        </div>
-                    )}
-                    <div className="overflow-hidden">
-                        <p className="text-sm font-bold truncate text-zinc-900">{user?.name || 'User'}</p>
-                        <p className="text-xs text-zinc-500 uppercase tracking-wider">{user?.role || 'Staff'}</p>
+                        )}
                     </div>
+                    <Link to="/pos" title="Launch POS">
+                        <Button
+                            className={cn(
+                                "w-full font-bold shadow-md bg-zinc-900/90 text-white hover:bg-zinc-900 transition-all active:scale-[0.98] backdrop-blur-sm",
+                                isCollapsed ? "px-0" : ""
+                            )}
+                        >
+                            {isCollapsed ? <Monitor className="w-5 h-5" /> : "Launch POS Station"}
+                        </Button>
+                    </Link>
                 </div>
-                <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 text-zinc-500 hover:text-red-600 hover:bg-red-50 mb-3"
-                    onClick={logout}
-                >
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                </Button>
-                <VersionFooter compact className="text-center pt-3 border-t border-zinc-100" />
+
+                <nav className="flex-1 p-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-zinc-200/50">
+                    {navigation.map((item) => {
+                        const isActive = location.pathname === item.href;
+                        return (
+                            <Link key={item.name} to={item.href} title={isCollapsed ? item.name : undefined}>
+                                <div className={cn(
+                                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+                                    isActive
+                                        ? "bg-white/80 text-zinc-900 font-bold shadow-sm backdrop-blur-md border border-white/50"
+                                        : "text-zinc-600 hover:bg-white/40 hover:text-zinc-900 hover:shadow-sm",
+                                    isCollapsed ? "justify-center px-2" : ""
+                                )}>
+                                    <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-zinc-900" : "text-zinc-500")} />
+                                    {!isCollapsed && <span className="whitespace-nowrap overflow-hidden transition-all duration-300">{item.name}</span>}
+                                </div>
+                            </Link>
+                        );
+                    })}
+                </nav>
+
+                <div className={cn("p-4 border-t border-white/20", isCollapsed && "px-2")}>
+                    <div className={cn("flex items-center gap-3 mb-4 px-2", isCollapsed && "justify-center px-0")}>
+                        {user?.username === 'bagus' ? (
+                            <img
+                                src="/bagus.webp"
+                                alt="Profile"
+                                className="w-8 h-8 rounded-full object-cover border border-white/50 flex-shrink-0 shadow-sm"
+                            />
+                        ) : user?.username === 'diva' ? (
+                            <img
+                                src="/profil_diva.webp"
+                                alt="Profile"
+                                className="w-8 h-8 rounded-full object-cover border border-white/50 flex-shrink-0 shadow-sm"
+                            />
+                        ) : (
+                            <div className="w-8 h-8 rounded-full bg-white/50 flex items-center justify-center text-zinc-900 font-bold border border-white/50 flex-shrink-0 backdrop-blur-sm shadow-sm">
+                                {user?.name?.charAt(0) || 'U'}
+                            </div>
+                        )}
+                        {!isCollapsed && (
+                            <div className="overflow-hidden whitespace-nowrap">
+                                <p className="text-sm font-bold truncate text-zinc-900">{user?.name || 'User'}</p>
+                                <p className="text-xs text-zinc-500 uppercase tracking-wider">{user?.role || 'Staff'}</p>
+                            </div>
+                        )}
+                    </div>
+                    <Button
+                        variant="ghost"
+                        className={cn(
+                            "w-full justify-start gap-3 text-zinc-600 hover:text-red-600 hover:bg-red-50/50 mb-3",
+                            isCollapsed && "justify-center px-0"
+                        )}
+                        onClick={logout}
+                        title="Logout"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        {!isCollapsed && "Logout"}
+                    </Button>
+                    {!isCollapsed && <VersionFooter compact className="text-center pt-3 border-t border-white/20 text-zinc-500" />}
+                </div>
             </div>
-        </div>
+        </aside>
     );
 }
