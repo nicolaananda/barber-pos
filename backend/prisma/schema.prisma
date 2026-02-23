@@ -135,6 +135,9 @@ model Booking {
   servicePrice  Float?   // Snapshot of service price
   status        String   @default("pending") // pending, confirmed, cancelled, completed
   paymentProof  String?  // URL/Path to uploaded evidence
+  rescheduleCount  Int       @default(0)
+  originalDate     DateTime?
+  originalTimeSlot String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

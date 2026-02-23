@@ -384,8 +384,21 @@ export default function StatusPage() {
                     </div>
                 )}
 
+                {/* Reschedule CTA */}
+                <div className="mt-16 bg-zinc-900 rounded-3xl p-6 text-center">
+                    <p className="text-zinc-400 text-sm mb-1">Perlu mengubah jadwal?</p>
+                    <h3 className="text-white font-black text-xl mb-4">Reschedule Booking</h3>
+                    <a
+                        href="/reschedule"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-white text-zinc-900 font-bold text-sm rounded-full hover:bg-zinc-100 transition-all hover:scale-105"
+                    >
+                        <BookOpen className="w-4 h-4" />
+                        Ubah Jadwal Saya
+                    </a>
+                </div>
+
                 {/* Footer */}
-                <footer className="mt-24 border-t border-zinc-200 py-12 text-center">
+                <footer className="mt-12 border-t border-zinc-200 py-12 text-center">
                     <p className="text-zinc-400 text-sm mb-6">
                         &copy; {new Date().getFullYear()} Staycool Hairlab. All rights reserved.
                     </p>
