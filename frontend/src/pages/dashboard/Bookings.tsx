@@ -32,11 +32,102 @@ export default function BookingsPage() {
     const [filterDate, setFilterDate] = useState<string>('');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+    // Reschedule Modal State
+    const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+    const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<Booking | null>(null);
+    const [newDate, setNewDate] = useState<string>('');
+    const [newTimeSlot, setNewTimeSlot] = useState<string>('');
+    const [newBarberId, setNewBarberId] = useState<string>('');
+    const [availableBarbers, setAvailableBarbers] = useState<{ id: number; name: string }[]>([]);
+    const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+    const [submittingReschedule, setSubmittingReschedule] = useState(false);
+
     useEffect(() => {
         fetchBookings();
+        fetchBarbers(); // Need barbers for the reschedule dropdown
         const interval = setInterval(fetchBookings, 10000); // Poll every 10s
         return () => clearInterval(interval);
     }, [filterStatus, filterDate]);
+
+    // Fetch slots when date or barber changes
+    useEffect(() => {
+        if (newDate && newBarberId) {
+            fetchAvailableSlots(newDate, parseInt(newBarberId));
+        } else {
+            setAvailableSlots([]);
+        }
+    }, [newDate, newBarberId]);
+
+    const fetchBarbers = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/users/barbers`);
+            if (res.ok) {
+                const data = await res.json();
+                setAvailableBarbers(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch barbers:', error);
+        }
+    };
+
+    const fetchAvailableSlots = async (date: string, barberId: number) => {
+        setLoadingSlots(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/slots/available?date=${date}&barberId=${barberId}`);
+            if (res.ok) {
+                const data = await res.json();
+                setAvailableSlots(data.availableSlots || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch available slots:', error);
+        } finally {
+            setLoadingSlots(false);
+        }
+    };
+
+    const openRescheduleModal = (booking: Booking) => {
+        setSelectedBookingForReschedule(booking);
+        setNewDate('');
+        setNewTimeSlot('');
+        setNewBarberId(booking.barberId.toString());
+        setIsRescheduleModalOpen(true);
+    };
+
+    const handleReschedule = async () => {
+        if (!selectedBookingForReschedule || !newDate || !newTimeSlot) return;
+
+        setSubmittingReschedule(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/bookings/${selectedBookingForReschedule.id}/reschedule`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    newBookingDate: newDate,
+                    newTimeSlot: newTimeSlot,
+                    newBarberId: parseInt(newBarberId)
+                })
+            });
+
+            if (res.ok) {
+                setIsRescheduleModalOpen(false);
+                fetchBookings();
+                // We could add a toast notification here
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Failed to reschedule');
+            }
+        } catch (error) {
+            console.error('Reschedule error:', error);
+            alert('An error occurred while rescheduling');
+        } finally {
+            setSubmittingReschedule(false);
+        }
+    };
 
     const fetchBookings = async () => {
         try {
@@ -249,13 +340,21 @@ export default function BookingsPage() {
 
                             {/* Actions */}
                             {booking.status === 'pending' && (
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 mt-4">
                                     <Button
                                         size="sm"
                                         className="bg-zinc-900 text-white hover:bg-zinc-800 font-bold shadow-sm"
                                         onClick={() => updateBookingStatus(booking.id, 'confirmed')}
                                     >
                                         Confirm
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-medium"
+                                        onClick={() => openRescheduleModal(booking)}
+                                    >
+                                        Reschedule
                                     </Button>
                                     <Button
                                         size="sm"
@@ -268,19 +367,106 @@ export default function BookingsPage() {
                                 </div>
                             )}
                             {booking.status === 'confirmed' && (
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="border-zinc-900 text-zinc-900 hover:bg-zinc-50 font-medium"
-                                    onClick={() => updateBookingStatus(booking.id, 'completed')}
-                                >
-                                    Mark Complete
-                                </Button>
+                                <div className="flex gap-2 mt-4">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-zinc-900 text-zinc-900 hover:bg-zinc-50 font-medium"
+                                        onClick={() => updateBookingStatus(booking.id, 'completed')}
+                                    >
+                                        Mark Complete
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-medium"
+                                        onClick={() => openRescheduleModal(booking)}
+                                    >
+                                        Reschedule
+                                    </Button>
+                                </div>
                             )}
                         </div>
                     ))
                 )}
             </div>
+
+            {/* Reschedule Modal */}
+            <Dialog open={isRescheduleModalOpen} onOpenChange={setIsRescheduleModalOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Reschedule Booking</DialogTitle>
+                    </DialogHeader>
+                    {selectedBookingForReschedule && (
+                        <div className="grid gap-4 py-4">
+                            <div className="text-sm border p-3 rounded-md bg-zinc-50">
+                                <p className="font-semibold text-zinc-900">{selectedBookingForReschedule.customerName}</p>
+                                <p className="text-zinc-500">
+                                    Current: {formatDate(selectedBookingForReschedule.bookingDate)} at {selectedBookingForReschedule.timeSlot}
+                                </p>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium">New Date</label>
+                                <Input
+                                    type="date"
+                                    value={newDate}
+                                    onChange={(e) => {
+                                        setNewDate(e.target.value);
+                                        setNewTimeSlot(''); // Reset slot when date changes
+                                    }}
+                                    min={new Date().toISOString().split('T')[0]} // Cannot schedule for past dates
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium">New Barber</label>
+                                <Select value={newBarberId} onValueChange={setNewBarberId}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select barber" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableBarbers.map((b) => (
+                                            <SelectItem key={b.id} value={b.id.toString()}>
+                                                {b.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium">New Time Slot</label>
+                                <Select value={newTimeSlot} onValueChange={setNewTimeSlot} disabled={!newDate || availableSlots.length === 0}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={
+                                            !newDate ? "Select date first" :
+                                                loadingSlots ? "Loading slots..." :
+                                                    availableSlots.length === 0 ? "No slots available" :
+                                                        "Select time slot"
+                                        } />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableSlots.map((slot) => (
+                                            <SelectItem key={slot} value={slot}>
+                                                {slot}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <Button
+                                className="w-full mt-2"
+                                onClick={handleReschedule}
+                                disabled={!newDate || !newTimeSlot || submittingReschedule}
+                            >
+                                {submittingReschedule ? "Saving..." : "Save Reschedule"}
+                            </Button>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
             {/* Image Preview Modal */}
             <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
                 <DialogContent className="max-w-3xl bg-white border-zinc-200 p-0 overflow-hidden">

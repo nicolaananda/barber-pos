@@ -16,7 +16,7 @@ cd ..
 # 3. Deploy frontend files
 echo "🚚 Deploying frontend files to server directories..."
 TARGET_1="/home/staycoolhairlab.id/public_html"
-TARGET_2="/home/staycoolhairlab.id/pos.staycoolhairlab.id"
+TARGET_2="/home/staycoolhairlab.id/pos.staycoolhairlab.id/public_html"
 
 if [ -d "$TARGET_1" ]; then
     echo "Cleaning and copying to $TARGET_1..."
@@ -37,8 +37,8 @@ fi
 
 # 4. Restart PM2
 echo "🔄 Restarting backend..."
-pm2 restart 4
+pm2 restart 3
 
 # 5. Show logs
 echo "✅ Deployment complete! Showing logs..."
-pm2 logs 4 --lines 20
+pm2 logs 3 --lines 20

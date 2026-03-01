@@ -135,11 +135,15 @@ model Booking {
   servicePrice  Float?   // Snapshot of service price
   status        String   @default("pending") // pending, confirmed, cancelled, completed
   paymentProof  String?  // URL/Path to uploaded evidence
-  rescheduleCount  Int       @default(0)
-  originalDate     DateTime?
-  originalTimeSlot String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+// Tracking reschedule history
+  rescheduledFrom      DateTime?
+  rescheduledFromSlot  String?
+  rescheduledAt        DateTime?
+  rescheduledByAdminId Int?
+  rescheduleCount      Int      @default(0)
 
   // ⚡ Performance indexes for common queries
   @@index([barberId, bookingDate, status]) // Most frequent query pattern

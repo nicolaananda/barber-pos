@@ -473,48 +473,20 @@ router.get('/summary', authenticateToken, async (req, res) => {
     }
 });
 
-
-// GET /api/bookings/active?phone=xxx - Get active bookings by phone (PUBLIC - for Reschedule page)
-router.get('/active', async (req, res) => {
+// PATCH /api/bookings/:id/reschedule - Reschedule booking (ADMIN ONLY)
+router.patch('/:id/reschedule', authenticateToken, async (req, res) => {
     try {
-        const { phone } = req.query;
+        const { id } = req.params;
+        const { newBookingDate, newTimeSlot, newBarberId, reason } = req.body;
+        const adminId = req.user.id; // From authenticateToken middleware
 
-        if (!phone) {
-            return res.status(400).json({ error: 'Nomor HP wajib diisi' });
+        if (!newBookingDate || !newTimeSlot) {
+            return res.status(400).json({ error: 'Tanggal dan jam baru harus diisi' });
         }
 
-        const bookings = await prisma.booking.findMany({
-            where: {
-                customerPhone: phone,
-                status: { in: ['pending', 'confirmed'] }
-            },
-            include: {
-                barber: {
-                    select: { id: true, name: true }
-                }
-            },
-            orderBy: [{ bookingDate: 'asc' }, { timeSlot: 'asc' }]
-        });
-
-        res.json(bookings);
-    } catch (error) {
-        console.error('Error fetching active bookings:', error);
-        res.status(500).json({ error: 'Gagal mengambil data booking' });
-    }
-});
-
-// POST /api/bookings/reschedule - Reschedule a booking (PUBLIC)
-router.post('/reschedule', async (req, res) => {
-    try {
-        const { bookingId, phone, newDate, newTimeSlot } = req.body;
-
-        if (!bookingId || !phone || !newDate || !newTimeSlot) {
-            return res.status(400).json({ error: 'Data tidak lengkap' });
-        }
-
-        // 1. Find the booking
+        // 1. Find existing booking
         const booking = await prisma.booking.findUnique({
-            where: { id: parseInt(bookingId) },
+            where: { id: parseInt(id) },
             include: { barber: { select: { id: true, name: true } } }
         });
 
@@ -522,30 +494,16 @@ router.post('/reschedule', async (req, res) => {
             return res.status(404).json({ error: 'Booking tidak ditemukan' });
         }
 
-        // 2. Verify phone ownership
-        if (booking.customerPhone !== phone) {
-            return res.status(403).json({ error: 'Nomor HP tidak sesuai dengan booking' });
+        // 2. Validate status
+        if (!['pending', 'confirmed'].includes(booking.status)) {
+            return res.status(400).json({ error: 'Hanya booking berstatus pending atau confirmed yang bisa di-reschedule' });
         }
 
-        // 3. Check if already rescheduled
-        if (booking.rescheduleCount >= 1) {
-            return res.status(400).json({ error: 'Booking ini sudah pernah direschedule. Setiap booking hanya bisa direschedule 1 kali.' });
-        }
+        // 3. Set target barber
+        const targetBarberId = newBarberId ? parseInt(newBarberId) : booking.barberId;
 
-        // 4. Check 1-hour cutoff from ORIGINAL booking time
-        const [startHourStr] = booking.timeSlot.split(':');
-        const originalDateTime = new Date(booking.bookingDate);
-        originalDateTime.setHours(parseInt(startHourStr, 10), 0, 0, 0);
-        const now = new Date();
-        const diffMs = originalDateTime.getTime() - now.getTime();
-        const diffHours = diffMs / (1000 * 60 * 60);
-
-        if (diffHours < 1) {
-            return res.status(400).json({ error: 'Maaf, reschedule tidak dapat dilakukan kurang dari 1 jam sebelum jadwal.' });
-        }
-
-        // 5. Check new slot availability
-        const checkDate = new Date(newDate);
+        // 4. Validate new slot availability
+        const checkDate = new Date(newBookingDate);
         const startOfDay = new Date(checkDate);
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(checkDate);
@@ -553,7 +511,7 @@ router.post('/reschedule', async (req, res) => {
 
         const conflicting = await prisma.booking.findFirst({
             where: {
-                barberId: booking.barberId,
+                barberId: targetBarberId,
                 bookingDate: { gte: startOfDay, lte: endOfDay },
                 timeSlot: newTimeSlot,
                 status: { in: ['pending', 'confirmed'] },
@@ -562,63 +520,50 @@ router.post('/reschedule', async (req, res) => {
         });
 
         if (conflicting) {
-            return res.status(409).json({ error: 'Slot waktu tersebut sudah terisi. Pilih waktu lain.' });
+            return res.status(409).json({ error: 'Slot waktu tersebut sudah terisi. Pilih admin/waktu lain.' });
         }
 
-        // 6. Determine new status
-        const newStatus = booking.status === 'confirmed' ? 'confirmed' : 'pending';
-
-        // 7. Update booking
-        const updated = await prisma.booking.update({
+        // 5. Update booking with reschedule tracking
+        const updatedBooking = await prisma.booking.update({
             where: { id: booking.id },
             data: {
-                bookingDate: new Date(newDate),
+                bookingDate: new Date(newBookingDate),
                 timeSlot: newTimeSlot,
-                status: newStatus,
-                rescheduleCount: { increment: 1 },
-                originalDate: booking.originalDate ?? booking.bookingDate,
-                originalTimeSlot: booking.originalTimeSlot ?? booking.timeSlot
+                barberId: targetBarberId,
+                // Reschedule tracking
+                rescheduledFrom: booking.rescheduledFrom || booking.bookingDate,
+                rescheduledFromSlot: booking.rescheduledFromSlot || booking.timeSlot,
+                rescheduledAt: new Date(),
+                rescheduledByAdminId: adminId,
+                rescheduleCount: { increment: 1 }
             },
             include: { barber: { select: { id: true, name: true } } }
         });
 
-        // 8. Send WhatsApp notifications (fire-and-forget)
+        // 6. Send WhatsApp notification
         try {
             const oldDateStr = format(new Date(booking.bookingDate), 'dd MMMM yyyy', { locale: idLocale });
-            const newDateStr = format(new Date(newDate), 'dd MMMM yyyy', { locale: idLocale });
+            const newDateStr = format(new Date(newBookingDate), 'dd MMMM yyyy', { locale: idLocale });
 
-            // To customer
-            const customerMsg = `🔄 *RESCHEDULE BOOKING*\n\n` +
-                `Halo Kak *${booking.customerName}*, jadwal booking Anda telah berhasil diubah!\n\n` +
-                `📅 Jadwal Lama: ${oldDateStr} – ${booking.timeSlot}\n` +
-                `📅 Jadwal Baru: *${newDateStr} – ${newTimeSlot}*\n` +
-                `💈 Barber: ${booking.barber.name}\n\n` +
-                (newStatus === 'confirmed'
-                    ? `✅ Booking Anda sudah *terkonfirmasi otomatis*.\n`
-                    : `⏳ Booking Anda menunggu konfirmasi ulang dari admin.\n`) +
-                `\nMohon datang 10 menit sebelum jam booking ya. Terima kasih! 🙏\n` +
+            const waMsg = `🔄 *RESCHEDULE BOOKING*\n\n` +
+                `Halo Kak *${booking.customerName}*, jadwal booking Anda telah *diubah oleh Admin*.\n\n` +
+                `✂️ Layanan: ${booking.serviceName || 'Potong Rambut'}\n` +
+                `📅 Jadwal Baru: *${newDateStr}*\n` +
+                `⏰ Jam Baru: *${newTimeSlot}*\n` +
+                `💈 Barber: ${updatedBooking.barber.name}\n\n` +
+                `Jadwal sebelumnya: ${oldDateStr} pukul ${booking.timeSlot}\n\n` +
+                `Mohon hadir 10 menit sebelum jadwal ya. Terima kasih! 🙏\n` +
                 `\n📍 *Staycool Hairlab*\nJl. Imam Bonjol Pertigaan No.370 Kediri`;
 
-            await whatsappService.sendWhatsAppMessage(booking.customerPhone, customerMsg);
-
-            // To admin (owner number from env, fallback to a known number)
-            const adminPhone = process.env.ADMIN_PHONE || '6281234567890';
-            const adminMsg = `🔄 *INFO RESCHEDULE*\n\n` +
-                `Pelanggan *${booking.customerName}* (${booking.customerPhone}) telah melakukan reschedule:\n\n` +
-                `❌ Jadwal Lama: ${oldDateStr} – ${booking.timeSlot}\n` +
-                `✅ Jadwal Baru: ${newDateStr} – ${newTimeSlot}\n` +
-                `💈 Barber: ${booking.barber.name}\n` +
-                `📋 Status: ${newStatus === 'confirmed' ? 'Auto-Confirmed ✅' : 'Pending (butuh konfirmasi) ⏳'}`;
-
-            await whatsappService.sendWhatsAppMessage(adminPhone, adminMsg);
-        } catch (waErr) {
-            console.error('[Reschedule] WA notification error:', waErr);
-            // don't fail the request
+            await whatsappService.sendWhatsAppMessage(booking.customerPhone, waMsg);
+        } catch (waError) {
+            console.error('[Admin Reschedule] WA notification error:', waError);
+            // Non-blocking
         }
 
-        res.json({ success: true, booking: updated });
+        res.json({ success: true, booking: updatedBooking });
     } catch (error) {
-        console.error('Error rescheduling booking:', error);
+        console.error('Error in admin reschedule:', error);
         res.status(500).json({ error: 'Gagal melakukan reschedule booking' });
     }
 });
