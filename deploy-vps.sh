@@ -16,8 +16,7 @@ cd ..
 # 3. Deploy frontend files
 echo "🚚 Deploying frontend files to server directories..."
 TARGET_1="/home/staycoolhairlab.id/public_html"
-TARGET_2="/home/staycoolhairlab.id/pos.staycoolhairlab.id/public_html"
-
+TARGET_2="/home/pos.staycoolhairlab.id/public_html"
 if [ -d "$TARGET_1" ]; then
     echo "Cleaning and copying to $TARGET_1..."
     rm -rf "$TARGET_1"/*
