@@ -83,6 +83,7 @@ app.use('/api/capital', capitalRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/offdays', require('./routes/offdays'));
+app.use('/api/slots', require('./routes/slots'));
 app.use('/api/analytics', analyticsRoutes);
 
 // Health check
