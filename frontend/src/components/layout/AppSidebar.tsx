@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -32,6 +32,33 @@ export function AppSidebar({ defaultCollapsed = true, className }: AppSidebarPro
     const { user, logout } = useAuth();
     const location = useLocation();
     const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+    const isHoverExpanded = useRef(false);
+    const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const handleMouseEnter = useCallback(() => {
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+        }
+        if (isCollapsed) {
+            isHoverExpanded.current = true;
+            setIsCollapsed(false);
+        }
+    }, [isCollapsed]);
+
+    const handleMouseLeave = useCallback(() => {
+        if (isHoverExpanded.current) {
+            hoverTimeoutRef.current = setTimeout(() => {
+                setIsCollapsed(true);
+                isHoverExpanded.current = false;
+            }, 300);
+        }
+    }, []);
+
+    const handleToggle = useCallback(() => {
+        isHoverExpanded.current = false;
+        setIsCollapsed(prev => !prev);
+    }, []);
 
     const navigation = [
         { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
@@ -57,6 +84,8 @@ export function AppSidebar({ defaultCollapsed = true, className }: AppSidebarPro
                 isCollapsed ? "w-20" : "w-64",
                 className
             )}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
         >
             {/* Liquid Glass Background Effect (CSS) */}
             <div className="absolute inset-0 z-0 rounded-2xl overflow-hidden border border-white/40 shadow-sm">
@@ -74,7 +103,7 @@ export function AppSidebar({ defaultCollapsed = true, className }: AppSidebarPro
                 variant="ghost"
                 size="icon"
                 className="absolute -right-3 top-6 h-6 w-6 rounded-full border border-zinc-300 bg-white shadow-md hover:bg-zinc-100 z-50 p-0 text-zinc-600 hover:text-zinc-900"
-                onClick={() => setIsCollapsed(!isCollapsed)}
+                onClick={handleToggle}
             >
                 {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
             </Button>
