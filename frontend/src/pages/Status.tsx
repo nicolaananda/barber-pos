@@ -170,6 +170,13 @@ export default function StatusPage() {
                 </div>
             )}
 
+            {/* Lebaran Pre-Announcement Banner */}
+            {new Date() <= new Date('2026-03-26T23:59:59') && (
+                <div className="bg-amber-400 text-amber-900 text-center py-3 px-4 text-sm font-bold sticky top-0 z-40 flex items-center justify-center gap-2 shadow-md">
+                    🌙 <span>Spesial Lebaran 10–26 Maret: <span className="underline">booking online ditutup</span>, hanya walk-in langsung ke tempat — siapa cepat dia dapat!</span>
+                </div>
+            )}
+
             <main className="max-w-4xl mx-auto px-4 pt-12 md:pt-20">
                 {/* Hero Section */}
                 <div className="text-center mb-12 md:mb-16 space-y-4">
