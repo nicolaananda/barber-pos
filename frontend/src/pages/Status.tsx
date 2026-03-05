@@ -153,6 +153,14 @@ export default function StatusPage() {
 
     const timeSlots = generateTimeSlots(selectedDate);
 
+    // Blackout period: 10–26 Maret 2026 (walk-in only)
+    const isBlackoutDate = (date: Date) => {
+        const start = new Date('2026-03-10T00:00:00');
+        const end = new Date('2026-03-26T23:59:59');
+        return date >= start && date <= end;
+    };
+    const isBlackout = isBlackoutDate(selectedDate);
+
     return (
         <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white pb-20">
             {/* Offline Warning Banner */}
@@ -221,6 +229,22 @@ export default function StatusPage() {
                         </button>
                     </div>
                 </div>
+
+                {/* Blackout Period Banner */}
+                {isBlackout && (
+                    <div className="mb-8 rounded-2xl border-2 border-amber-300 bg-amber-50 px-6 py-5 flex gap-4 items-start shadow-sm">
+                        <span className="text-2xl mt-0.5">🚫</span>
+                        <div>
+                            <p className="font-black text-amber-800 text-base leading-snug">
+                                Booking Online Tidak Tersedia (10–26 Maret 2026)
+                            </p>
+                            <p className="text-amber-700 text-sm mt-1 leading-relaxed">
+                                Selama periode ini kami hanya melayani <span className="font-bold">walk-in langsung</span> ke barbershop.
+                                Silakan datang ke <span className="font-bold">Jl. Imam Bonjol Pertigaan No.370 Kediri</span>.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Barbers Grid */}
                 {isLoading ? (
@@ -348,7 +372,7 @@ export default function StatusPage() {
                                                     );
 
                                                     // Determine visual state
-                                                    const isLocked = isBooked || isOffday;
+                                                    const isLocked = isBooked || isOffday || isBlackout;
 
                                                     return (
                                                         <button

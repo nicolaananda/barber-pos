@@ -29,6 +29,18 @@ router.post('/', (req, res, next) => {
 
         const { barberId, customerName, customerPhone, bookingDate, timeSlot, serviceId } = req.body;
 
+        // 🚫 Blackout period: 10–26 Maret 2026 (walk-in only)
+        if (bookingDate) {
+            const d = new Date(bookingDate);
+            const blackoutStart = new Date('2026-03-10T00:00:00');
+            const blackoutEnd = new Date('2026-03-26T23:59:59');
+            if (d >= blackoutStart && d <= blackoutEnd) {
+                return res.status(400).json({
+                    error: 'Booking online tidak tersedia untuk tanggal 10–26 Maret 2026. Silakan datang langsung (walk-in).'
+                });
+            }
+        }
+
         // Fetch Service Details if provided
         let serviceName = 'Potong Rambut'; // Default
         let servicePrice = null;
