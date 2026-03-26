@@ -89,8 +89,7 @@ async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
             // If not success but not last attempt, retry
             if (attempt < maxRetries) {
                 const delay = baseDelay * Math.pow(2, attempt - 1); // 1s, 2s, 4s
-                console.log(`[Retry ${attempt}/${maxRetries}] Waiting ${delay}ms before retry...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
+                        await new Promise(resolve => setTimeout(resolve, delay));
                 continue;
             }
 
@@ -102,7 +101,6 @@ async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
             }
 
             const delay = baseDelay * Math.pow(2, attempt - 1);
-            console.log(`[Retry ${attempt}/${maxRetries}] Error: ${error.message}. Retrying in ${delay}ms...`);
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
@@ -122,7 +120,6 @@ async function sendWhatsAppMessage(phoneNumber, message) {
                 message: message
             };
 
-            console.log('Sending WA Message:', { url: `${WA_GATEWAY_URL}/send/message`, payload });
 
             const response = await fetch(`${WA_GATEWAY_URL}/send/message`, {
                 method: 'POST',
@@ -166,7 +163,6 @@ async function sendWhatsAppFile(phoneNumber, filepath, caption = '') {
         // Plan said /send/file, usually expects 'file'.
         formData.append('file', new Blob([fileBuffer]), filename);
 
-        console.log('Sending WA File:', { url: `${WA_GATEWAY_URL}/send/file`, phone: formattedPhone, filename });
 
         const response = await fetch(`${WA_GATEWAY_URL}/send/file`, {
             method: 'POST',
@@ -206,9 +202,7 @@ async function sendInvoice(transaction, barberName, cashReceived = 0) {
     }
 
     try {
-        console.log('Generating PDF for invoice:', transaction.invoiceCode);
         const pdfUrl = await pdfGenerator.generateInvoicePDF(transaction, barberName, cashReceived);
-        console.log('PDF available at:', pdfUrl);
 
         const message = `🧾 *INVOICE STAYCOOL HAIRLAB*\n\n` +
             `📋 Invoice: *${transaction.invoiceCode}*\n` +

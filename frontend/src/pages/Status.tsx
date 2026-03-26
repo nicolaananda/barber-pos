@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/lib/api';
-import { Coffee, Scissors, Sparkles, BookOpen, MapPin, Instagram, MessageCircle } from 'lucide-react';
+import { MapPin, Instagram, MessageCircle, Clock, Search, CheckCircle2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import BookingModal from '@/components/booking/BookingModal';
 import ServicesModal from '@/components/pos/ServicesModal';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import { VersionFooter } from '@/components/VersionFooter';
 
 interface Barber {
@@ -20,12 +21,31 @@ interface BookingData {
     timeSlot: { start: string; end: string; label: string };
 }
 
+interface HistoryItem {
+    type: 'booking' | 'transaction';
+    date: string;
+    barberName: string;
+    customerName: string;
+    service: string | null;
+    amount: number | null;
+    status: string;
+    timeSlot: string | null;
+    paymentMethod: string | null;
+    invoiceCode: string | null;
+}
+
+const STATUS_LABEL: Record<string, { label: string; color: string }> = {
+    pending:     { label: 'Menunggu Konfirmasi', color: 'text-amber-600 bg-amber-50 border-amber-200' },
+    confirmed:   { label: 'Dikonfirmasi ✓',      color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+    completed:   { label: 'Selesai',              color: 'text-zinc-500 bg-zinc-50 border-zinc-200' },
+    cancelled:   { label: 'Dibatalkan',           color: 'text-red-600 bg-red-50 border-red-200' },
+};
+
 export default function StatusPage() {
     const [barbers, setBarbers] = useState<Barber[]>([]);
     const [bookingModalOpen, setBookingModalOpen] = useState(false);
     const [servicesModalOpen, setServicesModalOpen] = useState(false);
 
-    // Image Modal State
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [imageModalOpen, setImageModalOpen] = useState(false);
 
@@ -36,14 +56,21 @@ export default function StatusPage() {
     const [currentOffDays, setCurrentOffDays] = useState<any[]>([]);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-    // Monitor network status
+    // Success feedback state (#8)
+    const [lastBookedInfo, setLastBookedInfo] = useState<{ barberName: string; slot: string } | null>(null);
+
+    // Booking status check state (#5)
+    const [statusPhone, setStatusPhone] = useState('');
+    const [statusResults, setStatusResults] = useState<HistoryItem[] | null>(null);
+    const [statusLoading, setStatusLoading] = useState(false);
+    const [statusError, setStatusError] = useState('');
+    const [statusSectionOpen, setStatusSectionOpen] = useState(false);
+
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
         const handleOffline = () => setIsOnline(false);
-
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
-
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
@@ -55,59 +82,75 @@ export default function StatusPage() {
             await Promise.all([
                 fetchBarbers(),
                 fetchBookingsForDate(selectedDate),
-                fetchOffDaysForDate(selectedDate)
+                fetchOffDaysForDate(selectedDate),
             ]);
             setIsLoading(false);
         };
-
         fetchData();
         const interval = setInterval(fetchData, 10000);
         return () => clearInterval(interval);
     }, [selectedDate]);
+
+    // Auto-dismiss success banner after 6s (#8)
+    useEffect(() => {
+        if (!lastBookedInfo) return;
+        const t = setTimeout(() => setLastBookedInfo(null), 6000);
+        return () => clearTimeout(t);
+    }, [lastBookedInfo]);
 
     const fetchBarbers = async () => {
         try {
             const res = await fetch(`${API_BASE_URL}/users/barbers`);
             if (res.ok) {
                 const data = await res.json();
-                // Sort: Owner (username 'bagus') first, then others alphabetically
-                const sortedData = data.sort((a: Barber, b: Barber) => {
+                const sorted = data.sort((a: Barber, b: Barber) => {
                     if (a.username === 'bagus') return -1;
                     if (b.username === 'bagus') return 1;
                     return a.name.localeCompare(b.name);
                 });
-                setBarbers(sortedData);
+                setBarbers(sorted);
             }
-        } catch (error) {
-            console.error('Error fetching barbers:', error);
+        } catch (err) {
+            console.error('Error fetching barbers:', err);
         }
     };
 
     const fetchBookingsForDate = async (date: Date) => {
         try {
-            // Format date as YYYY-MM-DD using local time
             const dateStr = format(date, 'yyyy-MM-dd');
             const res = await fetch(`${API_BASE_URL}/bookings/date/${dateStr}`);
-            if (res.ok) {
-                const data = await res.json();
-                setExistingBookings(data);
-            }
-        } catch (error) {
-            console.error('Error fetching bookings:', error);
+            if (res.ok) setExistingBookings(await res.json());
+        } catch (err) {
+            console.error('Error fetching bookings:', err);
         }
     };
 
     const fetchOffDaysForDate = async (date: Date) => {
         try {
             const dateStr = format(date, 'yyyy-MM-dd');
-            // Fetch off days for this specific date
             const res = await fetch(`${API_BASE_URL}/offdays?start=${dateStr}&end=${dateStr}`);
-            if (res.ok) {
-                const data = await res.json();
-                setCurrentOffDays(data);
-            }
-        } catch (error) {
-            console.error('Error fetching off days:', error);
+            if (res.ok) setCurrentOffDays(await res.json());
+        } catch (err) {
+            console.error('Error fetching off days:', err);
+        }
+    };
+
+    const handleCheckStatus = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!statusPhone.trim()) return;
+        setStatusLoading(true);
+        setStatusError('');
+        setStatusResults(null);
+        try {
+            const res = await fetch(`${API_BASE_URL}/bookings/status?phone=${encodeURIComponent(statusPhone.trim())}`);
+            if (!res.ok) throw new Error((await res.json()).error || 'Gagal mengecek status');
+            const data = await res.json();
+            setStatusResults(data);
+            if (data.length === 0) setStatusError('Tidak ada booking ditemukan untuk nomor ini.');
+        } catch (err: any) {
+            setStatusError(err.message || 'Terjadi kesalahan. Coba lagi.');
+        } finally {
+            setStatusLoading(false);
         }
     };
 
@@ -116,61 +159,54 @@ export default function StatusPage() {
         const now = new Date();
         const isToday = forDate.toDateString() === now.toDateString();
         const currentHour = now.getHours();
-
         const isFriday = forDate.getDay() === 5;
         const OPENING_HOUR = isFriday ? 13 : 11;
         const CLOSING_HOUR = 22;
 
         for (let startHour = OPENING_HOUR; startHour < CLOSING_HOUR; startHour++) {
             if (isToday && startHour <= currentHour) continue;
-
             const endHour = startHour + 1;
             slots.push({
                 start: `${String(startHour).padStart(2, '0')}:00`,
                 end: `${String(endHour).padStart(2, '0')}:00`,
-                label: `${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:00`
+                label: `${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:00`,
             });
         }
-
         return slots;
     };
 
-    // Helper function to check if barber is on offday
     const isBarberOffday = (username: string, date: Date) => {
-        // 1. Check Manual Off Days from Database (highest priority)
         const manualOff = currentOffDays.find((od: any) => od.user.username === username);
         if (manualOff) return true;
-
-        // 2. Check Recurring Weekly Off Day
         const barber = barbers.find(b => b.username === username);
         if (barber?.defaultOffDay !== null && barber?.defaultOffDay !== undefined) {
-            const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-            if (dayOfWeek === barber.defaultOffDay) return true;
+            if (date.getDay() === barber.defaultOffDay) return true;
         }
-
         return false;
     };
 
-    const timeSlots = generateTimeSlots(selectedDate);
-
-    // Blackout period: 10–26 Maret 2026 (walk-in only)
     const isBlackoutDate = (date: Date) => {
         const start = new Date('2026-03-10T00:00:00');
         const end = new Date('2026-03-26T23:59:59');
         return date >= start && date <= end;
     };
+
+    const timeSlots = generateTimeSlots(selectedDate);
     const isBlackout = isBlackoutDate(selectedDate);
+
+    const bookingDaysAhead = parseInt(import.meta.env.VITE_BOOKING_DAYS_AHEAD || '3', 10);
+    const dateOptions = Array.from({ length: bookingDaysAhead }, (_, i) => addDays(new Date(), i));
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white pb-20">
-            {/* Offline Warning Banner */}
+            {/* Offline Warning */}
             {!isOnline && (
                 <div className="bg-red-500 text-white text-center py-2 px-4 text-sm font-semibold sticky top-0 z-50">
                     ⚠️ Tidak ada koneksi internet. Beberapa fitur mungkin tidak tersedia.
                 </div>
             )}
 
-            {/* Lebaran Pre-Announcement Banner */}
+            {/* Lebaran Banner */}
             {new Date() <= new Date('2026-03-26T23:59:59') && (
                 <div className="bg-amber-400 text-amber-900 text-center py-3 px-4 text-sm font-bold sticky top-0 z-40 flex items-center justify-center gap-2 shadow-md">
                     🌙 <span>Spesial Lebaran 10–26 Maret: <span className="underline">booking online ditutup</span>, hanya walk-in langsung ke tempat — siapa cepat dia dapat!</span>
@@ -178,66 +214,74 @@ export default function StatusPage() {
             )}
 
             <main className="max-w-4xl mx-auto px-4 pt-12 md:pt-20">
-                {/* Hero Section */}
-                <div className="text-center mb-12 md:mb-16 space-y-4">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-4">
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+
+                {/* Success Banner (#8) */}
+                {lastBookedInfo && (
+                    <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-center gap-3 shadow-sm animate-in slide-in-from-top-2 duration-300">
+                        <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0" />
+                        <div>
+                            <p className="font-bold text-emerald-800">Booking berhasil dibuat!</p>
+                            <p className="text-sm text-emerald-700">
+                                {lastBookedInfo.barberName} · {lastBookedInfo.slot}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Hero */}
+                <div className="text-center mb-8 md:mb-12 space-y-3">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-2">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                         Waktunya Tampil Keren!
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-zinc-900 uppercase">
                         STAYCOOLHAIR <br className="hidden md:block" />
                         <span className="text-zinc-400">LAB.</span>
                     </h1>
-                    <p className="text-zinc-500 max-w-lg mx-auto text-lg leading-relaxed">
-                        Select your preferred barber and time slot below.
+                    <p className="text-zinc-500 max-w-lg mx-auto text-base leading-relaxed">
+                        Pilih barber dan slot waktu yang tersedia di bawah.
                     </p>
+
+                    {/* Jam Operasional (#4) */}
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-zinc-200 shadow-sm text-xs text-zinc-600 font-medium">
+                        <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>Sen–Kam & Sab–Min: <strong>11:00–22:00</strong></span>
+                        <span className="text-zinc-300">|</span>
+                        <span>Jumat: <strong>13:00–22:00</strong></span>
+                    </div>
+
                 </div>
 
-                {/* Date Selector - Floating Segmented Control */}
-                <div className="flex justify-center mb-12">
-                    <div className="inline-flex bg-white/80 backdrop-blur-md border border-zinc-200/50 p-1.5 rounded-full shadow-lg shadow-zinc-200/50">
-                        <button
-                            onClick={() => setSelectedDate(new Date())}
-                            className={`
-                                relative px-8 py-3 rounded-full text-sm font-bold transition-all duration-300
-                                flex flex-col items-center leading-none gap-1 min-w-[120px]
-                                ${selectedDate.toDateString() === new Date().toDateString()
-                                    ? 'bg-zinc-900 text-white shadow-md transform scale-105'
-                                    : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50'
-                                }
-                            `}
-                        >
-                            <span className="uppercase tracking-wide text-[10px]">Today</span>
-                            <span className="text-base">{format(new Date(), 'd MMM')}</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                const tomorrow = new Date();
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                setSelectedDate(tomorrow);
-                            }}
-                            className={`
-                                relative px-8 py-3 rounded-full text-sm font-bold transition-all duration-300
-                                flex flex-col items-center leading-none gap-1 min-w-[120px]
-                                ${selectedDate.toDateString() !== new Date().toDateString()
-                                    ? 'bg-zinc-900 text-white shadow-md transform scale-105'
-                                    : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50'
-                                }
-                            `}
-                        >
-                            <span className="uppercase tracking-wide text-[10px]">Tomorrow</span>
-                            <span className="text-base">
-                                {format((() => {
-                                    const t = new Date();
-                                    t.setDate(t.getDate() + 1);
-                                    return t;
-                                })(), 'd MMM')}
-                            </span>
-                        </button>
+                {/* Date Selector — 7 hari */}
+                <div className="flex justify-center mb-10">
+                    <div className="flex gap-2 overflow-x-auto pb-1 max-w-full px-2 scrollbar-none">
+                        {dateOptions.map((date, i) => {
+                            const isSelected = selectedDate.toDateString() === date.toDateString();
+                            const isToday = i === 0;
+                            return (
+                                <button
+                                    key={i}
+                                    onClick={() => setSelectedDate(date)}
+                                    className={`
+                                        flex flex-col items-center px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-200 shrink-0 min-w-[72px]
+                                        ${isSelected
+                                            ? 'bg-zinc-900 text-white shadow-md scale-105'
+                                            : 'bg-white border border-zinc-200 text-zinc-500 hover:border-zinc-400 hover:text-zinc-900'
+                                        }
+                                    `}
+                                >
+                                    <span className="text-[10px] uppercase tracking-wide opacity-70">
+                                        {isToday ? 'Hari Ini' : format(date, 'EEE', { locale: idLocale })}
+                                    </span>
+                                    <span className="text-lg leading-tight">{format(date, 'd')}</span>
+                                    <span className="text-[10px] opacity-60">{format(date, 'MMM')}</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
-                {/* Blackout Period Banner */}
+                {/* Blackout Banner */}
                 {isBlackout && (
                     <div className="mb-8 rounded-2xl border-2 border-amber-300 bg-amber-50 px-6 py-5 flex gap-4 items-start shadow-sm">
                         <span className="text-2xl mt-0.5">🚫</span>
@@ -256,13 +300,11 @@ export default function StatusPage() {
                 {/* Barbers Grid */}
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
-                        <div className="w-8 h-8 border-4 border-zinc-900 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-8 h-8 border-4 border-zinc-900 border-t-transparent rounded-full animate-spin" />
                         <p className="text-zinc-400 font-medium">Loading availability...</p>
                     </div>
                 ) : barbers.length === 0 ? (
-                    <div className="text-center py-20 text-zinc-400">
-                        No barbers available.
-                    </div>
+                    <div className="text-center py-20 text-zinc-400">No barbers available.</div>
                 ) : (
                     <div className="grid gap-6">
                         {barbers.map((barber) => {
@@ -271,12 +313,15 @@ export default function StatusPage() {
                             const actualAvailability = onOffday
                                 ? 'offday'
                                 : isToday
-                                    ? barber.availability
-                                    : 'available';
+                                ? barber.availability
+                                : 'available';
 
                             const isAvailable = actualAvailability === 'available';
-                            const isWorking = actualAvailability === 'working';
                             const isOffday = actualAvailability === 'offday';
+
+                            // Slot counter (#3)
+                            const bookedSlots = existingBookings.filter(b => b.barberId === barber.id).length;
+                            const availableSlotCount = isOffday || isBlackout ? 0 : timeSlots.length - bookedSlots;
 
                             return (
                                 <div
@@ -291,12 +336,8 @@ export default function StatusPage() {
                                         const centerY = rect.height / 2;
                                         const rotateX = ((y - centerY) / 10).toFixed(2);
                                         const rotateY = ((centerX - x) / 10).toFixed(2);
-
                                         card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-                                        card.style.boxShadow = `
-                                            ${(parseFloat(rotateY) * -1)}px ${parseFloat(rotateX)}px 20px rgba(0,0,0,0.1),
-                                            0 20px 40px rgba(0,0,0,0.1)
-                                        `;
+                                        card.style.boxShadow = `${(parseFloat(rotateY) * -1)}px ${parseFloat(rotateX)}px 20px rgba(0,0,0,0.1), 0 20px 40px rgba(0,0,0,0.1)`;
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
@@ -338,7 +379,6 @@ export default function StatusPage() {
                                                         </div>
                                                     )}
                                                 </div>
-                                                {/* Status Badge Over Avatar */}
                                                 <div className={`
                                                     absolute -bottom-2 -right-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border border-white
                                                     ${isAvailable ? 'bg-zinc-900 text-white' : isOffday ? 'bg-zinc-200 text-zinc-500' : 'bg-zinc-100 text-zinc-900'}
@@ -355,17 +395,31 @@ export default function StatusPage() {
                                             </div>
                                         </div>
 
-                                        {/* Slots Grid */}
+                                        {/* Slots */}
                                         <div className="flex-1 border-t md:border-t-0 md:border-l border-zinc-100 pt-6 md:pt-0 md:pl-8">
+                                            {/* Slot header with counter (#3) */}
                                             <div className="flex items-center justify-between mb-6">
-                                                <h4 className="text-sm font-semibold text-zinc-900">Available Slots</h4>
+                                                <div className="flex items-center gap-3">
+                                                    <h4 className="text-sm font-semibold text-zinc-900">Available Slots</h4>
+                                                    {!isOffday && !isBlackout && (
+                                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                                            availableSlotCount === 0
+                                                                ? 'bg-red-100 text-red-600'
+                                                                : availableSlotCount <= 3
+                                                                ? 'bg-amber-100 text-amber-700'
+                                                                : 'bg-emerald-100 text-emerald-700'
+                                                        }`}>
+                                                            {availableSlotCount === 0 ? 'Penuh' : `${availableSlotCount} slot tersisa`}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                                                     {isOffday ? (
                                                         <span className="bg-zinc-100 px-2 py-1 rounded">Not Taking Bookings</span>
                                                     ) : (
                                                         <>
-                                                            <span className="w-2 h-2 rounded-full bg-zinc-900"></span> Available
-                                                            <span className="w-2 h-2 rounded-full bg-zinc-200 ml-2"></span> Booked
+                                                            <span className="w-2 h-2 rounded-full bg-zinc-900" /> Available
+                                                            <span className="w-2 h-2 rounded-full bg-zinc-200 ml-2" /> Booked
                                                         </>
                                                     )}
                                                 </div>
@@ -377,8 +431,6 @@ export default function StatusPage() {
                                                         booking.barberId === barber.id &&
                                                         booking.timeSlot === slot.label
                                                     );
-
-                                                    // Determine visual state
                                                     const isLocked = isBooked || isOffday || isBlackout;
 
                                                     return (
@@ -389,13 +441,13 @@ export default function StatusPage() {
                                                                 if (!isLocked) {
                                                                     setSelectedBooking({
                                                                         barber: { id: barber.id, name: barber.name, username: barber.username },
-                                                                        timeSlot: slot
+                                                                        timeSlot: slot,
                                                                     });
                                                                     setBookingModalOpen(true);
                                                                 }
                                                             }}
                                                             className={`
-                                                                group relative py-3 rounded-xl text-xs font-bold transition-all duration-200
+                                                                relative py-3 rounded-xl text-xs font-bold transition-all duration-200
                                                                 ${isLocked
                                                                     ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed'
                                                                     : 'bg-white border text-zinc-600 hover:bg-zinc-900 hover:text-white hover:shadow-lg hover:-translate-y-0.5 border-zinc-200'
@@ -415,8 +467,98 @@ export default function StatusPage() {
                     </div>
                 )}
 
+                {/* Cek Status Booking (#5) */}
+                <div className="mt-16 border border-zinc-200 rounded-3xl bg-white shadow-sm overflow-hidden">
+                    <button
+                        onClick={() => setStatusSectionOpen(prev => !prev)}
+                        className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-zinc-50 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center">
+                                <Search className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="font-bold text-zinc-900">Cek Status Booking</p>
+                                <p className="text-xs text-zinc-400">Masukkan nomor HP untuk melihat status booking kamu</p>
+                            </div>
+                        </div>
+                        {statusSectionOpen ? <ChevronUp className="w-5 h-5 text-zinc-400" /> : <ChevronDown className="w-5 h-5 text-zinc-400" />}
+                    </button>
+
+                    {statusSectionOpen && (
+                        <div className="px-6 pb-6 border-t border-zinc-100">
+                            <form onSubmit={handleCheckStatus} className="flex gap-3 mt-5">
+                                <input
+                                    type="tel"
+                                    placeholder="Contoh: 08123456789"
+                                    value={statusPhone}
+                                    onChange={e => setStatusPhone(e.target.value)}
+                                    className="flex-1 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 bg-zinc-50"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={statusLoading}
+                                    className="px-5 py-3 bg-zinc-900 text-white rounded-xl text-sm font-semibold hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                                >
+                                    {statusLoading ? '...' : 'Cek'}
+                                </button>
+                            </form>
+
+                            {statusError && (
+                                <div className="mt-4 flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                                    <AlertCircle className="w-4 h-4 shrink-0" />
+                                    {statusError}
+                                </div>
+                            )}
+
+                            {statusResults && statusResults.length > 0 && (
+                                <div className="mt-4 space-y-3">
+                                    <p className="text-xs text-zinc-400 font-medium uppercase tracking-wide">
+                                        {statusResults.length} riwayat ditemukan (90 hari terakhir)
+                                    </p>
+                                    {statusResults.map((item, idx) => {
+                                        const st = STATUS_LABEL[item.status] ?? { label: item.status, color: 'text-zinc-500 bg-zinc-50 border-zinc-200' };
+                                        const isBooking = item.type === 'booking';
+                                        return (
+                                            <div key={idx} className="border border-zinc-100 rounded-2xl p-4 bg-zinc-50">
+                                                <div className="flex items-start justify-between gap-2 mb-2">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            <p className="font-bold text-zinc-900">{item.customerName}</p>
+                                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${isBooking ? 'bg-blue-100 text-blue-600' : 'bg-zinc-200 text-zinc-600'}`}>
+                                                                {isBooking ? 'Booking' : 'Walk-in'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-zinc-500">
+                                                            {format(new Date(item.date), 'EEEE, d MMM yyyy', { locale: idLocale })}
+                                                            {item.timeSlot && ` · ${item.timeSlot}`}
+                                                        </p>
+                                                    </div>
+                                                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border shrink-0 ${st.color}`}>
+                                                        {st.label}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+                                                    <span>✂️ {item.barberName}</span>
+                                                    {item.service && <span>· {item.service}</span>}
+                                                    {item.amount && <span>· IDR {item.amount.toLocaleString('id-ID')}</span>}
+                                                    {item.paymentMethod && (
+                                                        <span className="ml-auto font-medium text-zinc-400 uppercase tracking-wide">
+                                                            {item.paymentMethod}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
                 {/* Footer */}
-                <footer className="mt-24 border-t border-zinc-200 py-12 text-center">
+                <footer className="mt-16 border-t border-zinc-200 py-12 text-center">
                     <p className="text-zinc-400 text-sm mb-6">
                         &copy; {new Date().getFullYear()} Staycool Hairlab. All rights reserved.
                     </p>
@@ -460,11 +602,17 @@ export default function StatusPage() {
                     timeSlot={selectedBooking.timeSlot}
                     bookingDate={selectedDate}
                     onSuccess={() => {
+                        // #8 — tampilkan success banner
+                        setLastBookedInfo({
+                            barberName: selectedBooking.barber.name,
+                            slot: selectedBooking.timeSlot.label,
+                        });
                         fetchBarbers();
                         fetchBookingsForDate(selectedDate);
                     }}
                 />
             )}
+
             <ServicesModal open={servicesModalOpen} onOpenChange={setServicesModalOpen} />
 
             <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>

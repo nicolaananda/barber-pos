@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const authRoutes = require('./routes/auth');
 const customersRoutes = require('./routes/customers');
@@ -21,6 +21,9 @@ const analyticsRoutes = require('./routes/analytics');
 
 // Rate limiting middleware
 const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
+
+// WA Reminder cron
+const { startReminderCron } = require('./lib/reminderService');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -59,15 +62,6 @@ app.use(express.json());
 // Apply rate limiting to all API routes
 app.use('/api/', apiLimiter);
 
-// Debug IP Logging - To verify if all users differ or share IP
-app.use((req, res, next) => {
-    // Only log API requests to avoid noise
-    if (req.url.startsWith('/api')) {
-        console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - IP: ${req.ip}`);
-    }
-    next();
-});
-
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/customers', customersRoutes);
@@ -101,8 +95,8 @@ app.use((req, res) => {
 });
 
 const server = app.listen(PORT, () => {
-    // Server running ...
     console.log(`Server running on port ${PORT}`);
+    startReminderCron();
 });
 
 // Graceful shutdown

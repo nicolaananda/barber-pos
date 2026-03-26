@@ -215,93 +215,117 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
 
-        // Default to current month if no dates provided
         const now = new Date();
         const start = startDate ? new Date(startDate) : startOfMonth(now);
         const end = endDate ? new Date(endDate) : endOfMonth(now);
-
-        // Ensure end date includes the full day
         end.setHours(23, 59, 59, 999);
 
-        // 1. Calculate Total Revenue (Transactions)
-        const revenueAgg = await prisma.transaction.aggregate({
-            _sum: { totalAmount: true },
-            where: {
-                date: {
-                    gte: start,
-                    lte: end,
-                },
-            },
-        });
+        // Previous period: same duration shifted back
+        const durationMs = end.getTime() - start.getTime();
+        const prevEnd = new Date(start.getTime() - 1);
+        prevEnd.setHours(23, 59, 59, 999);
+        const prevStart = new Date(prevEnd.getTime() - durationMs);
+        prevStart.setHours(0, 0, 0, 0);
+
+        // Get YYYY-MM period strings that overlap with a date range (for payroll lookup)
+        const getPayrollPeriods = (s, e) => {
+            const periods = [];
+            const cur = new Date(s.getFullYear(), s.getMonth(), 1);
+            const last = new Date(e.getFullYear(), e.getMonth(), 1);
+            while (cur <= last) {
+                periods.push(format(cur, 'yyyy-MM'));
+                cur.setMonth(cur.getMonth() + 1);
+            }
+            return periods;
+        };
+
+        const currentPeriods = getPayrollPeriods(start, end);
+        const prevPeriods = getPayrollPeriods(prevStart, prevEnd);
+
+        // Run all queries in parallel
+        const [
+            revenueAgg, opexAgg, capitalAgg, payrollAgg,
+            expensesByCategory, revenueByMethod, payrollRecords,
+            prevRevenueAgg, prevOpexAgg, prevPayrollAgg,
+            dailyTransactions, dailyExpenses,
+        ] = await Promise.all([
+            prisma.transaction.aggregate({ _sum: { totalAmount: true }, where: { date: { gte: start, lte: end } } }),
+            prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: start, lte: end } } }),
+            prisma.capital.aggregate({ _sum: { amount: true }, where: { date: { gte: start, lte: end } } }),
+            prisma.payroll.aggregate({ _sum: { totalPayout: true }, where: { period: { in: currentPeriods }, status: 'paid' } }),
+            prisma.expense.groupBy({ by: ['category'], _sum: { amount: true }, where: { date: { gte: start, lte: end } } }),
+            prisma.transaction.groupBy({ by: ['paymentMethod'], _sum: { totalAmount: true }, where: { date: { gte: start, lte: end } } }),
+            prisma.payroll.findMany({ where: { period: { in: currentPeriods }, status: 'paid' }, select: { barberId: true, period: true, totalPayout: true } }),
+            // Previous period
+            prisma.transaction.aggregate({ _sum: { totalAmount: true }, where: { date: { gte: prevStart, lte: prevEnd } } }),
+            prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: prevStart, lte: prevEnd } } }),
+            prisma.payroll.aggregate({ _sum: { totalPayout: true }, where: { period: { in: prevPeriods }, status: 'paid' } }),
+            // Daily trend data
+            prisma.transaction.findMany({ where: { date: { gte: start, lte: end } }, select: { date: true, totalAmount: true } }),
+            prisma.expense.findMany({ where: { date: { gte: start, lte: end } }, select: { date: true, amount: true } }),
+        ]);
+
         const totalRevenue = revenueAgg._sum.totalAmount || 0;
-
-        // 2. Calculate Total Expenses
-        const expensesAgg = await prisma.expense.aggregate({
-            _sum: { amount: true },
-            where: {
-                date: {
-                    gte: start,
-                    lte: end,
-                },
-            },
-        });
-        const totalExpenses = expensesAgg._sum.amount || 0;
-
-        // 3. Calculate Total Capital Injections
-        const capitalAgg = await prisma.capital.aggregate({
-            _sum: { amount: true },
-            where: {
-                date: {
-                    gte: start,
-                    lte: end,
-                },
-            },
-        });
+        const totalOpex = opexAgg._sum.amount || 0;
+        const totalPayroll = payrollAgg._sum.totalPayout || 0;
+        const totalExpenses = totalOpex + totalPayroll;
         const totalCapital = capitalAgg._sum.amount || 0;
+        const netProfit = totalRevenue - totalExpenses;
+        const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
-        // 4. Get Breakdown of Expenses by Category
-        const expensesByCategory = await prisma.expense.groupBy({
-            by: ['category'],
-            _sum: {
-                amount: true,
-            },
-            where: {
-                date: {
-                    gte: start,
-                    lte: end,
-                },
-            },
-        });
+        const prevRevenue = prevRevenueAgg._sum.totalAmount || 0;
+        const prevOpex = prevOpexAgg._sum.amount || 0;
+        const prevPayroll = prevPayrollAgg._sum.totalPayout || 0;
+        const prevExpenses = prevOpex + prevPayroll;
+        const prevNetProfit = prevRevenue - prevExpenses;
 
-        // 5. Get Breakdown of Revenue by Payment Method
-        const revenueByMethod = await prisma.transaction.groupBy({
-            by: ['paymentMethod'],
-            _sum: {
-                totalAmount: true,
-            },
-            where: {
-                date: {
-                    gte: start,
-                    lte: end,
-                },
-            },
+        const pctChange = (cur, prev) => prev !== 0 ? ((cur - prev) / Math.abs(prev)) * 100 : null;
+
+        // Build daily trend (revenue and opex by day; payroll is monthly so not in daily)
+        const trendMap = {};
+        dailyTransactions.forEach(tx => {
+            const day = format(new Date(tx.date), 'yyyy-MM-dd');
+            if (!trendMap[day]) trendMap[day] = { date: day, revenue: 0, expenses: 0 };
+            trendMap[day].revenue += tx.totalAmount;
         });
+        dailyExpenses.forEach(exp => {
+            const day = format(new Date(exp.date), 'yyyy-MM-dd');
+            if (!trendMap[day]) trendMap[day] = { date: day, revenue: 0, expenses: 0 };
+            trendMap[day].expenses += exp.amount;
+        });
+        const dailyTrend = Object.values(trendMap).sort((a, b) => a.date.localeCompare(b.date));
+
+        // Group payroll by period for breakdown display
+        const payrollByPeriod = payrollRecords.reduce((acc, p) => {
+            acc[p.period] = (acc[p.period] || 0) + p.totalPayout;
+            return acc;
+        }, {});
 
         res.json({
-            range: {
-                start: start,
-                end: end,
-            },
+            range: { start, end },
             summary: {
                 totalRevenue,
                 totalExpenses,
+                totalOpex,
+                totalPayroll,
                 totalCapital,
-                netProfit: totalRevenue - totalExpenses,
+                netProfit,
+                profitMargin: Math.round(profitMargin * 10) / 10,
+            },
+            comparison: {
+                prevRevenue,
+                prevExpenses,
+                prevNetProfit,
+                revenueChange: pctChange(totalRevenue, prevRevenue),
+                expensesChange: pctChange(totalExpenses, prevExpenses),
+                netProfitChange: pctChange(netProfit, prevNetProfit),
             },
             breakdown: {
                 expenses: expensesByCategory.map(e => ({ category: e.category, amount: e._sum.amount })),
                 revenue: revenueByMethod.map(r => ({ method: r.paymentMethod, amount: r._sum.totalAmount })),
-            }
+                payroll: Object.entries(payrollByPeriod).map(([period, amount]) => ({ period, amount })),
+            },
+            dailyTrend,
         });
 
     } catch (error) {
@@ -311,35 +335,30 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
 });
 
 // GET /api/dashboard/total-balance-all
-// Returns lifetime total balance (all capital + all revenue - all expenses)
+// Returns lifetime total balance (all capital + all revenue - all expenses - all paid payroll)
 router.get('/total-balance-all', authenticateToken, async (req, res) => {
     try {
-        // Get all-time capital injections
-        const capitalAgg = await prisma.capital.aggregate({
-            _sum: { amount: true },
-        });
+        const [capitalAgg, revenueAgg, expensesAgg, payrollAgg] = await Promise.all([
+            prisma.capital.aggregate({ _sum: { amount: true } }),
+            prisma.transaction.aggregate({ _sum: { totalAmount: true } }),
+            prisma.expense.aggregate({ _sum: { amount: true } }),
+            prisma.payroll.aggregate({ _sum: { totalPayout: true }, where: { status: 'paid' } }),
+        ]);
+
         const totalCapital = capitalAgg._sum.amount || 0;
-
-        // Get all-time revenue
-        const revenueAgg = await prisma.transaction.aggregate({
-            _sum: { totalAmount: true },
-        });
         const totalRevenue = revenueAgg._sum.totalAmount || 0;
-
-        // Get all-time expenses
-        const expensesAgg = await prisma.expense.aggregate({
-            _sum: { amount: true },
-        });
-        const totalExpenses = expensesAgg._sum.amount || 0;
-
-        // Calculate total balance
+        const totalOpex = expensesAgg._sum.amount || 0;
+        const totalPayroll = payrollAgg._sum.totalPayout || 0;
+        const totalExpenses = totalOpex + totalPayroll;
         const totalBalance = totalCapital + totalRevenue - totalExpenses;
 
         res.json({
             totalCapital,
             totalRevenue,
             totalExpenses,
-            totalBalance
+            totalOpex,
+            totalPayroll,
+            totalBalance,
         });
 
     } catch (error) {

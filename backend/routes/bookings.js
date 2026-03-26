@@ -14,29 +14,21 @@ const securityLogger = require('../lib/securityLogger');
 const { sanitizeText, sanitizePhone, isValidIndonesianPhone } = require('../lib/sanitizer');
 
 // POST /api/bookings - Create new booking
-router.post('/', (req, res, next) => {
-    // Debug Logging
-    console.log('Incoming Booking Request:');
-    console.log('Content-Type:', req.headers['content-type']);
-    next();
-}, upload.single('proof'), async (req, res) => {
+router.post('/', upload.single('proof'), async (req, res) => {
     try {
-        console.log('Req Body after Multer:', req.body);
-        console.log('Req File after Multer:', req.file);
-
         // Safety check for req.body
         req.body = req.body || {};
 
         const { barberId, customerName, customerPhone, bookingDate, timeSlot, serviceId } = req.body;
 
-        // 🚫 Blackout period: 10–26 Maret 2026 (walk-in only)
-        if (bookingDate) {
+        // 🚫 Blackout period — configured via env BLACKOUT_START / BLACKOUT_END
+        if (bookingDate && process.env.BLACKOUT_START && process.env.BLACKOUT_END) {
             const d = new Date(bookingDate);
-            const blackoutStart = new Date('2026-03-10T00:00:00');
-            const blackoutEnd = new Date('2026-03-26T23:59:59');
+            const blackoutStart = new Date(process.env.BLACKOUT_START + 'T00:00:00');
+            const blackoutEnd = new Date(process.env.BLACKOUT_END + 'T23:59:59');
             if (d >= blackoutStart && d <= blackoutEnd) {
                 return res.status(400).json({
-                    error: 'Booking online tidak tersedia untuk tanggal 10–26 Maret 2026. Silakan datang langsung (walk-in).'
+                    error: `Booking online tidak tersedia untuk tanggal ${process.env.BLACKOUT_START} – ${process.env.BLACKOUT_END}. Silakan datang langsung (walk-in).`
                 });
             }
         }
@@ -67,12 +59,6 @@ router.post('/', (req, res, next) => {
                     req.file.mimetype
                 );
 
-                console.warn('⚠️ Rejected malicious file upload:', {
-                    filename: req.file.originalname,
-                    mimetype: req.file.mimetype,
-                    size: req.file.size,
-                    ip: req.ip
-                });
                 return res.status(400).json({
                     error: 'File tidak valid. Hanya gambar asli yang diperbolehkan.'
                 });
@@ -180,6 +166,116 @@ router.post('/', (req, res, next) => {
     } catch (error) {
         console.error('Error creating booking:', error);
         res.status(500).json({ error: 'Failed to create booking' });
+    }
+});
+
+// GET /api/bookings/status?phone=08xxx - Public endpoint to check booking status by phone
+router.get('/status', async (req, res) => {
+    try {
+        const { phone } = req.query;
+        if (!phone || phone.trim().length < 6) {
+            return res.status(400).json({ error: 'Nomor HP tidak valid' });
+        }
+
+        // Match by last 8 digits to handle 08xx / 628xx / +628xx variations
+        const suffix = phone.trim().replace(/\D/g, '').slice(-8);
+
+        const since = new Date();
+        since.setDate(since.getDate() - 90);
+
+        // Fetch bookings and transactions in parallel
+        const [bookings, transactions] = await Promise.all([
+            prisma.booking.findMany({
+                where: {
+                    customerPhone: { endsWith: suffix },
+                    bookingDate: { gte: since },
+                    status: { not: 'cancelled' },
+                },
+                select: {
+                    id: true,
+                    customerName: true,
+                    bookingDate: true,
+                    barberId: true,
+                    timeSlot: true,
+                    serviceName: true,
+                    servicePrice: true,
+                    status: true,
+                    barber: { select: { name: true } },
+                },
+                orderBy: { bookingDate: 'desc' },
+                take: 10,
+            }),
+            prisma.transaction.findMany({
+                where: {
+                    customerPhone: { endsWith: suffix },
+                    date: { gte: since },
+                },
+                select: {
+                    id: true,
+                    invoiceCode: true,
+                    customerName: true,
+                    date: true,
+                    barberId: true,
+                    items: true,
+                    totalAmount: true,
+                    paymentMethod: true,
+                    barber: { select: { name: true } },
+                },
+                orderBy: { date: 'desc' },
+                take: 10,
+            }),
+        ]);
+
+        // Build set of booking keys (barberId_YYYY-MM-DD) to detect duplicates
+        const bookingKeys = new Set(
+            bookings.map(b => `${b.barberId}_${format(new Date(b.bookingDate), 'yyyy-MM-dd')}`)
+        );
+
+        // Only include transactions that don't match an existing booking on the same day+barber
+        const unmatchedTransactions = transactions.filter(tx => {
+            const key = `${tx.barberId}_${format(new Date(tx.date), 'yyyy-MM-dd')}`;
+            return !bookingKeys.has(key);
+        });
+
+        // Normalize to unified shape
+        const bookingItems = bookings.map(b => ({
+            type: 'booking',
+            date: b.bookingDate,
+            barberName: b.barber.name,
+            customerName: b.customerName,
+            service: b.serviceName || null,
+            amount: b.servicePrice || null,
+            status: b.status,
+            timeSlot: b.timeSlot,
+            paymentMethod: null,
+            invoiceCode: null,
+        }));
+
+        const txItems = unmatchedTransactions.map(tx => {
+            const firstItem = Array.isArray(tx.items) && tx.items.length > 0 ? tx.items[0] : null;
+            return {
+                type: 'transaction',
+                date: tx.date,
+                barberName: tx.barber.name,
+                customerName: tx.customerName || 'Walk-in',
+                service: firstItem ? firstItem.name : null,
+                amount: tx.totalAmount,
+                status: 'completed',
+                timeSlot: null,
+                paymentMethod: tx.paymentMethod,
+                invoiceCode: tx.invoiceCode,
+            };
+        });
+
+        // Merge and sort by date desc
+        const result = [...bookingItems, ...txItems]
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 10);
+
+        res.json(result);
+    } catch (error) {
+        console.error('Booking status check error:', error);
+        res.status(500).json({ error: 'Gagal mengecek status booking' });
     }
 });
 
@@ -353,7 +449,6 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
                             lastVisit: new Date()
                         }
                     });
-                    console.log(`[Auto] New Customer saved: ${booking.customerName}`);
                 }
 
                 // 2. Send WhatsApp Notification
@@ -368,7 +463,6 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
                     `\n📍 *Staycool Hairlab*\nJl. Imam Bonjol Pertigaan No.370 Kediri`;
 
                 await whatsappService.sendWhatsAppMessage(booking.customerPhone, message);
-                console.log(`[Auto] WA sent to ${booking.customerPhone}`);
 
             } catch (autoError) {
                 console.error("Error in Booking Automation (Customer/WA):", autoError);

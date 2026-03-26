@@ -3,16 +3,28 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 
-// GET /api/expenses
+// GET /api/expenses?month=3&year=2026
 router.get('/', async (req, res) => {
     try {
+        const { month, year } = req.query;
+
+        let where = {};
+        if (month && year) {
+            const m = parseInt(month);
+            const y = parseInt(year);
+            const start = new Date(y, m - 1, 1);
+            const end = new Date(y, m, 0, 23, 59, 59, 999);
+            where.date = { gte: start, lte: end };
+        }
+
         const expenses = await prisma.expense.findMany({
+            where,
             orderBy: { date: 'desc' },
         });
         res.json(expenses);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Failed to fetch expenses' });
+        res.status(500).json({ error: 'Gagal mengambil data pengeluaran' });
     }
 });
 

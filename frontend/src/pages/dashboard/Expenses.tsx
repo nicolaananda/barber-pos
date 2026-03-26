@@ -11,8 +11,9 @@ import {
     DialogFooter
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, Loader2, Wallet, Tag, TrendingDown, Target } from 'lucide-react';
+import { Plus, Trash2, Loader2, Wallet, Tag, TrendingDown, Target, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import {
     Select,
     SelectContent,
@@ -36,7 +37,15 @@ interface Expense {
 const CATEGORIES = ['Operational', 'Supplies', 'Maintenance', 'Marketing', 'Salary', 'Other'];
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#06b6d4', '#8b5cf6'];
 
+const MONTHS = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
 export default function ExpensesPage() {
+    const now = new Date();
+    const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState(now.getFullYear());
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -49,16 +58,16 @@ export default function ExpensesPage() {
 
     useEffect(() => {
         fetchExpenses();
-    }, []);
+    }, [selectedMonth, selectedYear]);
 
     const fetchExpenses = async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/expenses`, {
+            const res = await fetch(`${API_BASE_URL}/expenses?month=${selectedMonth}&year=${selectedYear}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (!res.ok) throw new Error('Failed to fetch expenses');
+            if (!res.ok) throw new Error('Gagal mengambil data pengeluaran');
             const data = await res.json();
             setExpenses(data);
         } catch (error) {
@@ -66,6 +75,16 @@ export default function ExpensesPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const prevMonth = () => {
+        if (selectedMonth === 1) { setSelectedMonth(12); setSelectedYear(y => y - 1); }
+        else setSelectedMonth(m => m - 1);
+    };
+
+    const nextMonth = () => {
+        if (selectedMonth === 12) { setSelectedMonth(1); setSelectedYear(y => y + 1); }
+        else setSelectedMonth(m => m + 1);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -91,7 +110,7 @@ export default function ExpensesPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this expense?')) return;
+        if (!confirm('Yakin ingin menghapus pengeluaran ini?')) return;
         try {
             const token = localStorage.getItem('token');
             await fetch(`${API_BASE_URL}/expenses`, {
@@ -128,17 +147,29 @@ export default function ExpensesPage() {
         <div className="p-6 md:p-8 space-y-8 animate-in fade-in duration-500 pb-20">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight mb-2 text-zinc-900">Expenses Management</h1>
-                    <p className="text-zinc-500">Track outflow and manage operational budget.</p>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2 text-zinc-900">Pengeluaran</h1>
+                    <p className="text-zinc-500">Lacak pengeluaran dan kelola anggaran operasional.</p>
                 </div>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-lg px-3 py-2">
+                        <button onClick={prevMonth} className="text-zinc-400 hover:text-zinc-900 transition-colors">
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="font-semibold text-zinc-900 text-sm min-w-[120px] text-center">
+                            {MONTHS[selectedMonth - 1]} {selectedYear}
+                        </span>
+                        <button onClick={nextMonth} className="text-zinc-400 hover:text-zinc-900 transition-colors">
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
                         <Button className="font-bold shadow-sm bg-zinc-900 text-white hover:bg-zinc-800 transition-all border border-zinc-900">
-                            <Plus className="mr-2 h-4 w-4" /> Record Expense
+                            <Plus className="mr-2 h-4 w-4" /> Catat Pengeluaran
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
-                        <DialogHeader><DialogTitle>Record New Expense</DialogTitle></DialogHeader>
+                        <DialogHeader><DialogTitle>Catat Pengeluaran Baru</DialogTitle></DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                             <div className="space-y-2">
                                 <Label>Description</Label>
@@ -162,19 +193,20 @@ export default function ExpensesPage() {
                             <DialogFooter className="pt-4">
                                 <Button type="submit" className="bg-zinc-900 text-white hover:bg-zinc-800" disabled={isSubmitting}>
                                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Record Expense
+                                    Simpan
                                 </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
                 </Dialog>
+                </div>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
                 <Card className="bg-zinc-900 text-white shadow-sm border-zinc-900 col-span-1">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-zinc-300 uppercase tracking-widest flex items-center justify-between">
-                            <span>Total Spend</span>
+                            <span>Total Pengeluaran</span>
                             <Wallet className="w-4 h-4" />
                         </CardTitle>
                     </CardHeader>
@@ -184,7 +216,7 @@ export default function ExpensesPage() {
                         </div>
                         <p className="text-xs text-zinc-400 mt-2 flex items-center gap-1">
                             <TrendingDown className="w-3 h-3 text-zinc-300" />
-                            Recorded this month
+                            {MONTHS[selectedMonth - 1]} {selectedYear}
                         </p>
                     </CardContent>
                 </Card>
@@ -192,7 +224,7 @@ export default function ExpensesPage() {
                 <Card className="col-span-1 md:col-span-2 shadow-sm bg-white border-zinc-200">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium uppercase tracking-widest flex items-center justify-between text-zinc-500">
-                            <span>Monthly Budget Control</span>
+                            <span>Kontrol Anggaran Bulanan</span>
                             <Target className="w-4 h-4 text-zinc-400" />
                         </CardTitle>
                     </CardHeader>
@@ -207,7 +239,7 @@ export default function ExpensesPage() {
                         </div>
                         <Progress value={budgetUsage} className="h-4 bg-zinc-100 border border-zinc-100" indicatorClassName="bg-zinc-900" />
                         <p className="text-xs text-zinc-500 mt-4">
-                            You have spent <strong className="text-zinc-900">IDR {totalExpenses.toLocaleString('id-ID')}</strong> out of your set budget.
+                            Telah dipakai <strong className="text-zinc-900">IDR {totalExpenses.toLocaleString('id-ID')}</strong> dari anggaran yang ditetapkan.
                         </p>
                     </CardContent>
                 </Card>
@@ -269,8 +301,8 @@ export default function ExpensesPage() {
 
             <Card className="border-zinc-200 shadow-sm bg-white">
                 <CardHeader>
-                    <CardTitle className="text-zinc-900 font-bold">Expense Log</CardTitle>
-                    <CardDescription className="text-zinc-500">Detailed transaction history</CardDescription>
+                    <CardTitle className="text-zinc-900 font-bold">Riwayat Pengeluaran</CardTitle>
+                    <CardDescription className="text-zinc-500">{MONTHS[selectedMonth - 1]} {selectedYear}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loading ? (

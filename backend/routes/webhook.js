@@ -5,27 +5,40 @@ const router = express.Router();
 router.post('/', (req, res) => {
     try {
         const secret = process.env.WA_WEBHOOK_SECRET;
-
-        // Basic verification (adjust header name based on actual Go-WA behavior)
-        // Commonly passed in headers
         const incomingSecret = req.headers['x-webhook-secret'] || req.headers['authorization'];
 
-        // If secret is configured but not provided or non-matching
         if (secret && (!incomingSecret || incomingSecret !== secret)) {
-            console.warn('Webhook Unauthorized: Invalid Secret');
-            // return res.status(401).json({ error: 'Unauthorized' }); 
-            // Commented out to prevent blocking until we confirm the exact header name from logs
+            return res.status(401).json({ error: 'Unauthorized' });
         }
 
         const payload = req.body;
-        console.log('Received Webhook Event:', JSON.stringify(payload, null, 2));
-        console.log('Webhook Headers:', req.headers);
+        const eventType = payload?.event || payload?.type || 'unknown';
 
-        // TODO: specific event handling if needed (e.g., incoming messages)
+        switch (eventType) {
+            case 'message':
+            case 'message.any':
+                // Incoming message dari pelanggan — abaikan untuk sekarang
+                break;
+
+            case 'message.ack':
+                // Delivery/read receipt — tidak perlu ditangani
+                break;
+
+            case 'session.status':
+                // Status koneksi WA berubah
+                if (payload?.payload?.status === 'STOPPED') {
+                    console.error('[Webhook] Sesi WhatsApp terputus:', payload?.payload);
+                }
+                break;
+
+            default:
+                // Event tidak dikenal, abaikan
+                break;
+        }
 
         res.status(200).json({ status: 'ok' });
     } catch (error) {
-        console.error('Webhook Error:', error);
+        console.error('[Webhook] Error:', error.message);
         res.status(500).json({ error: 'Webhook processing failed' });
     }
 });
