@@ -22,9 +22,6 @@ const analyticsRoutes = require('./routes/analytics');
 // Rate limiting middleware
 const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
 
-// WA Reminder cron
-const { startReminderCron } = require('./lib/reminderService');
-
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -96,7 +93,6 @@ app.use((req, res) => {
 
 const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    startReminderCron();
 });
 
 // Graceful shutdown
