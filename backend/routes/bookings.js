@@ -162,6 +162,23 @@ router.post('/', upload.single('proof'), async (req, res) => {
             }
         });
 
+        // Send WhatsApp acknowledgement (non-blocking)
+        try {
+            const dateStr = format(new Date(booking.bookingDate), 'dd MMMM yyyy', { locale: idLocale });
+            const ackMsg = `📋 *BOOKING DITERIMA*\n\n` +
+                `Halo Kak *${booking.customerName}*, booking Anda sudah kami terima dan sedang menunggu konfirmasi admin.\n\n` +
+                `✂️ Layanan: ${booking.serviceName || 'Potong Rambut'}\n` +
+                `📅 Tanggal: ${dateStr}\n` +
+                `⏰ Jam: ${booking.timeSlot}\n` +
+                `💈 Barber: ${booking.barber.name}\n\n` +
+                `Kami akan kirim WA lagi setelah booking dikonfirmasi. Mohon ditunggu ya! 🙏\n` +
+                `\n📍 *Staycool Hairlab*\nJl. Imam Bonjol Pertigaan No.370 Kediri`;
+
+            await whatsappService.sendWhatsAppMessage(booking.customerPhone, ackMsg);
+        } catch (waError) {
+            console.error('[Booking Create] WA acknowledgement error:', waError);
+        }
+
         res.status(201).json(booking);
     } catch (error) {
         console.error('Error creating booking:', error);
