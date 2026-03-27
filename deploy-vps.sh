@@ -36,8 +36,8 @@ fi
 
 # 4. Restart PM2
 echo "🔄 Restarting backend..."
-pm2 restart 3
+pm2 restart bagus-engine
 
 # 5. Show logs
 echo "✅ Deployment complete! Showing logs..."
-pm2 logs 3 --lines 20
+pm2 logs bagus-engine --lines 20
