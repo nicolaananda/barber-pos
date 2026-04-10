@@ -320,7 +320,10 @@ export default function StatusPage() {
                             const isOffday = actualAvailability === 'offday';
 
                             // Slot counter (#3)
-                            const bookedSlots = existingBookings.filter(b => b.barberId === barber.id).length;
+                            const bookedSlots = existingBookings.filter(b =>
+                                b.barberId === barber.id &&
+                                timeSlots.some(slot => slot.label === b.timeSlot)
+                            ).length;
                             const availableSlotCount = isOffday || isBlackout ? 0 : timeSlots.length - bookedSlots;
 
                             return (
