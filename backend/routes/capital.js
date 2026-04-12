@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
+const requireOwner = require('../middleware/requireOwner');
 
 // GET all capital entries
 router.get('/', authenticateToken, async (req, res) => {
@@ -15,10 +16,24 @@ router.get('/', authenticateToken, async (req, res) => {
             };
         }
 
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * limit;
+
         const capitalList = await prisma.capital.findMany({
             where,
             orderBy: { date: 'desc' },
+            skip,
+            take: limit,
         });
+
+        if (req.query.page) {
+            const total = await prisma.capital.count({ where });
+            return res.json({
+                data: capitalList,
+                pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+            });
+        }
         res.json(capitalList);
     } catch (error) {
         console.error('Get Capital Error:', error);
@@ -27,9 +42,18 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST new capital entry
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { description, amount, date } = req.body;
+
+        // Input validation
+        if (!description || typeof description !== 'string' || description.trim().length === 0) {
+            return res.status(400).json({ error: 'Description is required' });
+        }
+        if (amount === undefined || amount === null || isNaN(Number(amount)) || Number(amount) < 0) {
+            return res.status(400).json({ error: 'Valid amount is required' });
+        }
+
         const newCapital = await prisma.capital.create({
             data: {
                 description,
@@ -46,7 +70,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // PUT update capital entry
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { id } = req.params;
         const { description, amount, date } = req.body;
@@ -66,7 +90,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // DELETE capital entry
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { id } = req.params;
         await prisma.capital.delete({

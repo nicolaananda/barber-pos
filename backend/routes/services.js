@@ -22,6 +22,15 @@ router.get('/', async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
     try {
         const { name, price, commissionType, commissionValue } = req.body;
+
+        // Input validation
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+            return res.status(400).json({ error: 'Name is required' });
+        }
+        if (price === undefined || price === null || isNaN(Number(price)) || Number(price) < 0) {
+            return res.status(400).json({ error: 'Valid price is required' });
+        }
+
         const service = await prisma.service.create({
             data: {
                 name,
@@ -43,6 +52,15 @@ router.patch('/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, price, commissionType, commissionValue } = req.body;
+
+        // Input validation
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+            return res.status(400).json({ error: 'Name is required' });
+        }
+        if (price === undefined || price === null || isNaN(Number(price)) || Number(price) < 0) {
+            return res.status(400).json({ error: 'Valid price is required' });
+        }
+
         const service = await prisma.service.update({
             where: { id: parseInt(id) },
             data: {

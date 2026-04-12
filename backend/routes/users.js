@@ -51,6 +51,12 @@ router.patch('/:id/availability', authenticateToken, async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
 
+        // IDOR protection: only owner or self can update
+        const targetId = parseInt(id);
+        if (req.user.role !== 'owner' && req.user.id !== targetId) {
+            return res.status(403).json({ error: 'You can only update your own availability' });
+        }
+
         console.log('Updating availability for user:', id, 'to:', status);
 
         if (!status || !['available', 'working', 'offday'].includes(status)) {
@@ -66,7 +72,7 @@ router.patch('/:id/availability', authenticateToken, async (req, res) => {
         res.json(user);
     } catch (error) {
         console.error('Error updating availability:', error);
-        res.status(500).json({ error: 'Failed to update availability', details: error.message });
+        res.status(500).json({ error: 'Failed to update availability' });
     }
 });
 
@@ -74,6 +80,12 @@ router.patch('/:id/availability', authenticateToken, async (req, res) => {
 router.patch('/:id/default-offday', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
+
+        // IDOR protection: only owner can update default off-day
+        if (req.user.role !== 'owner') {
+            return res.status(403).json({ error: 'Only owners can update default off-day' });
+        }
+
         const { defaultOffDay } = req.body;
 
         // Validate: must be 0-6 or null
@@ -100,7 +112,7 @@ router.patch('/:id/default-offday', authenticateToken, async (req, res) => {
         res.json(user);
     } catch (error) {
         console.error('Error updating default off-day:', error);
-        res.status(500).json({ error: 'Failed to update default off-day', details: error.message });
+        res.status(500).json({ error: 'Failed to update default off-day' });
     }
 });
 
@@ -140,7 +152,7 @@ router.get('/barbers-list', authenticateToken, requireOwner, async (req, res) =>
         res.json(barbers);
     } catch (error) {
         console.error('Error fetching barbers:', error);
-        res.status(500).json({ error: 'Failed to fetch barbers', details: error.message });
+        res.status(500).json({ error: 'Failed to fetch barbers' });
     }
 });
 
@@ -196,8 +208,7 @@ router.post('/barbers', authenticateToken, requireOwner, async (req, res) => {
             return res.status(400).json({ error: 'Username already exists' });
         }
         res.status(500).json({
-            error: 'Failed to create barber',
-            details: error.message || 'Unknown error occurred'
+            error: 'Failed to create barber'
         });
     }
 });
@@ -275,8 +286,7 @@ router.put('/barbers/:id', authenticateToken, requireOwner, async (req, res) => 
             return res.status(404).json({ error: 'Barber not found' });
         }
         res.status(500).json({
-            error: 'Failed to update barber',
-            details: error.message || 'Unknown error occurred'
+            error: 'Failed to update barber'
         });
     }
 });
@@ -304,7 +314,7 @@ router.delete('/barbers/:id', authenticateToken, requireOwner, async (req, res) 
         res.json({ message: 'Barber deleted successfully' });
     } catch (error) {
         console.error('Error deleting barber:', error);
-        res.status(500).json({ error: 'Failed to delete barber', details: error.message });
+        res.status(500).json({ error: 'Failed to delete barber' });
     }
 });
 

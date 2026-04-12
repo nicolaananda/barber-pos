@@ -7,6 +7,12 @@ const authenticateToken = require('../middleware/auth');
 router.post('/', authenticateToken, async (req, res) => {
     try {
         const { openingCash } = req.body;
+
+        // Validate openingCash is a valid non-negative number
+        if (openingCash === undefined || openingCash === null || isNaN(Number(openingCash)) || Number(openingCash) < 0) {
+            return res.status(400).json({ error: 'Valid opening cash amount is required' });
+        }
+
         // openingCash comes as string or number? Standardize to Float.
         // openedBy is the current user.
 
@@ -45,22 +51,35 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // GET /api/shifts
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
     try {
         const { status } = req.query;
 
         const where = {};
         if (status) where.status = status;
 
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * limit;
+
         const shifts = await prisma.cashShift.findMany({
             where,
             orderBy: { startTime: 'desc' },
+            skip,
+            take: limit,
             include: {
                 openedBy: { select: { name: true } },
                 closedBy: { select: { name: true } },
             },
         });
 
+        if (req.query.page) {
+            const total = await prisma.cashShift.count({ where });
+            return res.json({
+                data: shifts,
+                pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+            });
+        }
         res.json(shifts);
     } catch (error) {
         console.error(error);
@@ -69,7 +88,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/shifts/:id
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const shift = await prisma.cashShift.findUnique({

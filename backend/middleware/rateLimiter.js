@@ -31,7 +31,7 @@ const strictLimiter = rateLimit({
 // Very strict for authentication
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Increased to 100 to prevent staff lockouts
+    max: 15, // Strict limit for auth attempts
     message: 'Too many login attempts, please try again after 15 minutes.',
     skipSuccessfulRequests: true, // Don't count successful logins
     ...trustProxyConfig,

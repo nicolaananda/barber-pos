@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { API_BASE_URL } from '@/lib/api';
+import { toast } from 'sonner';
 import { usePosStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
@@ -21,7 +22,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function PosPage() {
-    const { user, logout, refreshUser } = useAuth();
+    const { user, token, logout, refreshUser } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const { activeShift, setActiveShift, selectedBarber, setCustomerInfo, setBarber, addToCart, setBookingId, clearCart } = usePosStore();
@@ -35,8 +36,19 @@ export default function PosPage() {
     const cartCount = cart.reduce((sum: number, item: any) => sum + item.qty, 0);
 
     useEffect(() => {
-        // Auth check handled by ProtectedRoute mostly, but role check valid here
-    }, []);
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'F2' && cart.length > 0) {
+                e.preventDefault();
+                setIsCheckoutOpen(true);
+            }
+            if (e.key === 'Escape') {
+                setIsCheckoutOpen(false);
+                setIsCartOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [cart.length]);
 
     useEffect(() => {
         const state = location.state as any;
@@ -58,7 +70,6 @@ export default function PosPage() {
     useEffect(() => {
         const checkShift = async () => {
             try {
-                const token = localStorage.getItem('token');
                 const res = await fetch(`${API_BASE_URL}/shifts?status=open`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -97,7 +108,6 @@ export default function PosPage() {
         const newStatus = user.availability === 'working' ? 'available' : 'working';
 
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/users/${user.id}/availability`, {
                 method: 'PATCH',
                 headers: {
@@ -116,7 +126,7 @@ export default function PosPage() {
             setIsTogglingStatus(false);
         } catch (error) {
             console.error("Failed to update status", error);
-            alert('Failed to update status. Please try again.');
+            toast.error('Failed to update status. Please try again.');
             setIsTogglingStatus(false);
         }
     };
@@ -174,18 +184,28 @@ export default function PosPage() {
                                 Dashboard
                             </Button>
                         ) : (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 h-9 px-2 md:px-4"
-                                onClick={() => {
-                                    logout();
-                                    navigate('/login');
-                                }}
-                            >
-                                <span className="hidden md:inline">Logout</span>
-                                <span className="md:hidden">Exit</span>
-                            </Button>
+                            <>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 h-9 hidden md:inline-flex"
+                                    onClick={() => navigate('/barber')}
+                                >
+                                    My Schedule
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 h-9 px-2 md:px-4"
+                                    onClick={() => {
+                                        logout();
+                                        navigate('/login');
+                                    }}
+                                >
+                                    <span className="hidden md:inline">Logout</span>
+                                    <span className="md:hidden">Exit</span>
+                                </Button>
+                            </>
                         )}
                     </div>
                 </header>

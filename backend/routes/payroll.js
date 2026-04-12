@@ -18,16 +18,15 @@ router.get('/', authenticateToken, async (req, res) => {
             where: { role: { not: 'admin' } },
         });
 
+        // Fetch all services to get commission rules (outside the loop to avoid N+1)
+        const services = await prisma.service.findMany();
+        const serviceMap = services.reduce((acc, service) => {
+            acc[service.name] = service;
+            return acc;
+        }, {});
+
         const payrollStats = await Promise.all(
             barbers.map(async (barber) => {
-                // Aggregate transactions for this barber in this period
-                // Fetch all services to get commission rules
-                const services = await prisma.service.findMany();
-                const serviceMap = services.reduce((acc, service) => {
-                    acc[service.name] = service;
-                    return acc;
-                }, {});
-
                 let estimatedCommission = 0;
 
                 // Fetch full transactions to iterate items

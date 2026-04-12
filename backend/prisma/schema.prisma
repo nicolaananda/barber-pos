@@ -78,6 +78,8 @@ model CashShift {
   // Relations
   openedBy User  @relation("OpenedShifts", fields: [openedById], references: [id])
   closedBy User? @relation("ClosedShifts", fields: [closedById], references: [id])
+
+  @@index([status])
 }
 
 model Transaction {
@@ -106,6 +108,8 @@ model Expense {
   amount      Float
   category    String   @default("operational")
   date        DateTime @default(now())
+
+  @@index([date])
 }
 
 model Payroll {
@@ -120,6 +124,9 @@ model Payroll {
   totalPayout     Float
   status          String   @default("draft") // draft, paid
   generatedAt     DateTime @default(now())
+
+  @@index([period, status])
+  @@index([barberId])
 }
 
 model Booking {
@@ -158,4 +165,6 @@ model Capital {
   amount      Float
   type        String   @default("injection") // 'injection'
   date        DateTime @default(now())
+
+  @@index([date])
 }

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
+const authenticateToken = require('../middleware/auth');
 const {
     calculateProfitMargin,
     forecastRevenue,
@@ -15,7 +16,7 @@ const {
  * Calculate profit margin per service and per barber
  * Query params: startDate, endDate
  */
-router.get('/profit-margin', async (req, res) => {
+router.get('/profit-margin', authenticateToken, async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         console.log(`[Analytics] Profit Margin Request: ${startDate} to ${endDate}`);
@@ -72,7 +73,7 @@ router.get('/profit-margin', async (req, res) => {
  * Forecast revenue based on historical trends
  * Query params: periods (default 30)
  */
-router.get('/revenue-forecast', async (req, res) => {
+router.get('/revenue-forecast', authenticateToken, async (req, res) => {
     try {
         const periods = parseInt(req.query.periods) || 30;
 
@@ -124,11 +125,23 @@ router.get('/revenue-forecast', async (req, res) => {
  * GET /api/analytics/customer-segmentation
  * Segment customers using RFM analysis
  */
-router.get('/customer-segmentation', async (req, res) => {
+router.get('/customer-segmentation', authenticateToken, async (req, res) => {
     try {
+        const defaultStart = new Date();
+        defaultStart.setMonth(defaultStart.getMonth() - 12);
+        const dateFilter = {};
+        if (req.query.startDate) dateFilter.gte = new Date(req.query.startDate);
+        else dateFilter.gte = defaultStart;
+        if (req.query.endDate) {
+            const end = new Date(req.query.endDate);
+            end.setHours(23, 59, 59, 999);
+            dateFilter.lte = end;
+        }
+
         const [customers, transactions] = await Promise.all([
             prisma.customer.findMany(),
             prisma.transaction.findMany({
+                where: { date: dateFilter },
                 select: {
                     customerPhone: true,
                     totalAmount: true,
@@ -157,7 +170,7 @@ router.get('/customer-segmentation', async (req, res) => {
  * Analyze peak hours and transaction patterns
  * Query params: startDate, endDate
  */
-router.get('/peak-hours', async (req, res) => {
+router.get('/peak-hours', authenticateToken, async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
 
@@ -197,7 +210,7 @@ router.get('/peak-hours', async (req, res) => {
  * Calculate customer churn rate
  * Query params: periodDays (default 90)
  */
-router.get('/churn-rate', async (req, res) => {
+router.get('/churn-rate', authenticateToken, async (req, res) => {
     try {
         const periodDays = parseInt(req.query.periodDays) || 90;
 
@@ -223,11 +236,23 @@ router.get('/churn-rate', async (req, res) => {
  * GET /api/analytics/customer-lifetime-value
  * Calculate Customer Lifetime Value (CLV)
  */
-router.get('/customer-lifetime-value', async (req, res) => {
+router.get('/customer-lifetime-value', authenticateToken, async (req, res) => {
     try {
+        const defaultStart = new Date();
+        defaultStart.setMonth(defaultStart.getMonth() - 12);
+        const dateFilter = {};
+        if (req.query.startDate) dateFilter.gte = new Date(req.query.startDate);
+        else dateFilter.gte = defaultStart;
+        if (req.query.endDate) {
+            const end = new Date(req.query.endDate);
+            end.setHours(23, 59, 59, 999);
+            dateFilter.lte = end;
+        }
+
         const [customers, transactions] = await Promise.all([
             prisma.customer.findMany(),
             prisma.transaction.findMany({
+                where: { date: dateFilter },
                 select: {
                     customerPhone: true,
                     totalAmount: true,
@@ -256,7 +281,7 @@ router.get('/customer-lifetime-value', async (req, res) => {
  * Get comprehensive booking history with filters
  * Query params: startDate, endDate, barberId, status, customerPhone, limit, offset
  */
-router.get('/booking-history', async (req, res) => {
+router.get('/booking-history', authenticateToken, async (req, res) => {
     try {
         const {
             startDate,
@@ -322,7 +347,7 @@ router.get('/booking-history', async (req, res) => {
  * GET /api/analytics/insights
  * Generate AI-powered business insights
  */
-router.get('/insights', async (req, res) => {
+router.get('/insights', authenticateToken, async (req, res) => {
     try {
         // Gather data for analysis
         const startDate = new Date();

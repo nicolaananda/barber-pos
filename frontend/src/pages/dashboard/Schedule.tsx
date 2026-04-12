@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { API_BASE_URL } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -25,6 +27,7 @@ interface OffDay {
 }
 
 export default function SchedulePage() {
+    const { token } = useAuth();
     const [barbers, setBarbers] = useState<Barber[]>([]);
     const [offDays, setOffDays] = useState<OffDay[]>([]);
     const [loading, setLoading] = useState(true);
@@ -91,12 +94,11 @@ export default function SchedulePage() {
 
     const handleAddOffDay = async () => {
         if (!selectedBarber || !selectedDate) {
-            alert('Please select a barber and a date');
+            toast.error('Please select a barber and a date');
             return;
         }
 
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/offdays`, {
                 method: 'POST',
                 headers: {
@@ -111,12 +113,12 @@ export default function SchedulePage() {
             });
 
             if (res.ok) {
-                alert('Off day added successfully');
+                toast.success('Off day added successfully');
                 fetchOffDays();
                 setReason('');
             } else {
                 const error = await res.json();
-                alert(error.error || 'Failed to add off day');
+                toast.error(error.error || 'Failed to add off day');
             }
         } catch (error) {
             console.error('Error adding off day:', error);
@@ -127,7 +129,6 @@ export default function SchedulePage() {
         if (!confirm('Are you sure?')) return;
 
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/offdays/${id}`, {
                 method: 'DELETE',
                 headers: {
@@ -145,12 +146,11 @@ export default function SchedulePage() {
 
     const handleSetRecurringOffDay = async () => {
         if (!recurringBarber || !recurringDay) {
-            alert('Please select a barber and a day');
+            toast.error('Please select a barber and a day');
             return;
         }
 
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/users/${recurringBarber}/default-offday`, {
                 method: 'PATCH',
                 headers: {
@@ -163,12 +163,12 @@ export default function SchedulePage() {
             });
 
             if (res.ok) {
-                alert('Recurring off-day set successfully');
+                toast.success('Recurring off-day set successfully');
                 fetchBarbers();
                 setRecurringDay('');
             } else {
                 const error = await res.json();
-                alert(error.error || 'Failed to set recurring off-day');
+                toast.error(error.error || 'Failed to set recurring off-day');
             }
         } catch (error) {
             console.error('Error setting recurring off-day:', error);
@@ -179,7 +179,6 @@ export default function SchedulePage() {
         if (!confirm('Clear recurring off-day for this barber?')) return;
 
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/users/${barberId}/default-offday`, {
                 method: 'PATCH',
                 headers: {

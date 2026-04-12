@@ -39,6 +39,8 @@ import {
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, subDays } from 'date-fns';
 import { API_BASE_URL } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 interface ProfitLossData {
     range: { start: string; end: string };
@@ -165,6 +167,7 @@ function TrendChart({ data }: { data: { date: string; revenue: number; expenses:
 }
 
 export default function ProfitLossPage() {
+    const { token } = useAuth();
     const [data, setData] = useState<ProfitLossData | null>(null);
     const [loading, setLoading] = useState(true);
     const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
@@ -190,7 +193,6 @@ export default function ProfitLossPage() {
     const fetchData = async (start = startDate, end = endDate) => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const query = new URLSearchParams({ startDate: start, endDate: end }).toString();
             const [plRes, capitalRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/dashboard/profit-loss?${query}`, {
@@ -213,7 +215,6 @@ export default function ProfitLossPage() {
 
     const fetchTotalBalanceAll = async () => {
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/dashboard/total-balance-all`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -241,7 +242,6 @@ export default function ProfitLossPage() {
         e.preventDefault();
         setCapitalLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const url = editingCapitalId
                 ? `${API_BASE_URL}/capital/${editingCapitalId}`
                 : `${API_BASE_URL}/capital`;
@@ -257,7 +257,7 @@ export default function ProfitLossPage() {
             fetchData();
             fetchTotalBalanceAll();
         } catch {
-            alert('Failed to save capital entry');
+            toast.error('Failed to save capital entry');
         } finally {
             setCapitalLoading(false);
         }
@@ -276,7 +276,6 @@ export default function ProfitLossPage() {
     const handleDeleteCapital = async (id: number) => {
         if (!confirm('Hapus entri ini?')) return;
         try {
-            const token = localStorage.getItem('token');
             await fetch(`${API_BASE_URL}/capital/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -284,7 +283,7 @@ export default function ProfitLossPage() {
             fetchData();
             fetchTotalBalanceAll();
         } catch {
-            alert('Failed to delete');
+            toast.error('Failed to delete');
         }
     };
 

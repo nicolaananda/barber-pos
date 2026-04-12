@@ -51,7 +51,7 @@ export function AppSidebar({ defaultCollapsed = true, className }: AppSidebarPro
             hoverTimeoutRef.current = setTimeout(() => {
                 setIsCollapsed(true);
                 isHoverExpanded.current = false;
-            }, 300);
+            }, 500);
         }
     }, []);
 
@@ -104,6 +104,7 @@ export function AppSidebar({ defaultCollapsed = true, className }: AppSidebarPro
                 size="icon"
                 className="absolute -right-3 top-6 h-6 w-6 rounded-full border border-zinc-300 bg-white shadow-md hover:bg-zinc-100 z-50 p-0 text-zinc-600 hover:text-zinc-900"
                 onClick={handleToggle}
+                aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
                 {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
             </Button>
@@ -159,23 +160,9 @@ export function AppSidebar({ defaultCollapsed = true, className }: AppSidebarPro
 
                 <div className={cn("p-4 border-t border-white/20", isCollapsed && "px-2")}>
                     <div className={cn("flex items-center gap-3 mb-4 px-2", isCollapsed && "justify-center px-0")}>
-                        {user?.username === 'bagus' ? (
-                            <img
-                                src="/bagus.webp"
-                                alt="Profile"
-                                className="w-8 h-8 rounded-full object-cover border border-white/50 flex-shrink-0 shadow-sm"
-                            />
-                        ) : user?.username === 'diva' ? (
-                            <img
-                                src="/profil_diva.webp"
-                                alt="Profile"
-                                className="w-8 h-8 rounded-full object-cover border border-white/50 flex-shrink-0 shadow-sm"
-                            />
-                        ) : (
-                            <div className="w-8 h-8 rounded-full bg-white/50 flex items-center justify-center text-zinc-900 font-bold border border-white/50 flex-shrink-0 backdrop-blur-sm shadow-sm">
-                                {user?.name?.charAt(0) || 'U'}
-                            </div>
-                        )}
+                        <div className="w-8 h-8 rounded-full bg-white/50 flex items-center justify-center text-zinc-900 font-bold border border-white/50 flex-shrink-0 backdrop-blur-sm shadow-sm text-sm">
+                            {user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
+                        </div>
                         {!isCollapsed && (
                             <div className="overflow-hidden whitespace-nowrap">
                                 <p className="text-sm font-bold truncate text-zinc-900">{user?.name || 'User'}</p>

@@ -26,7 +26,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Trust proxy - required for rate limiting behind reverse proxy
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 // 🔒 SECURITY: Helmet for security headers
 app.use(helmet({
@@ -41,6 +41,18 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false, // Allow external resources
 }));
 
+// Request logging
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        if (req.path !== '/health') {
+            console.log(`${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+        }
+    });
+    next();
+});
+
 // Middleware
 // Middleware
 app.use(cors({
@@ -54,10 +66,21 @@ app.use(cors({
     ],
     credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
+
+// Apply rate limiting to auth routes (stricter)
+app.use('/api/auth', authLimiter);
 
 // Apply rate limiting to all API routes
 app.use('/api/', apiLimiter);
+
+// Validate required environment variables
+const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+if (missingVars.length > 0) {
+    console.error(`❌ Missing required environment variables: ${missingVars.join(', ')}`);
+    process.exit(1);
+}
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -71,15 +94,22 @@ app.use('/api/payroll', payrollRoutes);
 app.use('/api/shifts', shiftsRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/api/capital', capitalRoutes);
-app.use('/api/seed', seedRoutes);
+// Seed route — disabled in production, CLI only recommended
+// app.use('/api/seed', seedRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/offdays', require('./routes/offdays'));
 app.use('/api/slots', require('./routes/slots'));
 app.use('/api/analytics', analyticsRoutes);
 
-// Health check
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date() });
+// Health check (with database connectivity verification)
+app.get('/health', async (req, res) => {
+    try {
+        const prismaHealth = require('./lib/prisma');
+        await prismaHealth.$queryRaw`SELECT 1`;
+        res.json({ status: 'ok', database: 'connected', timestamp: new Date() });
+    } catch (error) {
+        res.status(503).json({ status: 'error', database: 'disconnected', timestamp: new Date() });
+    }
 });
 
 // Serve static files from the frontend app
@@ -91,8 +121,24 @@ app.use((req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(err.status || 500).json({
+        error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message
+    });
+});
+
 const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+
+    // Start reminder cron service
+    try {
+        const { startReminderCron } = require('./lib/reminderService');
+        startReminderCron();
+    } catch (err) {
+        console.error('Failed to start reminder service:', err);
+    }
 });
 
 // Graceful shutdown
@@ -123,3 +169,11 @@ const gracefulShutdown = async (signal) => {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    process.exit(1);
+});

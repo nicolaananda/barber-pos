@@ -98,7 +98,7 @@ router.get('/', async (req, res) => {
         });
 
         res.json({
-            message: 'Database seeded successfully (PostgreSQL)',
+            message: 'Database seeded successfully (MySQL)',
             users: {
                 owner: owner.username,
                 staff1: staff1.username,

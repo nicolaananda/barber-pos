@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { API_BASE_URL } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 interface Booking {
     id: number;
@@ -26,6 +28,7 @@ interface Booking {
 }
 
 export default function BookingsPage() {
+    const { token } = useAuth();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('active');
@@ -46,8 +49,15 @@ export default function BookingsPage() {
     useEffect(() => {
         fetchBookings();
         fetchBarbers(); // Need barbers for the reschedule dropdown
-        const interval = setInterval(fetchBookings, 10000); // Poll every 10s
-        return () => clearInterval(interval);
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+        const startPolling = () => { if (!intervalId) intervalId = setInterval(fetchBookings, 10000); };
+        const stopPolling = () => { if (intervalId) { clearInterval(intervalId); intervalId = null; } };
+        const handleVisibility = () => {
+            if (document.hidden) { stopPolling(); } else { fetchBookings(); startPolling(); }
+        };
+        startPolling();
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => { stopPolling(); document.removeEventListener('visibilitychange', handleVisibility); };
     }, [filterStatus, filterDate]);
 
     // Fetch slots when date or barber changes
@@ -99,7 +109,6 @@ export default function BookingsPage() {
 
         setSubmittingReschedule(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/bookings/${selectedBookingForReschedule.id}/reschedule`, {
                 method: 'PATCH',
                 headers: {
@@ -119,11 +128,11 @@ export default function BookingsPage() {
                 // We could add a toast notification here
             } else {
                 const err = await res.json();
-                alert(err.error || 'Failed to reschedule');
+                toast.error(err.error || 'Failed to reschedule');
             }
         } catch (error) {
             console.error('Reschedule error:', error);
-            alert('An error occurred while rescheduling');
+            toast.error('An error occurred while rescheduling');
         } finally {
             setSubmittingReschedule(false);
         }
@@ -131,7 +140,6 @@ export default function BookingsPage() {
 
     const fetchBookings = async () => {
         try {
-            const token = localStorage.getItem('token');
             let url = `${API_BASE_URL}/bookings?`;
 
             if (filterStatus !== 'all') {
@@ -170,7 +178,6 @@ export default function BookingsPage() {
 
     const updateBookingStatus = async (bookingId: number, newStatus: string) => {
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/status`, {
                 method: 'PATCH',
                 headers: {
@@ -360,7 +367,11 @@ export default function BookingsPage() {
                                         size="sm"
                                         variant="ghost"
                                         className="text-zinc-400 hover:text-red-500 hover:bg-red-50"
-                                        onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                        onClick={() => {
+                                            if (window.confirm('Yakin ingin membatalkan booking ini?')) {
+                                                updateBookingStatus(booking.id, 'cancelled');
+                                            }
+                                        }}
                                     >
                                         Cancel
                                     </Button>

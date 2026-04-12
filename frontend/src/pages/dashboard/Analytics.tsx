@@ -50,7 +50,7 @@ function KPICard({ label, value, sub, icon: Icon, color }: {
             <div className="min-w-0">
                 <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide truncate">{label}</p>
                 <p className="text-xl font-black text-zinc-900 leading-tight">{value}</p>
-                {sub && <p className="text-xs text-zinc-400 mt-0.5">{sub}</p>}
+                {sub && <p className="text-xs text-zinc-500 mt-0.5">{sub}</p>}
             </div>
         </div>
     );
@@ -188,7 +188,7 @@ export default function Analytics() {
 
                 {/* Tabs */}
                 <div className="bg-white border border-zinc-200 rounded-lg p-2 mb-6 overflow-x-auto shadow-sm">
-                    <div className="flex gap-1 min-w-max">
+                    <div className="flex gap-1 min-w-max" role="tablist">
                         {tabs.map(tab => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
@@ -196,6 +196,8 @@ export default function Analytics() {
                             return (
                                 <button
                                     key={tab.id}
+                                    role="tab"
+                                    aria-selected={isActive}
                                     onClick={() => setActiveTab(tab.id as AnalyticsTab)}
                                     className={`flex items-center gap-2 px-3 py-2.5 rounded-md transition-all whitespace-nowrap font-medium text-sm ${
                                         isActive
@@ -205,7 +207,7 @@ export default function Analytics() {
                                             : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900'
                                     }`}
                                 >
-                                    <Icon className={`w-4 h-4 ${isActive ? 'text-zinc-300' : isAI ? 'text-purple-500' : 'text-zinc-400'}`} />
+                                    <Icon className={`w-4 h-4 ${isActive ? 'text-zinc-300' : isAI ? 'text-purple-500' : 'text-zinc-500'}`} />
                                     {tab.label}
                                 </button>
                             );

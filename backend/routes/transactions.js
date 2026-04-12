@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
+const requireOwner = require('../middleware/requireOwner');
 const { format } = require('date-fns');
 const whatsappService = require('../lib/whatsapp');
 const backupService = require('../lib/backupService');
+const { logAudit } = require('../lib/auditLogger');
 
 // POST /api/transactions
 router.post('/', authenticateToken, async (req, res) => {
@@ -16,44 +18,67 @@ router.post('/', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Invalid Barber ID' });
         }
 
-        // Generate Invoice Code INV-YYMMDD-XXX
-        const today = new Date();
-        const todayStr = format(today, 'yyMMdd');
-
-        const startOfDay = new Date(today);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(today);
-        endOfDay.setHours(23, 59, 59, 999);
-
-        const countToday = await prisma.transaction.count({
-            where: {
-                date: {
-                    gte: startOfDay,
-                    lte: endOfDay,
-                },
-            },
-        });
-
-        const sequence = (countToday + 1).toString().padStart(3, '0');
-        const invoiceCode = `INV-${todayStr}-${sequence}`;
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'Items are required' });
+        }
+        const calculatedTotal = items.reduce((sum, item) => sum + (Number(item.price) * Number(item.qty || 1)), 0);
+        if (Math.abs(calculatedTotal - totalAmount) > 1) {
+            return res.status(400).json({ error: 'Total amount does not match items' });
+        }
 
         // Find active shift
         const activeShift = await prisma.cashShift.findFirst({
             where: { status: 'open' },
         });
 
-        const transaction = await prisma.transaction.create({
-            data: {
-                invoiceCode,
-                date: new Date(),
-                customerName,
-                customerPhone,
-                barberId: bId,
-                items, // Json type
-                totalAmount,
-                paymentMethod,
-            },
-        });
+        // Wrap invoice generation + transaction creation in a transaction with retry on P2002
+        let transaction;
+        const MAX_RETRIES = 3;
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            try {
+                transaction = await prisma.$transaction(async (tx) => {
+                    // Generate Invoice Code INV-YYMMDD-XXX
+                    const today = new Date();
+                    const todayStr = format(today, 'yyMMdd');
+
+                    const startOfDay = new Date(today);
+                    startOfDay.setHours(0, 0, 0, 0);
+                    const endOfDay = new Date(today);
+                    endOfDay.setHours(23, 59, 59, 999);
+
+                    const countToday = await tx.transaction.count({
+                        where: {
+                            date: {
+                                gte: startOfDay,
+                                lte: endOfDay,
+                            },
+                        },
+                    });
+
+                    const sequence = (countToday + 1).toString().padStart(3, '0');
+                    const invoiceCode = `INV-${todayStr}-${sequence}`;
+
+                    return await tx.transaction.create({
+                        data: {
+                            invoiceCode,
+                            date: new Date(),
+                            customerName,
+                            customerPhone,
+                            barberId: bId,
+                            items, // Json type
+                            totalAmount,
+                            paymentMethod,
+                        },
+                    });
+                });
+                break; // Success, exit retry loop
+            } catch (err) {
+                if (err.code === 'P2002' && attempt < MAX_RETRIES - 1) {
+                    continue; // Retry on unique constraint violation
+                }
+                throw err;
+            }
+        }
 
         // Auto-complete booking if bookingId is provided
         if (req.body.bookingId) {
@@ -92,7 +117,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // GET /api/transactions
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
     try {
         const { date } = req.query;
 
@@ -182,7 +207,7 @@ router.post('/:id/send-whatsapp', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/transactions/:id
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const transactionId = parseInt(req.params.id);
         const { items, totalAmount, paymentMethod, customerName, customerPhone, barberId } = req.body;
@@ -235,6 +260,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
                 });
             }
         }
+
+        logAudit('transaction.edit', req.user.id, { transactionId });
 
         res.json(updatedTransaction);
     } catch (error) {

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select"
 import { Label } from '@/components/ui/label';
 import { API_BASE_URL } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 interface PayrollData {
     barberId: number;
@@ -22,6 +23,7 @@ interface PayrollData {
 }
 
 export default function PayrollPage() {
+    const { token } = useAuth();
     const [payrollData, setPayrollData] = useState<PayrollData[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth().toString());
@@ -34,7 +36,6 @@ export default function PayrollPage() {
     const fetchPayroll = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/payroll?month=${selectedMonth}&year=${selectedYear}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -479,6 +480,8 @@ export default function PayrollPage() {
                             No payroll data available for this period
                         </div>
                     ) : (
+                        <>
+                        <p className="text-xs text-zinc-400 md:hidden mb-2">&larr; Geser untuk lihat semua &rarr;</p>
                         <div className="rounded-xl border border-zinc-200 overflow-x-auto bg-white">
                             <table className="w-full text-sm text-left min-w-[800px]">
                                 <thead className="bg-zinc-50 uppercase tracking-wider text-xs font-semibold text-zinc-500 border-b border-zinc-200">
@@ -535,6 +538,7 @@ export default function PayrollPage() {
                                 </tfoot>
                             </table>
                         </div>
+                        </>
                     )}
                 </CardContent>
             </Card>

@@ -1,8 +1,7 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 
 import { usePosStore } from '@/lib/store';
+import { useAuth } from '@/context/AuthContext';
 import { API_BASE_URL } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,12 +15,12 @@ interface Service {
 
 export default function ServiceGrid() {
     const { addToCart, selectedBarber } = usePosStore();
+    const { token } = useAuth();
     const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(false); // Default false to avoid flash if fast? No, let's keep logic
 
     useEffect(() => {
         setLoading(true);
-        const token = localStorage.getItem('token');
         fetch(`${API_BASE_URL}/services`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -35,8 +34,11 @@ export default function ServiceGrid() {
                 setServices(data);
                 setLoading(false);
             })
-            .catch((err) => console.error(err));
-    }, []);
+            .catch((err) => {
+                console.error(err);
+                setLoading(false);
+            });
+    }, [token]);
 
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -44,25 +46,9 @@ export default function ServiceGrid() {
         // Search filter
         if (!service.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
 
-        if (!selectedBarber) return true;
-
-        const serviceName = service.name.toLowerCase();
-
-        // Owner (Bagus) Logic
-        if (selectedBarber.username === 'bagus') {
-            // Hide regular haircut
-            if ((serviceName.includes('haircut') || serviceName.includes('cukur')) && !serviceName.includes('head')) return false;
-            // Show everything else (including 'Haircut by Head')
-            return true;
-        }
-
-        // Other Barbers Logic
-        else {
-            // Hide owner exclusive services
-            if (serviceName.includes('head') || serviceName.includes('owner')) return false;
-            // Show everything else (including regular 'Haircut')
-            return true;
-        }
+        // TODO: Implement proper service-barber mapping from database
+        // Currently showing all active services to all barbers
+        return true;
     });
 
     if (loading) return <div>Loading Services...</div>;

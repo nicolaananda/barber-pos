@@ -22,23 +22,25 @@ export default defineConfig({
         display: 'standalone',
         scope: '/',
         start_url: '/',
-        orientation: 'landscape',
+        orientation: 'portrait',
         icons: [
           {
             src: '/logo.jpg',
             sizes: '192x192',
-            type: 'image/jpeg'
-          },
-          {
-            src: '/logo.jpg',
-            sizes: '512x512',
-            type: 'image/jpeg'
+            type: 'image/jpeg',
+            purpose: 'any'
           },
           {
             src: '/logo.jpg',
             sizes: '512x512',
             type: 'image/jpeg',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: '/logo.jpg',
+            sizes: '512x512',
+            type: 'image/jpeg',
+            purpose: 'maskable'
           }
         ]
       }

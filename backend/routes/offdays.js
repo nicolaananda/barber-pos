@@ -5,7 +5,7 @@ const authenticateToken = require('../middleware/auth');
 
 // GET /api/offdays
 // Query params: start (YYYY-MM-DD), end (YYYY-MM-DD), barberId (optional)
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
     try {
         const { start, end, barberId } = req.query;
 

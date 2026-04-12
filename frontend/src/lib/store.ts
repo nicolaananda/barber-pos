@@ -14,6 +14,7 @@ export interface PosState {
     customerName: string;
     customerPhone: string;
     activeShift: { id: string; status: 'open' | 'closed' } | null;
+    lastActivity: number;
 
     bookingId: number | null;
     setBookingId: (id: number | null) => void;
@@ -37,8 +38,9 @@ export const usePosStore = create<PosState>()(
             customerPhone: '',
             activeShift: null,
             bookingId: null,
+            lastActivity: Date.now(),
 
-            setBarber: (barber) => set({ selectedBarber: barber }),
+            setBarber: (barber) => set({ selectedBarber: barber, lastActivity: Date.now() }),
             setBookingId: (id) => set({ bookingId: id }),
 
             addToCart: (item) =>
@@ -49,9 +51,10 @@ export const usePosStore = create<PosState>()(
                             cart: state.cart.map((i) =>
                                 i.id === item.id ? { ...i, qty: i.qty + 1 } : i
                             ),
+                            lastActivity: Date.now(),
                         };
                     }
-                    return { cart: [...state.cart, { ...item, qty: 1 }] };
+                    return { cart: [...state.cart, { ...item, qty: 1 }], lastActivity: Date.now() };
                 }),
 
             removeFromCart: (itemId) =>
@@ -68,7 +71,7 @@ export const usePosStore = create<PosState>()(
                     }),
                 })),
 
-            clearCart: () => set({ cart: [], selectedBarber: null, customerName: '', customerPhone: '', bookingId: null }),
+            clearCart: () => set({ cart: [], selectedBarber: null, customerName: '', customerPhone: '', bookingId: null, lastActivity: Date.now() }),
 
             setCustomerInfo: (name, phone) => set({ customerName: name, customerPhone: phone }),
 
@@ -76,6 +79,19 @@ export const usePosStore = create<PosState>()(
         }),
         {
             name: 'staycool-pos-storage',
+            onRehydrateStorage: () => (state) => {
+                if (state && state.lastActivity) {
+                    const twelveHours = 12 * 60 * 60 * 1000;
+                    if (Date.now() - state.lastActivity > twelveHours) {
+                        state.cart = [];
+                        state.selectedBarber = null;
+                        state.activeShift = null;
+                        state.customerName = '';
+                        state.customerPhone = '';
+                        state.bookingId = null;
+                    }
+                }
+            },
         }
     )
 );

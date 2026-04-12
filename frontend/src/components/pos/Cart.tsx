@@ -1,5 +1,3 @@
-'use client';
-
 import { usePosStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Trash2, Plus, Minus } from 'lucide-react';
@@ -36,6 +34,7 @@ export default function Cart() {
                             size="icon"
                             className="h-7 w-7 rounded-sm border border-zinc-200 bg-white hover:bg-zinc-100 hover:text-zinc-900"
                             onClick={() => updateQty(item.id, -1)}
+                            aria-label={`Kurangi jumlah ${item.name}`}
                         >
                             <Minus className="h-3 w-3" />
                         </Button>
@@ -45,6 +44,7 @@ export default function Cart() {
                             size="icon"
                             className="h-7 w-7 rounded-sm border border-zinc-200 bg-white hover:bg-zinc-100 hover:text-zinc-900"
                             onClick={() => updateQty(item.id, 1)}
+                            aria-label={`Tambah jumlah ${item.name}`}
                         >
                             <Plus className="h-3 w-3" />
                         </Button>
@@ -53,6 +53,7 @@ export default function Cart() {
                             size="icon"
                             className="h-7 w-7 text-zinc-400 hover:text-red-600 hover:bg-red-50 ml-1"
                             onClick={() => removeFromCart(item.id)}
+                            aria-label="Hapus item"
                         >
                             <Trash2 className="h-3 w-3" />
                         </Button>

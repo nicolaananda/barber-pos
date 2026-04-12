@@ -16,7 +16,16 @@
       "Bash(grep -r \"TODO\\\\|FIXME\\\\|XXX\\\\|HACK\\\\|BUG\" /Users/nicolaanandadwiervantoro/SE/barber-pos/backend --include=*.js --include=*.jsx)",
       "Bash(find /Users/nicolaanandadwiervantoro/SE/barber-pos -name *.test.js -o -name *.spec.js -o -name __tests__ -type d)",
       "Bash(ls -la /Users/nicolaanandadwiervantoro/SE/barber-pos/*.md)",
-      "Bash(find /Users/nicolaanandadwiervantoro/SE/barber-pos/frontend/src/pages -type f -name \"*.tsx\" -exec wc -l {})"
+      "Bash(find /Users/nicolaanandadwiervantoro/SE/barber-pos/frontend/src/pages -type f -name \"*.tsx\" -exec wc -l {})",
+      "Bash(wc:*)",
+      "Bash(npm run:*)",
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Grep",
+      "LS",
+      "Glob"
     ]
   }
 }

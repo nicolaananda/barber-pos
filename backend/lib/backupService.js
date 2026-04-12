@@ -1,4 +1,4 @@
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -53,49 +53,62 @@ class BackupService {
      */
     executeBackup() {
         return new Promise((resolve) => {
+            const fs = require('fs');
             const DB_NAME = process.env.DB_NAME || 'barber_pos';
             const DB_USER = process.env.DB_USER || 'root';
             const DB_PASS = process.env.DB_PASSWORD || '';
-            const BACKUP_DIR = '/root/backup/mysql-auto';
+            const BACKUP_DIR = process.env.BACKUP_DIR || '/root/backup/mysql-auto';
             const DATE = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
             const TIME = new Date().toTimeString().split(' ')[0].replace(/:/g, '');
             const BACKUP_FILE = `${BACKUP_DIR}/${DB_NAME}_${DATE}_${TIME}.sql`;
 
             // Create backup directory if not exists
-            exec(`mkdir -p ${BACKUP_DIR}`, (mkdirErr) => {
-                if (mkdirErr) {
-                    return resolve({ success: false, error: mkdirErr.message });
+            try {
+                fs.mkdirSync(BACKUP_DIR, { recursive: true });
+            } catch (mkdirErr) {
+                return resolve({ success: false, error: mkdirErr.message });
+            }
+
+            // Execute mysqldump safely using execFile (no shell interpolation)
+            const dumpArgs = ['-u', DB_USER];
+            if (DB_PASS) dumpArgs.push(`-p${DB_PASS}`);
+            dumpArgs.push('--result-file', BACKUP_FILE, DB_NAME);
+
+            execFile('mysqldump', dumpArgs, (dumpErr) => {
+                if (dumpErr) {
+                    return resolve({ success: false, error: dumpErr.message });
                 }
 
-                // Execute mysqldump
-                const dumpCmd = `mysqldump -u ${DB_USER} ${DB_PASS ? `-p${DB_PASS}` : ''} ${DB_NAME} > ${BACKUP_FILE}`;
-
-                exec(dumpCmd, (dumpErr) => {
-                    if (dumpErr) {
-                        return resolve({ success: false, error: dumpErr.message });
+                // Compress backup
+                execFile('gzip', [BACKUP_FILE], (gzipErr) => {
+                    if (gzipErr) {
+                        return resolve({ success: false, error: gzipErr.message });
                     }
 
-                    // Compress backup
-                    exec(`gzip ${BACKUP_FILE}`, (gzipErr) => {
-                        if (gzipErr) {
-                            return resolve({ success: false, error: gzipErr.message });
-                        }
+                    const compressedFile = `${BACKUP_FILE}.gz`;
 
-                        const compressedFile = `${BACKUP_FILE}.gz`;
+                    // Upload to R2 (async, don't wait)
+                    this.uploadToR2(compressedFile).catch(err => {
+                        console.error('⚠️ R2 upload failed (backup still saved locally):', err.message);
+                    });
 
-                        // Upload to R2 (async, don't wait)
-                        this.uploadToR2(compressedFile).catch(err => {
-                            console.error('⚠️ R2 upload failed (backup still saved locally):', err.message);
+                    // Clean old backups (keep last 50)
+                    try {
+                        const files = fs.readdirSync(BACKUP_DIR)
+                            .filter(f => f.endsWith('.sql.gz'))
+                            .map(f => ({ name: f, time: fs.statSync(`${BACKUP_DIR}/${f}`).mtime.getTime() }))
+                            .sort((a, b) => b.time - a.time);
+
+                        files.slice(50).forEach(f => {
+                            try { fs.unlinkSync(`${BACKUP_DIR}/${f.name}`); } catch (e) { /* ignore */ }
                         });
+                    } catch (cleanErr) {
+                        // Don't fail on cleanup error
+                    }
 
-                        // Clean old backups (keep last 50)
-                        exec(`ls -t ${BACKUP_DIR}/*.sql.gz | tail -n +51 | xargs rm -f`, (cleanErr) => {
-                            // Don't fail on cleanup error
-                            resolve({
-                                success: true,
-                                filename: compressedFile
-                            });
-                        });
+                    resolve({
+                        success: true,
+                        filename: compressedFile
                     });
                 });
             });

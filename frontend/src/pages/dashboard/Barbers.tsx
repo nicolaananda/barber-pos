@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
 import { API_BASE_URL } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface Barber {
     id: number;
@@ -38,7 +39,7 @@ interface Barber {
 }
 
 export default function BarbersPage() {
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const [barbers, setBarbers] = useState<Barber[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -63,7 +64,6 @@ export default function BarbersPage() {
     const fetchBarbers = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/users/barbers-list`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -77,7 +77,7 @@ export default function BarbersPage() {
             setBarbers(data || []);
         } catch (error) {
             console.error('Error fetching barbers:', error);
-            alert(`Error: ${error instanceof Error ? error.message : 'Failed to fetch barbers'}`);
+            toast.error(`Error: ${error instanceof Error ? error.message : 'Failed to fetch barbers'}`);
             setBarbers([]);
         } finally {
             setLoading(false);
@@ -89,19 +89,17 @@ export default function BarbersPage() {
         try {
             // Validate inputs
             if (!username.trim()) {
-                alert('Username is required');
+                toast.error('Username is required');
                 return;
             }
             if (!name.trim()) {
-                alert('Name is required');
+                toast.error('Name is required');
                 return;
             }
             if (!currentId && !password.trim()) {
-                alert('Password is required');
+                toast.error('Password is required');
                 return;
             }
-
-            const token = localStorage.getItem('token');
             const method = currentId ? 'PUT' : 'POST';
             const url = currentId ? `${API_BASE_URL}/users/barbers/${currentId}` : `${API_BASE_URL}/users/barbers`;
 
@@ -114,7 +112,7 @@ export default function BarbersPage() {
             // Only include password if it's a new user or if password is provided for update
             if (!currentId) {
                 if (!password.trim()) {
-                    alert('Password is required');
+                    toast.error('Password is required');
                     return;
                 }
                 body.password = password;
@@ -134,7 +132,7 @@ export default function BarbersPage() {
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({ error: 'Failed to save barber' }));
                 const errorMessage = errorData.error || errorData.details || 'Failed to save barber';
-                alert(`Error: ${errorMessage}`);
+                toast.error(`Error: ${errorMessage}`);
                 return;
             }
 
@@ -142,14 +140,13 @@ export default function BarbersPage() {
             handleClose();
         } catch (error) {
             console.error('Error saving barber:', error);
-            alert(`Failed to save barber: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            toast.error(`Failed to save barber: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     };
 
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this barber?')) return;
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/users/barbers/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -157,14 +154,14 @@ export default function BarbersPage() {
 
             if (!res.ok) {
                 const error = await res.json();
-                alert(error.error || 'Failed to delete barber');
+                toast.error(error.error || 'Failed to delete barber');
                 return;
             }
 
             await fetchBarbers();
         } catch (error) {
             console.error(error);
-            alert('Failed to delete barber');
+            toast.error('Failed to delete barber');
         }
     };
 
@@ -335,6 +332,8 @@ export default function BarbersPage() {
                             <p className="text-sm">No barbers found matching "{searchTerm}"</p>
                         </div>
                     ) : (
+                        <>
+                        <p className="text-xs text-zinc-400 md:hidden mb-2">&larr; Geser untuk lihat semua &rarr;</p>
                         <div className="rounded-xl border border-zinc-200 overflow-x-auto bg-white">
                             <table className="w-full text-sm text-left min-w-[800px]">
                                 <thead className="bg-zinc-50 uppercase tracking-wider text-xs font-semibold text-zinc-500 border-b border-zinc-200">
@@ -389,6 +388,7 @@ export default function BarbersPage() {
                                 </tbody>
                             </table>
                         </div>
+                        </>
                     )}
                 </CardContent>
             </Card>

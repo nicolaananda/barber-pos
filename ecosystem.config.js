@@ -10,9 +10,9 @@ module.exports = {
         PORT: 3001,
         WA_GATEWAY_URL: 'https://gowa.nicola.id',
         WA_DEVICE_ID: 'bagus_tab',
-        WA_GATEWAY_USER: 'admin',
-        WA_GATEWAY_PASS: '@Nandha20',
-        WA_WEBHOOK_SECRET: 'apiku'
+        WA_GATEWAY_USER: process.env.WA_GATEWAY_USER || '',
+        WA_GATEWAY_PASS: process.env.WA_GATEWAY_PASS || '',
+        WA_WEBHOOK_SECRET: process.env.WA_WEBHOOK_SECRET || ''
       },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',

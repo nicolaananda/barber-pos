@@ -1,8 +1,8 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { usePosStore } from '@/lib/store';
+import { useAuth } from '@/context/AuthContext';
 import { API_BASE_URL } from '@/lib/api';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export default function CheckoutModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+    const { token } = useAuth();
     const { cart, selectedBarber, customerName, customerPhone, setCustomerInfo, clearCart, bookingId } = usePosStore();
     const totalAmount = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
@@ -47,26 +48,30 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
         }
     }, [open]);
 
-    // Simple debounce search could be implemented, but direct fetch on > 2 chars is fine for small scale
-    const handleSearch = async (query: string) => {
-        setSearchQuery(query);
-        if (query.length < 2) {
+    // Debounced customer search
+    useEffect(() => {
+        if (searchQuery.length < 2) {
             setSearchResults([]);
             setShowSuggestions(false);
             return;
         }
+        const timeout = setTimeout(async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/customers?q=${searchQuery}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                setSearchResults(data);
+                setShowSuggestions(true);
+            } catch (error) {
+                console.error(error);
+            }
+        }, 300);
+        return () => clearTimeout(timeout);
+    }, [searchQuery, token]);
 
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/customers?q=${query}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            setSearchResults(data);
-            setShowSuggestions(true);
-        } catch (error) {
-            console.error(error);
-        }
+    const handleSearchInput = (query: string) => {
+        setSearchQuery(query);
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -77,14 +82,17 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
     };
 
     const handleCheckout = async () => {
-        if (!selectedBarber || cart.length === 0) return;
+        if (cart.length === 0) return;
+        if (!selectedBarber) {
+            toast.error('Pilih barber terlebih dahulu');
+            return;
+        }
 
         setLoading(true);
 
         try {
             // 1. Save/Update Customer if info exists
             if (customerName && customerPhone) {
-                const token = localStorage.getItem('token');
                 await fetch(`${API_BASE_URL}/customers`, {
                     method: 'POST',
                     headers: {
@@ -96,7 +104,6 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
             }
 
             // 2. Create Transaction
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/transactions`, {
                 method: 'POST',
                 headers: {
@@ -125,7 +132,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
         } catch (error) {
             console.error(error);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            alert(`Checkout Failed: ${(error as any).message}`);
+            toast.error(`Checkout Failed: ${(error as any).message}`);
         } finally {
             setLoading(false);
         }
@@ -151,7 +158,6 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
         setWhatsappError('');
 
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/transactions/${lastTx.id}/send-whatsapp`, {
                 method: 'POST',
                 headers: {
@@ -360,7 +366,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
                                     className="pl-9 bg-card border-border focus:border-primary transition-colors"
                                     placeholder="Search by Name or Phone..."
                                     value={searchQuery}
-                                    onChange={(e) => handleSearch(e.target.value)}
+                                    onChange={(e) => handleSearchInput(e.target.value)}
                                     autoComplete="off"
                                 />
                             </div>

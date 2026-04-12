@@ -10,9 +10,23 @@ router.get('/', authenticateToken, async (req, res) => {
 
         if (!q) {
             // Return all customers, ordered by most recent
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 50;
+            const skip = (page - 1) * limit;
+
             const customers = await prisma.customer.findMany({
                 orderBy: { updatedAt: 'desc' },
+                skip,
+                take: limit,
             });
+
+            if (req.query.page) {
+                const total = await prisma.customer.count();
+                return res.json({
+                    data: customers,
+                    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+                });
+            }
             return res.json(customers);
         }
 

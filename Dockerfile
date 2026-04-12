@@ -18,9 +18,13 @@ COPY frontend ./frontend
 WORKDIR /app/backend
 RUN npx prisma generate
 
-# Expose frontend and backend ports
-EXPOSE 7763
+# Build frontend for production
+WORKDIR /app/frontend
+RUN npm run build
+
+# Expose port (backend serves frontend static files)
 EXPOSE 7764
 
-# Jalankan frontend (Vite) di 7763 dan backend (Express) di 7764 dalam satu container
-CMD ["sh", "-c", "cd /app/backend && PORT=7764 npm run server & cd /app/frontend && npm run dev -- --host 0.0.0.0 --port 7763 & wait -n"]
+# Run backend only (server.js serves frontend/dist as static files)
+WORKDIR /app/backend
+CMD ["sh", "-c", "PORT=7764 node server.js"]

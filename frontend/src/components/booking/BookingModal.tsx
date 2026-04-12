@@ -60,22 +60,8 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                 const data = await res.json();
                 let availableServices = data.filter((s: any) => s.isActive);
 
-                // Filter by barber specific rules
-                if (barber.username) {
-                    const isOwner = barber.username === 'bagus';
-                    availableServices = availableServices.filter((service: any) => {
-                        const serviceName = service.name.toLowerCase();
-                        if (isOwner) {
-                            // Owner Logic: Hide regular haircuts, show Head Barber only
-                            if ((serviceName.includes('haircut') || serviceName.includes('cukur')) && !serviceName.includes('head')) return false;
-                            return true;
-                        } else {
-                            // Staff Logic: Hide Head Barber services
-                            if (serviceName.includes('head') || serviceName.includes('owner')) return false;
-                            return true;
-                        }
-                    });
-                }
+                // TODO: Implement proper service-barber mapping from database
+                // Currently showing all active services to all barbers
 
                 // Sort services: Haircut/Cukur first, then others
                 availableServices.sort((a: any, b: any) => {

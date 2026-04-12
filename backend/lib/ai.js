@@ -3,12 +3,29 @@ const fs = require('fs');
 const path = require('path');
 
 const CACHE_DIR = path.join(__dirname, '../cache');
-const API_KEY = 'sk-nuovEnVCABMhiwDStHZ3lg'; // In production, this should be in .env
+const API_KEY = process.env.AI_API_KEY || '';
 const BASE_URL = 'https://ai.sumopod.com/v1';
 
 // Ensure cache directory exists
 if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
+}
+
+// Cleanup cache files older than 7 days on startup
+try {
+    const files = fs.readdirSync(CACHE_DIR);
+    const now = Date.now();
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+    for (const file of files) {
+        const filePath = path.join(CACHE_DIR, file);
+        const stat = fs.statSync(filePath);
+        if (now - stat.mtimeMs > SEVEN_DAYS) {
+            fs.unlinkSync(filePath);
+            console.log(`[Cache Cleanup] Deleted old cache file: ${file}`);
+        }
+    }
+} catch (err) {
+    console.error('Cache cleanup error:', err);
 }
 
 /**

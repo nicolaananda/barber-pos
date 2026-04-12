@@ -65,7 +65,15 @@ router.post('/', upload.single('proof'), async (req, res) => {
             }
 
             const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            const ext = path.extname(req.file.originalname);
+            // Determine extension from magic bytes instead of user input
+            const getExtFromMagicBytes = (buffer) => {
+                if (buffer[0] === 0xFF && buffer[1] === 0xD8) return '.jpg';
+                if (buffer[0] === 0x89 && buffer[1] === 0x50) return '.png';
+                if (buffer[0] === 0x47 && buffer[1] === 0x49) return '.gif';
+                if (buffer[0] === 0x52 && buffer[1] === 0x49) return '.webp';
+                return '.jpg'; // fallback
+            };
+            const ext = getExtFromMagicBytes(req.file.buffer);
             const filename = 'proofs/proof-' + uniqueSuffix + ext;
 
             try {

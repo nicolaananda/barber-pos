@@ -29,6 +29,8 @@ import {
     SheetDescription
 } from "@/components/ui/sheet";
 import { API_BASE_URL } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 
 interface Customer {
@@ -50,6 +52,7 @@ interface Transaction {
 }
 
 export default function CustomersPage() {
+    const { token } = useAuth();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -75,7 +78,6 @@ export default function CustomersPage() {
     const fetchCustomers = async (search: string = '') => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/customers?q=${search}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -100,7 +102,6 @@ export default function CustomersPage() {
         if (!editingCustomer) return;
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/customers/${editingCustomer.id}`, {
                 method: 'PATCH',
                 headers: {
@@ -116,7 +117,7 @@ export default function CustomersPage() {
             setEditingCustomer(null);
         } catch (error) {
             console.error(error);
-            alert('Failed to update customer');
+            toast.error('Failed to update customer');
         } finally {
             setIsSubmitting(false);
         }
@@ -126,7 +127,6 @@ export default function CustomersPage() {
         setHistoryCustomer(customer);
         setHistoryLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/transactions?phone=${customer.phone}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -182,6 +182,8 @@ export default function CustomersPage() {
                             <Loader2 className="h-8 w-8 animate-spin text-zinc-900" />
                         </div>
                     ) : (
+                        <>
+                        <p className="text-xs text-zinc-400 md:hidden mb-2">&larr; Geser untuk lihat semua &rarr;</p>
                         <div className="rounded-xl border border-zinc-200 overflow-x-auto bg-white">
                             <table className="w-full text-sm text-left min-w-[800px]">
                                 <thead className="bg-zinc-50 uppercase tracking-wider text-xs font-semibold text-zinc-500 border-b border-zinc-200">
@@ -234,7 +236,7 @@ export default function CustomersPage() {
                                                             <History className="w-3 h-3 text-zinc-400" />
                                                             {customer.lastVisit ? format(new Date(customer.lastVisit), 'dd MMM yyyy') : '-'}
                                                         </div>
-                                                        <div className="flex items-center gap-2 text-zinc-400" title="Joined">
+                                                        <div className="flex items-center gap-2 text-zinc-500" title="Joined">
                                                             <CalendarDays className="w-3 h-3 opacity-70" />
                                                             {format(new Date(customer.createdAt), 'MMM yyyy')}
                                                         </div>
@@ -264,6 +266,7 @@ export default function CustomersPage() {
                                 </tbody>
                             </table>
                         </div>
+                        </>
                     )}
                 </CardContent>
             </Card>
@@ -286,7 +289,7 @@ export default function CustomersPage() {
                         <DialogFooter className="pt-4">
                             <Button type="submit" disabled={isSubmitting} className="bg-zinc-900 text-white hover:bg-zinc-800">
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Like Changes
+                                Simpan
                             </Button>
                         </DialogFooter>
                     </form>

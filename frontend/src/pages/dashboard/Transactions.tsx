@@ -7,6 +7,8 @@ import { Loader2, Calendar, FileText, Download, Filter, Eye, DollarSign, Banknot
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { API_BASE_URL } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 import {
     Dialog,
     DialogContent,
@@ -27,6 +29,7 @@ interface Transaction {
 }
 
 export default function TransactionsPage() {
+    const { token } = useAuth();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [dateFilter, setDateFilter] = useState('');
@@ -49,7 +52,6 @@ export default function TransactionsPage() {
     const fetchTransactions = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/transactions`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -125,13 +127,29 @@ export default function TransactionsPage() {
     };
 
     const confirmSave = async () => {
-        if (pin !== '0401') {
-            alert('Invalid PIN Code');
+        if (!pin) {
+            toast.error('Please enter PIN');
             return;
         }
 
         try {
-            const token = localStorage.getItem('token');
+
+            // Verify PIN server-side first
+            const pinRes = await fetch(`${API_BASE_URL}/auth/verify-pin`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ pin })
+            });
+
+            if (!pinRes.ok) {
+                const pinData = await pinRes.json();
+                toast.error(pinData.error || 'Invalid PIN Code');
+                return;
+            }
+
             const res = await fetch(`${API_BASE_URL}/transactions/${editForm?.id}`, {
                 method: 'PUT',
                 headers: {
@@ -150,7 +168,7 @@ export default function TransactionsPage() {
             fetchTransactions(); // Refresh list
         } catch (error) {
             console.error(error);
-            alert('Failed to update transaction');
+            toast.error('Failed to update transaction');
         }
     };
 
@@ -246,6 +264,7 @@ export default function TransactionsPage() {
                         </div>
                     ) : (
                         <div className="space-y-4">
+                            <p className="text-xs text-zinc-400 md:hidden mb-2">&larr; Geser untuk lihat semua &rarr;</p>
                             <div className="rounded-xl border border-zinc-200 overflow-hidden">
                                 <table className="w-full text-sm text-left">
                                     <thead className="bg-zinc-50 uppercase tracking-wider text-xs font-semibold text-zinc-500 border-b border-zinc-200">
@@ -523,7 +542,7 @@ export default function TransactionsPage() {
                 <DialogContent className="sm:max-w-[300px] bg-white">
                     <DialogHeader>
                         <DialogTitle>Enter Secret Code</DialogTitle>
-                        <DialogDescription>Use code 0401 to authorize update.</DialogDescription>
+                        <DialogDescription>Enter your authorization PIN to save changes.</DialogDescription>
                     </DialogHeader>
                     <div className="py-2">
                         <Input

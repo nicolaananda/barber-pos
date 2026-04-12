@@ -25,8 +25,10 @@ class SecurityLogger {
 
         const logLine = JSON.stringify(logEntry) + '\n';
 
-        // Append to log file
-        fs.appendFileSync(this.logFile, logLine);
+        // Append to log file (async, fire-and-forget)
+        fs.promises.appendFile(this.logFile, logLine).catch(err => {
+            console.error('Failed to write security log:', err);
+        });
 
         // Also log to console in development
         if (process.env.NODE_ENV !== 'production') {

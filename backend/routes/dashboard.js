@@ -83,7 +83,7 @@ router.get('/daily', authenticateToken, async (req, res) => {
 });
 
 // GET /api/dashboard/stats
-router.get('/stats', async (req, res) => {
+router.get('/stats', authenticateToken, async (req, res) => {
     try {
         // 1. Total Revenue (Current Month)
         const now = new Date();

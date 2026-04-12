@@ -7,7 +7,11 @@ router.post('/', (req, res) => {
         const secret = process.env.WA_WEBHOOK_SECRET;
         const incomingSecret = req.headers['x-webhook-secret'] || req.headers['authorization'];
 
-        if (secret && (!incomingSecret || incomingSecret !== secret)) {
+        if (!secret) {
+            console.error('❌ WA_WEBHOOK_SECRET not configured');
+            return res.status(500).json({ error: 'Webhook not configured' });
+        }
+        if (!incomingSecret || incomingSecret !== secret) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 

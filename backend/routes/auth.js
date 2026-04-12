@@ -20,13 +20,13 @@ router.post('/login', authLimiter, async (req, res) => {
         });
 
         if (!user) {
-            return res.status(401).json({ error: 'User not found' });
+            return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const isValid = await bcrypt.compare(password, user.password);
 
         if (!isValid) {
-            return res.status(401).json({ error: 'Invalid password' });
+            return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         // Create JWT
@@ -39,7 +39,7 @@ router.post('/login', authLimiter, async (req, res) => {
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role, name: user.name },
             process.env.JWT_SECRET,
-            { expiresIn: '7d' } // 7 days for better UX
+            { expiresIn: '24h' }
         );
 
         res.json({
@@ -79,6 +79,33 @@ router.get('/me', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch user' });
+    }
+});
+
+// POST /api/auth/verify-pin - Verify edit PIN server-side
+router.post('/verify-pin', authenticateToken, async (req, res) => {
+    try {
+        const { pin } = req.body;
+
+        if (!pin) {
+            return res.status(400).json({ error: 'PIN is required' });
+        }
+
+        // Only owners can verify edit PIN
+        if (req.user.role !== 'owner') {
+            return res.status(403).json({ error: 'Only owners can authorize edits' });
+        }
+
+        const EDIT_PIN = process.env.EDIT_PIN || '0401';
+
+        if (pin !== EDIT_PIN) {
+            return res.status(401).json({ error: 'Invalid PIN' });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('PIN verification error:', error);
+        res.status(500).json({ error: 'Failed to verify PIN' });
     }
 });
 

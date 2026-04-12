@@ -35,7 +35,6 @@ export default function LoginPage() {
             }
 
             login(data.token, data.user);
-            login(data.token, data.user);
 
             if (data.user.role === 'owner') {
                 navigate('/dashboard');
