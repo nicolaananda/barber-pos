@@ -8,6 +8,6 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "7781:80"
+      - "8541:80"
     environment:
       - TZ=Asia/Jakarta
