@@ -1,17 +1,13 @@
-
 version: '3.9'
 
 services:
-  app:
-    container_name: staycool-pos
+  frontend:
+    container_name: staycool-frontend
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "7763:7763"  # Frontend
-      - "7764:7764"  # Backend
-    # Env variables will be read from the .env file in the same directory
-    env_file:
-      - .env
-
+      - "7781:80"
+    environment:
+      - TZ=Asia/Jakarta

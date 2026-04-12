@@ -329,32 +329,14 @@ export default function StatusPage() {
                             return (
                                 <div
                                     key={barber.id}
-                                    onMouseMove={(e) => {
-                                        if (isOffday) return;
-                                        const card = e.currentTarget;
-                                        const rect = card.getBoundingClientRect();
-                                        const x = e.clientX - rect.left;
-                                        const y = e.clientY - rect.top;
-                                        const centerX = rect.width / 2;
-                                        const centerY = rect.height / 2;
-                                        const rotateX = ((y - centerY) / 10).toFixed(2);
-                                        const rotateY = ((centerX - x) / 10).toFixed(2);
-                                        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-                                        card.style.boxShadow = `${(parseFloat(rotateY) * -1)}px ${parseFloat(rotateX)}px 20px rgba(0,0,0,0.1), 0 20px 40px rgba(0,0,0,0.1)`;
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
-                                        e.currentTarget.style.boxShadow = '';
-                                    }}
                                     className={`
                                         group relative bg-white rounded-3xl p-6 md:p-8
-                                        transition-all duration-200 ease-out preserve-3d
+                                        transition-all duration-200 ease-out
                                         ${isOffday
                                             ? 'opacity-60 grayscale border border-dashed border-zinc-200'
-                                            : 'border border-zinc-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
+                                            : 'border border-zinc-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)] hover:-translate-y-0.5'
                                         }
                                     `}
-                                    style={{ transformStyle: 'preserve-3d' }}
                                 >
                                     <div className="flex flex-col md:flex-row gap-8">
                                         {/* Barber Profile */}
