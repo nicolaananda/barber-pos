@@ -60,8 +60,20 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                 const data = await res.json();
                 let availableServices = data.filter((s: any) => s.isActive);
 
-                // TODO: Implement proper service-barber mapping from database
-                // Currently showing all active services to all barbers
+                // Filter services based on barber type
+                const isHeadBarber = barber.username === 'bagus';
+
+                if (isHeadBarber) {
+                    // Head barber: only show "Head Barber" services (price 50000)
+                    availableServices = availableServices.filter((s: any) =>
+                        s.name.toLowerCase().includes('head') || s.price === 50000
+                    );
+                } else {
+                    // Regular barber: exclude "Head Barber" services (price 40000 only)
+                    availableServices = availableServices.filter((s: any) =>
+                        !s.name.toLowerCase().includes('head') && s.price === 40000
+                    );
+                }
 
                 // Sort services: Haircut/Cukur first, then others
                 availableServices.sort((a: any, b: any) => {
