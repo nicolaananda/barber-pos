@@ -61,18 +61,23 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                 let availableServices = data.filter((s: any) => s.isActive);
 
                 // Filter services based on barber type
+                // "Haircut by Head" (50K) only shown for head barber
+                // "Haircut" biasa (40K) only shown for regular barbers
                 const isHeadBarber = barber.username === 'bagus';
 
                 if (isHeadBarber) {
-                    // Head barber: only show "Head Barber" services (price 50000)
-                    availableServices = availableServices.filter((s: any) =>
-                        s.name.toLowerCase().includes('head') || s.price === 50000
-                    );
+                    // Head barber: hide regular "Haircut" (non-head), show everything else including "Haircut by Head"
+                    availableServices = availableServices.filter((s: any) => {
+                        const name = s.name.toLowerCase();
+                        const isRegularHaircut = (name.includes('haircut') || name.includes('cukur')) && !name.includes('head');
+                        return !isRegularHaircut;
+                    });
                 } else {
-                    // Regular barber: exclude "Head Barber" services (price 40000 only)
-                    availableServices = availableServices.filter((s: any) =>
-                        !s.name.toLowerCase().includes('head') && s.price === 40000
-                    );
+                    // Regular barber: hide "Haircut by Head", show everything else including regular "Haircut"
+                    availableServices = availableServices.filter((s: any) => {
+                        const name = s.name.toLowerCase();
+                        return !name.includes('head');
+                    });
                 }
 
                 // Sort services: Haircut/Cukur first, then others
