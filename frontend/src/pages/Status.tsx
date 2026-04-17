@@ -55,6 +55,7 @@ export default function StatusPage() {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentOffDays, setCurrentOffDays] = useState<any[]>([]);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [blackout, setBlackout] = useState<{ enabled: boolean; start: string | null; end: string | null }>({ enabled: false, start: null, end: null });
 
     // Success feedback state (#8)
     const [lastBookedInfo, setLastBookedInfo] = useState<{ barberName: string; slot: string } | null>(null);
@@ -75,6 +76,14 @@ export default function StatusPage() {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
+    }, []);
+
+    useEffect(() => {
+        // Fetch blackout config once on mount
+        fetch(`${API_BASE_URL}/bookings/config`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => { if (data?.blackout) setBlackout(data.blackout); })
+            .catch(() => {});
     }, []);
 
     useEffect(() => {
@@ -186,8 +195,9 @@ export default function StatusPage() {
     };
 
     const isBlackoutDate = (date: Date) => {
-        const start = new Date('2026-03-10T00:00:00');
-        const end = new Date('2026-03-26T23:59:59');
+        if (!blackout.enabled || !blackout.start || !blackout.end) return false;
+        const start = new Date(blackout.start + 'T00:00:00');
+        const end = new Date(blackout.end + 'T23:59:59');
         return date >= start && date <= end;
     };
 
@@ -206,10 +216,10 @@ export default function StatusPage() {
                 </div>
             )}
 
-            {/* Lebaran Banner */}
-            {new Date() <= new Date('2026-03-26T23:59:59') && (
+            {/* Blackout Banner (driven by backend config) */}
+            {blackout.enabled && blackout.start && blackout.end && new Date() <= new Date(blackout.end + 'T23:59:59') && (
                 <div className="bg-amber-400 text-amber-900 text-center py-3 px-4 text-sm font-bold sticky top-0 z-40 flex items-center justify-center gap-2 shadow-md">
-                    🌙 <span>Spesial Lebaran 10–26 Maret: <span className="underline">booking online ditutup</span>, hanya walk-in langsung ke tempat — siapa cepat dia dapat!</span>
+                    <span>Periode {blackout.start} s/d {blackout.end}: <span className="underline">booking online ditutup</span>, hanya walk-in langsung ke tempat.</span>
                 </div>
             )}
 
@@ -253,8 +263,11 @@ export default function StatusPage() {
                 </div>
 
                 {/* Date Selector — 7 hari */}
-                <div className="flex justify-center mb-10">
-                    <div className="flex gap-2 overflow-x-auto pb-1 max-w-full px-2 scrollbar-none">
+                <div className="flex justify-center mb-10 relative">
+                    {/* Scroll fade indicators for mobile */}
+                    <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[#FAFAFA] to-transparent z-10 pointer-events-none md:hidden" />
+                    <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[#FAFAFA] to-transparent z-10 pointer-events-none md:hidden" />
+                    <div className="flex gap-2 overflow-x-auto pb-2 max-w-full px-4 scrollbar-none" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
                         {dateOptions.map((date, i) => {
                             const isSelected = selectedDate.toDateString() === date.toDateString();
                             const isToday = i === 0;
@@ -422,6 +435,7 @@ export default function StatusPage() {
                                                         <button
                                                             key={idx}
                                                             disabled={isLocked}
+                                                            aria-label={`Book ${barber.name} at ${slot.label}${isBooked ? ' (booked)' : isOffday ? ' (off day)' : ''}`}
                                                             onClick={() => {
                                                                 if (!isLocked) {
                                                                     setSelectedBooking({

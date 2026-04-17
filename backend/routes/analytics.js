@@ -63,7 +63,7 @@ router.get('/profit-margin', authenticateToken, async (req, res) => {
         console.error('Profit margin analysis error:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to calculate profit margin: ' + error.message
+            error: 'Failed to calculate profit margin'
         });
     }
 });
@@ -389,6 +389,74 @@ router.get('/insights', authenticateToken, async (req, res) => {
             success: false,
             error: 'Failed to generate insights'
         });
+    }
+});
+
+/**
+ * GET /api/analytics/barber-comparison
+ * Compare barber performance side-by-side
+ * Query params: startDate, endDate
+ */
+router.get('/barber-comparison', authenticateToken, async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        const dateFilter = {};
+        if (startDate) dateFilter.gte = new Date(startDate);
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            dateFilter.lte = end;
+        }
+
+        const where = dateFilter.gte || dateFilter.lte ? { date: dateFilter } : {};
+
+        const [barbers, transactions] = await Promise.all([
+            prisma.user.findMany({ where: { role: { not: 'admin' } }, select: { id: true, name: true, username: true } }),
+            prisma.transaction.findMany({ where, include: { barber: { select: { id: true, name: true } } } }),
+        ]);
+
+        const comparison = barbers.map(barber => {
+            const barberTxs = transactions.filter(t => t.barberId === barber.id);
+            const totalRevenue = barberTxs.reduce((sum, t) => sum + t.totalAmount, 0);
+            const totalTransactions = barberTxs.length;
+            const avgTicket = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+
+            // Unique customers
+            const uniqueCustomers = new Set(barberTxs.filter(t => t.customerPhone).map(t => t.customerPhone)).size;
+
+            // Service breakdown
+            const serviceBreakdown = {};
+            barberTxs.forEach(t => {
+                if (Array.isArray(t.items)) {
+                    t.items.forEach(item => {
+                        const name = item.name || 'Unknown';
+                        if (!serviceBreakdown[name]) serviceBreakdown[name] = { count: 0, revenue: 0 };
+                        serviceBreakdown[name].count += item.qty || 1;
+                        serviceBreakdown[name].revenue += (item.price || 0) * (item.qty || 1);
+                    });
+                }
+            });
+
+            return {
+                barberId: barber.id,
+                barberName: barber.name,
+                username: barber.username,
+                totalRevenue: Math.round(totalRevenue),
+                totalTransactions,
+                avgTicket: Math.round(avgTicket),
+                uniqueCustomers,
+                serviceBreakdown: Object.entries(serviceBreakdown).map(([name, data]) => ({
+                    name,
+                    count: data.count,
+                    revenue: data.revenue,
+                })).sort((a, b) => b.revenue - a.revenue),
+            };
+        }).sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+        res.json({ success: true, data: comparison });
+    } catch (error) {
+        console.error('Barber comparison error:', error);
+        res.status(500).json({ success: false, error: 'Failed to generate barber comparison' });
     }
 });
 

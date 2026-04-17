@@ -142,6 +142,7 @@ model Booking {
   servicePrice  Float?   // Snapshot of service price
   status        String   @default("pending") // pending, confirmed, cancelled, completed
   paymentProof  String?  // URL/Path to uploaded evidence
+  transactionId Int?     // Link to the transaction that fulfilled this booking
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

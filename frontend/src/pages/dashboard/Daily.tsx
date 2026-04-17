@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { API_BASE_URL } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import {
     BarChart,
     Bar,
@@ -51,6 +52,8 @@ interface DailyData {
     transactionCount: number;
     cashTotal: number;
     qrisTotal: number;
+    yesterdayRevenue: number;
+    revenueGrowthVsYesterday: number;
     topBarber: {
         name: string;
         revenue: number;
@@ -60,6 +63,7 @@ interface DailyData {
 }
 
 export default function DailyPage() {
+    const { token } = useAuth();
     const [data, setData] = useState<DailyData | null>(null);
     const [loading, setLoading] = useState(true);
     const [chartData, setChartData] = useState<any[]>([]);
@@ -72,7 +76,6 @@ export default function DailyPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/dashboard/daily`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -154,7 +157,11 @@ export default function DailyPage() {
                     <CardContent>
                         <div className="text-2xl font-black text-zinc-900">IDR {data.totalRevenue.toLocaleString('id-ID')}</div>
                         <p className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3 text-zinc-900" /> +100% from yesterday
+                            <TrendingUp className={`w-3 h-3 ${data.revenueGrowthVsYesterday >= 0 ? 'text-emerald-600' : 'text-red-500'}`} />
+                            {data.revenueGrowthVsYesterday >= 0 ? '+' : ''}{data.revenueGrowthVsYesterday}% vs kemarin
+                            {data.yesterdayRevenue > 0 && (
+                                <span className="text-zinc-400 ml-1">(IDR {data.yesterdayRevenue.toLocaleString('id-ID')})</span>
+                            )}
                         </p>
                     </CardContent>
                 </Card>

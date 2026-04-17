@@ -368,9 +368,13 @@ export default function BookingsPage() {
                                         variant="ghost"
                                         className="text-zinc-400 hover:text-red-500 hover:bg-red-50"
                                         onClick={() => {
-                                            if (window.confirm('Yakin ingin membatalkan booking ini?')) {
-                                                updateBookingStatus(booking.id, 'cancelled');
-                                            }
+                                            toast('Yakin ingin membatalkan booking ini?', {
+                                                action: {
+                                                    label: 'Ya, Batalkan',
+                                                    onClick: () => updateBookingStatus(booking.id, 'cancelled'),
+                                                },
+                                                duration: 5000,
+                                            });
                                         }}
                                     >
                                         Cancel

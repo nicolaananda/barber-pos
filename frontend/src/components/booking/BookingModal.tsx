@@ -61,22 +61,25 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                 let availableServices = data.filter((s: any) => s.isActive);
 
                 // Filter services based on barber type
-                // "Haircut by Head" (50K) only shown for head barber
-                // "Haircut" biasa (40K) only shown for regular barbers
+                // Services containing "head barber" or "by head" are exclusive to head barber
+                // Uses phrase matching (not just "head") to avoid false positives like "Overhead Trim"
                 const isHeadBarber = barber.username === 'bagus';
+                const isHeadBarberService = (name: string) => {
+                    const n = name.toLowerCase();
+                    return n.includes('head barber') || n.includes('by head');
+                };
 
                 if (isHeadBarber) {
-                    // Head barber: hide regular "Haircut" (non-head), show everything else including "Haircut by Head"
+                    // Head barber: hide regular haircut variants (non-head), show head barber services + everything else
                     availableServices = availableServices.filter((s: any) => {
                         const name = s.name.toLowerCase();
-                        const isRegularHaircut = (name.includes('haircut') || name.includes('cukur')) && !name.includes('head');
-                        return !isRegularHaircut;
+                        const isBasicHaircut = (name.includes('haircut') || name.includes('cukur')) && !isHeadBarberService(s.name);
+                        return !isBasicHaircut;
                     });
                 } else {
-                    // Regular barber: hide "Haircut by Head", show everything else including regular "Haircut"
+                    // Regular barber: hide head barber exclusive services, show everything else
                     availableServices = availableServices.filter((s: any) => {
-                        const name = s.name.toLowerCase();
-                        return !name.includes('head');
+                        return !isHeadBarberService(s.name);
                     });
                 }
 
@@ -255,7 +258,10 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
 
             if (onSuccess) onSuccess();
         } catch (err: any) {
-            setError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
+            const baseMsg = err.message || 'Terjadi kesalahan.';
+            setError(
+                `${baseMsg}\n\nJika Anda sudah transfer via QRIS, jangan khawatir — silakan coba lagi atau hubungi kami via WhatsApp di 0877-7099-5270 untuk konfirmasi manual.`
+            );
         } finally {
             setIsSubmitting(false);
         }

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Clock, User, DollarSign, CheckCircle, XCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface Booking {
     id: number;
@@ -36,7 +37,7 @@ interface TodayData {
 }
 
 export default function BarberDashboard() {
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const navigate = useNavigate();
     const [data, setData] = useState<TodayData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -54,10 +55,9 @@ export default function BarberDashboard() {
     }, [user]);
 
     const fetchTodayBookings = async () => {
-        if (!user) return;
+        if (!user || !token) return;
 
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/bookings/barber/${user.id}/today`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -75,7 +75,6 @@ export default function BarberDashboard() {
     const updateBookingStatus = async (bookingId: number, status: string) => {
         setUpdatingStatus(bookingId);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}/status`, {
                 method: 'PATCH',
                 headers: {
@@ -91,7 +90,7 @@ export default function BarberDashboard() {
             await fetchTodayBookings();
         } catch (error) {
             console.error('Error updating booking status:', error);
-            alert('Gagal update status booking');
+            toast.error('Gagal update status booking');
         } finally {
             setUpdatingStatus(null);
         }

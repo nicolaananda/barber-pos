@@ -4,7 +4,8 @@ const prisma = require('../lib/prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const authenticateToken = require('../middleware/auth');
-const { authLimiter } = require('../middleware/rateLimiter');
+const { authLimiter, pinLimiter } = require('../middleware/rateLimiter');
+const { addToBlacklist } = require('../lib/tokenBlacklist');
 
 // POST /api/auth/login - with rate limiting
 router.post('/login', authLimiter, async (req, res) => {
@@ -83,7 +84,7 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 // POST /api/auth/verify-pin - Verify edit PIN server-side
-router.post('/verify-pin', authenticateToken, async (req, res) => {
+router.post('/verify-pin', pinLimiter, authenticateToken, async (req, res) => {
     try {
         const { pin } = req.body;
 
@@ -96,7 +97,12 @@ router.post('/verify-pin', authenticateToken, async (req, res) => {
             return res.status(403).json({ error: 'Only owners can authorize edits' });
         }
 
-        const EDIT_PIN = process.env.EDIT_PIN || '0401';
+        // 🔒 SECURITY: No fallback for EDIT_PIN - fail fast if not configured
+        if (!process.env.EDIT_PIN) {
+            console.error('❌ CRITICAL: EDIT_PIN not configured in environment');
+            return res.status(500).json({ error: 'Server configuration error' });
+        }
+        const EDIT_PIN = process.env.EDIT_PIN;
 
         if (pin !== EDIT_PIN) {
             return res.status(401).json({ error: 'Invalid PIN' });
@@ -106,6 +112,21 @@ router.post('/verify-pin', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('PIN verification error:', error);
         res.status(500).json({ error: 'Failed to verify PIN' });
+    }
+});
+
+// POST /api/auth/logout - Revoke current token
+router.post('/logout', authenticateToken, (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        if (token) {
+            addToBlacklist(token);
+        }
+        res.json({ success: true, message: 'Logged out successfully' });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({ error: 'Failed to logout' });
     }
 });
 

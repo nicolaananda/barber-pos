@@ -25,6 +25,20 @@ router.get('/daily', authenticateToken, async (req, res) => {
             },
         });
 
+        // Fetch yesterday's revenue for comparison
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayEnd = new Date(yesterday);
+        yesterdayEnd.setHours(23, 59, 59, 999);
+
+        const yesterdayAgg = await prisma.transaction.aggregate({
+            _sum: { totalAmount: true },
+            where: {
+                date: { gte: yesterday, lte: yesterdayEnd },
+            },
+        });
+        const yesterdayRevenue = yesterdayAgg._sum.totalAmount || 0;
+
         // Calculate Totals
         const totalRevenue = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
         const transactionCount = transactions.length;
@@ -59,12 +73,19 @@ router.get('/daily', authenticateToken, async (req, res) => {
             }
         });
 
+        // Calculate growth vs yesterday
+        const revenueGrowthVsYesterday = yesterdayRevenue === 0
+            ? (totalRevenue > 0 ? 100 : 0)
+            : ((totalRevenue - yesterdayRevenue) / yesterdayRevenue) * 100;
+
         res.json({
             totalRevenue,
             transactionCount,
             cashTotal,
             qrisTotal,
             topBarber,
+            yesterdayRevenue,
+            revenueGrowthVsYesterday: Math.round(revenueGrowthVsYesterday * 10) / 10,
             recentTransactions: transactions.map((t) => ({
                 id: t.id,
                 invoiceCode: t.invoiceCode,

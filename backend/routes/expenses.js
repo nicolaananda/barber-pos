@@ -4,7 +4,7 @@ const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 
 // GET /api/expenses?month=3&year=2026
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
     try {
         const { month, year } = req.query;
 
@@ -85,6 +85,37 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to delete expense' });
+    }
+});
+
+// GET /api/expenses/export/csv - Export expenses as CSV
+router.get('/export/csv', authenticateToken, async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        let where = {};
+        if (month && year) {
+            const m = parseInt(month);
+            const y = parseInt(year);
+            const start = new Date(y, m - 1, 1);
+            const end = new Date(y, m, 0, 23, 59, 59, 999);
+            where.date = { gte: start, lte: end };
+        }
+
+        const { format } = require('date-fns');
+        const expenses = await prisma.expense.findMany({ where, orderBy: { date: 'desc' } });
+
+        const header = 'Date,Description,Category,Amount\n';
+        const rows = expenses.map(e => {
+            const date = format(new Date(e.date), 'yyyy-MM-dd');
+            return `"${date}","${e.description}","${e.category}",${e.amount}`;
+        }).join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=expenses-${format(new Date(), 'yyyyMMdd')}.csv`);
+        res.send(header + rows);
+    } catch (error) {
+        console.error('Export Expenses CSV Error:', error);
+        res.status(500).json({ error: 'Failed to export expenses' });
     }
 });
 

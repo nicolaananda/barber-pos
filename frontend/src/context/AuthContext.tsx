@@ -66,7 +66,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await fetchUserFromAPI(newToken);
     };
 
-    const logout = () => {
+    const logout = async () => {
+        // Revoke token server-side before clearing locally
+        if (token) {
+            try {
+                await fetch(`${API_BASE_URL}/auth/logout`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch (error) {
+                // Non-blocking: still logout locally even if server call fails
+                console.error('Server logout failed:', error);
+            }
+        }
         setToken(null);
         setUser(null);
         localStorage.removeItem('token');

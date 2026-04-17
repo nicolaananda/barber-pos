@@ -80,14 +80,17 @@ router.post('/', authenticateToken, async (req, res) => {
             }
         }
 
-        // Auto-complete booking if bookingId is provided
+        // Auto-complete booking if bookingId is provided, and link to transaction
         if (req.body.bookingId) {
             try {
                 await prisma.booking.update({
                     where: { id: parseInt(req.body.bookingId) },
-                    data: { status: 'completed' }
+                    data: {
+                        status: 'completed',
+                        transactionId: transaction.id, // Link booking to transaction
+                    }
                 });
-                console.log(`[Auto] Booking #${req.body.bookingId} marked as completed.`);
+                console.log(`[Auto] Booking #${req.body.bookingId} marked as completed, linked to transaction #${transaction.id}.`);
             } catch (err) {
                 console.error(`Failed to mark booking #${req.body.bookingId} as completed:`, err);
             }
@@ -267,6 +270,90 @@ router.put('/:id', authenticateToken, requireOwner, async (req, res) => {
     } catch (error) {
         console.error('Update Transaction Error:', error);
         res.status(500).json({ error: 'Failed to update transaction' });
+    }
+});
+
+// GET /api/transactions/export/csv - Export transactions as CSV
+router.get('/export/csv', authenticateToken, requireOwner, async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        const where = {};
+
+        if (startDate || endDate) {
+            where.date = {};
+            if (startDate) where.date.gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                where.date.lte = end;
+            }
+        }
+
+        const transactions = await prisma.transaction.findMany({
+            where,
+            orderBy: { date: 'desc' },
+            include: { barber: { select: { name: true } } },
+        });
+
+        // Build CSV
+        const header = 'Invoice,Date,Barber,Customer,Items,Total,Payment Method\n';
+        const rows = transactions.map(t => {
+            const items = Array.isArray(t.items)
+                ? t.items.map(i => `${i.name} x${i.qty || 1}`).join('; ')
+                : '';
+            const date = format(new Date(t.date), 'yyyy-MM-dd HH:mm');
+            return `"${t.invoiceCode}","${date}","${t.barber.name}","${t.customerName || 'Walk-in'}","${items}",${t.totalAmount},"${t.paymentMethod}"`;
+        }).join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=transactions-${format(new Date(), 'yyyyMMdd')}.csv`);
+        res.send(header + rows);
+    } catch (error) {
+        console.error('Export CSV Error:', error);
+        res.status(500).json({ error: 'Failed to export transactions' });
+    }
+});
+
+// DELETE /api/transactions/:id - Void/delete a transaction (owner only, PIN required)
+router.delete('/:id', authenticateToken, requireOwner, async (req, res) => {
+    try {
+        const transactionId = parseInt(req.params.id);
+        if (isNaN(transactionId)) return res.status(400).json({ error: 'Invalid ID' });
+
+        const transaction = await prisma.transaction.findUnique({
+            where: { id: transactionId }
+        });
+
+        if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+
+        // Reverse shift revenue if applicable
+        const activeShift = await prisma.cashShift.findFirst({
+            where: { status: 'open' }
+        });
+
+        if (activeShift && new Date(transaction.date) >= new Date(activeShift.startTime)) {
+            await prisma.cashShift.update({
+                where: { id: activeShift.id },
+                data: {
+                    totalRevenue: { decrement: transaction.totalAmount }
+                }
+            });
+        }
+
+        // Delete the transaction
+        await prisma.transaction.delete({ where: { id: transactionId } });
+
+        logAudit('transaction.void', req.user.id, {
+            transactionId,
+            invoiceCode: transaction.invoiceCode,
+            amount: transaction.totalAmount,
+            reason: req.body.reason || 'No reason provided'
+        });
+
+        res.json({ message: 'Transaction voided successfully', invoiceCode: transaction.invoiceCode });
+    } catch (error) {
+        console.error('Void Transaction Error:', error);
+        res.status(500).json({ error: 'Failed to void transaction' });
     }
 });
 

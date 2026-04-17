@@ -1,16 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/lib/api';
-
-// Simple "Glass" / "Ping" sound effect (short & pleasant)
-const NOTIFICATION_SOUND = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAAOPAAAAAABAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-// Using a simpler approach - playing a standard browser beep logic or a reliable external URL if data uri fails. 
-// Actually, let's use a very short reliable beep. The above was just a header.
-// I will use a standard "Ding" sound URL from a reliable CDN or a very short synthesized sound.
-// Synthesized sound is best for zero-dependency.
+import { useAuth } from '@/context/AuthContext';
 
 export function BookingNotifier() {
-    const previousCount = useRef<number | null>(null);
+    const { token, user } = useAuth();
+    const previousPendingCount = useRef<number | null>(null);
 
     const playNotificationSound = () => {
         try {
@@ -18,68 +13,103 @@ export function BookingNotifier() {
             if (!AudioContext) return;
 
             const ctx = new AudioContext();
-            const oscillator = ctx.createOscillator();
-            const gainNode = ctx.createGain();
 
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(500, ctx.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
+            // Play a two-tone "ding-dong" for better audibility
+            const playTone = (freq: number, startTime: number, duration: number) => {
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(freq, startTime);
+                gainNode.gain.setValueAtTime(0.8, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                oscillator.start(startTime);
+                oscillator.stop(startTime + duration);
+            };
 
-            // Increased volume to maximum (1.0) and longer duration
-            gainNode.gain.setValueAtTime(1.0, ctx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
-
-            oscillator.connect(gainNode);
-            gainNode.connect(ctx.destination);
-
-            oscillator.start();
-            oscillator.stop(ctx.currentTime + 1.0);
+            playTone(880, ctx.currentTime, 0.3);        // A5
+            playTone(1108, ctx.currentTime + 0.15, 0.4); // C#6
         } catch (error) {
             console.error("Audio play failed", error);
         }
     };
 
+    const sendBrowserNotification = (customerName: string, timeSlot: string) => {
+        if (!('Notification' in window)) return;
+
+        if (Notification.permission === 'granted') {
+            new Notification('Booking Baru!', {
+                body: `${customerName} - ${timeSlot}`,
+                icon: '/logo.jpg',
+                tag: 'new-booking', // Prevents duplicate notifications
+            });
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    };
+
     useEffect(() => {
+        // Only run for owner role
+        if (!token || user?.role !== 'owner') return;
+
+        // Request notification permission on mount
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
         const checkBookings = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/bookings/today`);
+                const res = await fetch(`${API_BASE_URL}/bookings?status=pending`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (!res.ok) return;
 
                 const bookings = await res.json();
-                const currentCount = bookings.length;
+                const currentPendingCount = bookings.length;
 
                 // First load: just store the count
-                if (previousCount.current === null) {
-                    previousCount.current = currentCount;
+                if (previousPendingCount.current === null) {
+                    previousPendingCount.current = currentPendingCount;
                     return;
                 }
 
-                // If new bookings found
-                if (currentCount > previousCount.current) {
+                // If new pending bookings found
+                if (currentPendingCount > previousPendingCount.current) {
+                    const newCount = currentPendingCount - previousPendingCount.current;
+                    const latestBooking = bookings[0]; // Most recent
+
                     playNotificationSound();
-                    toast.success("New Booking Received!", {
-                        description: "Check Bookings page for details.",
-                        duration: 5000,
+
+                    toast.success(`${newCount} Booking Baru!`, {
+                        description: latestBooking
+                            ? `${latestBooking.customerName} - ${latestBooking.timeSlot}`
+                            : 'Cek halaman Bookings untuk detail.',
+                        duration: 8000,
                         action: {
-                            label: "View",
+                            label: "Lihat",
                             onClick: () => window.location.href = "/dashboard/bookings"
                         }
                     });
-                    previousCount.current = currentCount;
+
+                    // Send browser notification
+                    if (latestBooking) {
+                        sendBrowserNotification(latestBooking.customerName, latestBooking.timeSlot);
+                    }
                 }
+
+                previousPendingCount.current = currentPendingCount;
             } catch (error) {
                 console.error("Failed to check bookings:", error);
             }
         };
 
-        // Check continuously every 30 seconds
-        const interval = setInterval(checkBookings, 30000);
-
-        // Also check immediately on mount
+        // Check every 15 seconds (more responsive than 30s)
+        const interval = setInterval(checkBookings, 15000);
         checkBookings();
 
         return () => clearInterval(interval);
-    }, []);
+    }, [token, user?.role]);
 
     return null; // Invisible component
 }

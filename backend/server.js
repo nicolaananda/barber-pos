@@ -54,16 +54,17 @@ app.use((req, res, next) => {
 });
 
 // Middleware
-// Middleware
+const corsOrigins = [
+    'https://staycoolhairlab.id',
+    'https://www.staycoolhairlab.id',
+    'https://pos.staycoolhairlab.id',
+];
+// Only allow localhost origins in development
+if (process.env.NODE_ENV !== 'production') {
+    corsOrigins.push('http://localhost:5173', 'http://localhost:3000', 'http://localhost:7781');
+}
 app.use(cors({
-    origin: [
-        'https://staycoolhairlab.id',
-        'https://www.staycoolhairlab.id',
-        'https://pos.staycoolhairlab.id',
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'http://localhost:7781'
-    ],
+    origin: corsOrigins,
     credentials: true
 }));
 app.use(express.json({ limit: '1mb' }));

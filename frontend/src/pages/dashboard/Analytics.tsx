@@ -10,6 +10,7 @@ import CLVRankings from '../../components/analytics/CLVRankings';
 import BookingHistoryTable from '../../components/analytics/BookingHistoryTable';
 import AIInsights from '../../components/analytics/AIInsights';
 import { API_BASE_URL } from '../../lib/api';
+import { useAuth } from '../../context/AuthContext';
 
 type AnalyticsTab =
     | 'overview'
@@ -57,6 +58,7 @@ function KPICard({ label, value, sub, icon: Icon, color }: {
 }
 
 export default function Analytics() {
+    const { token } = useAuth();
     const [activeTab, setActiveTab] = useState<AnalyticsTab>('overview');
     const [dateRange, setDateRange] = useState({
         startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
@@ -65,11 +67,13 @@ export default function Analytics() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
 
     useEffect(() => {
-        fetch(`${API_BASE_URL}/dashboard/stats`)
+        fetch(`${API_BASE_URL}/dashboard/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
             .then(r => r.json())
             .then(d => setStats(d.stats))
             .catch(() => {});
-    }, []);
+    }, [token]);
 
     const tabs = [
         { id: 'overview', label: 'AI Review', icon: Sparkles },

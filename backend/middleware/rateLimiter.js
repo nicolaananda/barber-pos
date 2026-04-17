@@ -37,8 +37,18 @@ const authLimiter = rateLimit({
     ...trustProxyConfig,
 });
 
+// Very strict for PIN verification (brute-force protection)
+const pinLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Only 5 PIN attempts per 15 minutes
+    message: 'Too many PIN attempts, please try again after 15 minutes.',
+    skipSuccessfulRequests: false, // Count ALL attempts
+    ...trustProxyConfig,
+});
+
 module.exports = {
     apiLimiter,
     strictLimiter,
-    authLimiter
+    authLimiter,
+    pinLimiter
 };

@@ -112,7 +112,13 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
                 },
                 body: JSON.stringify({
                     barberId: selectedBarber.id,
-                    items: cart,
+                    // Include serviceId in each item for reliable payroll commission matching
+                    items: cart.map(item => ({
+                        name: item.name,
+                        price: item.price,
+                        qty: item.qty,
+                        serviceId: item.id ? parseInt(item.id) : undefined,
+                    })),
                     totalAmount,
                     paymentMethod,
                     customerName,

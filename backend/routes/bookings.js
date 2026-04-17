@@ -12,6 +12,23 @@ const path = require('path');
 const { uploadFile } = require('../lib/r2');
 const securityLogger = require('../lib/securityLogger');
 const { sanitizeText, sanitizePhone, isValidIndonesianPhone } = require('../lib/sanitizer');
+const requireOwner = require('../middleware/requireOwner');
+
+// GET /api/bookings/config - Public endpoint for booking configuration (blackout dates, etc.)
+router.get('/config', async (req, res) => {
+    try {
+        res.json({
+            blackout: {
+                enabled: !!(process.env.BLACKOUT_START && process.env.BLACKOUT_END),
+                start: process.env.BLACKOUT_START || null,
+                end: process.env.BLACKOUT_END || null,
+            },
+        });
+    } catch (error) {
+        console.error('Error fetching booking config:', error);
+        res.status(500).json({ error: 'Failed to fetch config' });
+    }
+});
 
 // POST /api/bookings - Create new booking
 router.post('/', upload.single('proof'), async (req, res) => {
@@ -170,22 +187,8 @@ router.post('/', upload.single('proof'), async (req, res) => {
             }
         });
 
-        // Send WhatsApp acknowledgement (non-blocking)
-        try {
-            const dateStr = format(new Date(booking.bookingDate), 'dd MMMM yyyy', { locale: idLocale });
-            const ackMsg = `📋 *BOOKING DITERIMA*\n\n` +
-                `Halo Kak *${booking.customerName}*, booking Anda sudah kami terima dan sedang menunggu konfirmasi admin.\n\n` +
-                `✂️ Layanan: ${booking.serviceName || 'Potong Rambut'}\n` +
-                `📅 Tanggal: ${dateStr}\n` +
-                `⏰ Jam: ${booking.timeSlot}\n` +
-                `💈 Barber: ${booking.barber.name}\n\n` +
-                `Kami akan kirim WA lagi setelah booking dikonfirmasi. Mohon ditunggu ya! 🙏\n` +
-                `\n📍 *Staycool Hairlab*\nJl. Imam Bonjol Pertigaan No.370 Kediri`;
-
-            await whatsappService.sendWhatsAppMessage(booking.customerPhone, ackMsg);
-        } catch (waError) {
-            console.error('[Booking Create] WA acknowledgement error:', waError);
-        }
+        // NOTE: No WA sent on booking creation per client request.
+        // WA is only sent when admin confirms the booking (status -> confirmed).
 
         res.status(201).json(booking);
     } catch (error) {
@@ -202,8 +205,12 @@ router.get('/status', async (req, res) => {
             return res.status(400).json({ error: 'Nomor HP tidak valid' });
         }
 
-        // Match by last 8 digits to handle 08xx / 628xx / +628xx variations
-        const suffix = phone.trim().replace(/\D/g, '').slice(-8);
+        // Normalize phone: strip non-digits, convert +62/62 prefix to 0
+        let normalized = phone.trim().replace(/\D/g, '');
+        if (normalized.startsWith('62')) normalized = '0' + normalized.slice(2);
+        if (normalized.startsWith('+62')) normalized = '0' + normalized.slice(3);
+        // Match by last 10 digits to reduce collision while still handling format variations
+        const suffix = normalized.slice(-10);
 
         const since = new Date();
         since.setDate(since.getDate() - 90);
@@ -230,6 +237,7 @@ router.get('/status', async (req, res) => {
                 orderBy: { bookingDate: 'desc' },
                 take: 10,
             }),
+            // 🔒 SECURITY: Only select fields needed for public display (no financial data)
             prisma.transaction.findMany({
                 where: {
                     customerPhone: { endsWith: suffix },
@@ -237,13 +245,10 @@ router.get('/status', async (req, res) => {
                 },
                 select: {
                     id: true,
-                    invoiceCode: true,
                     customerName: true,
                     date: true,
                     barberId: true,
                     items: true,
-                    totalAmount: true,
-                    paymentMethod: true,
                     barber: { select: { name: true } },
                 },
                 orderBy: { date: 'desc' },
@@ -276,6 +281,7 @@ router.get('/status', async (req, res) => {
             invoiceCode: null,
         }));
 
+        // 🔒 SECURITY: Don't expose financial details (totalAmount, paymentMethod, invoiceCode) to public
         const txItems = unmatchedTransactions.map(tx => {
             const firstItem = Array.isArray(tx.items) && tx.items.length > 0 ? tx.items[0] : null;
             return {
@@ -284,11 +290,11 @@ router.get('/status', async (req, res) => {
                 barberName: tx.barber.name,
                 customerName: tx.customerName || 'Walk-in',
                 service: firstItem ? firstItem.name : null,
-                amount: tx.totalAmount,
+                amount: null,
                 status: 'completed',
                 timeSlot: null,
-                paymentMethod: tx.paymentMethod,
-                invoiceCode: tx.invoiceCode,
+                paymentMethod: null,
+                invoiceCode: null,
             };
         });
 
@@ -433,7 +439,7 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 });
 
-// PATCH /api/bookings/:id/status - Update booking status
+// PATCH /api/bookings/:id/status - Update booking status (owner or assigned barber only)
 router.patch('/:id/status', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -442,6 +448,32 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
         const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
+        }
+
+        // Role check: only owner can confirm/cancel, barber can only mark their own bookings as completed
+        if (req.user.role !== 'owner') {
+            if (status === 'confirmed' || status === 'cancelled') {
+                return res.status(403).json({ error: 'Only owners can confirm or cancel bookings' });
+            }
+            // Staff can only complete their own bookings
+            const bookingCheck = await prisma.booking.findUnique({ where: { id: parseInt(id) } });
+            if (!bookingCheck || bookingCheck.barberId !== req.user.id) {
+                return res.status(403).json({ error: 'You can only complete your own bookings' });
+            }
+        }
+
+        // Guard: check current status to prevent duplicate actions (e.g. double-click sending WA twice)
+        const currentBooking = await prisma.booking.findUnique({ where: { id: parseInt(id) } });
+        if (!currentBooking) {
+            return res.status(404).json({ error: 'Booking not found' });
+        }
+        if (currentBooking.status === status) {
+            // Already in the target status — return success without re-sending WA
+            const bookingWithBarber = await prisma.booking.findUnique({
+                where: { id: parseInt(id) },
+                include: { barber: { select: { id: true, name: true } } }
+            });
+            return res.json(bookingWithBarber);
         }
 
         const booking = await prisma.booking.update({
@@ -605,7 +637,7 @@ router.get('/summary', authenticateToken, async (req, res) => {
 });
 
 // PATCH /api/bookings/:id/reschedule - Reschedule booking (ADMIN ONLY)
-router.patch('/:id/reschedule', authenticateToken, async (req, res) => {
+router.patch('/:id/reschedule', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { id } = req.params;
         const { newBookingDate, newTimeSlot, newBarberId, reason } = req.body;
