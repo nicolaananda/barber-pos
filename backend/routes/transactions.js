@@ -88,10 +88,9 @@ router.post('/', authenticateToken, async (req, res) => {
                     where: { id: parseInt(req.body.bookingId) },
                     data: {
                         status: 'completed',
-                        transactionId: transaction.id, // Link booking to transaction
                     }
                 });
-                console.log(`[Auto] Booking #${req.body.bookingId} marked as completed, linked to transaction #${transaction.id}.`);
+                console.log(`[Auto] Booking #${req.body.bookingId} marked as completed.`);
             } catch (err) {
                 console.error(`Failed to mark booking #${req.body.bookingId} as completed:`, err);
             }
@@ -339,21 +338,6 @@ router.delete('/:id', authenticateToken, requireOwner, async (req, res) => {
                     totalRevenue: { decrement: transaction.totalAmount }
                 }
             });
-        }
-
-        // Revert linked booking status back to 'confirmed' if applicable
-        const linkedBooking = await prisma.booking.findFirst({
-            where: { transactionId: transactionId }
-        });
-        if (linkedBooking) {
-            await prisma.booking.update({
-                where: { id: linkedBooking.id },
-                data: {
-                    status: 'confirmed',
-                    transactionId: null,
-                }
-            });
-            console.log(`[Void] Booking #${linkedBooking.id} reverted to confirmed.`);
         }
 
         // Delete the transaction
