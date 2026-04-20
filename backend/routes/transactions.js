@@ -40,23 +40,25 @@ router.post('/', authenticateToken, async (req, res) => {
                     // Generate Invoice Code INV-YYMMDD-XXX
                     const today = new Date();
                     const todayStr = format(today, 'yyMMdd');
+                    const prefix = `INV-${todayStr}-`;
 
-                    const startOfDay = new Date(today);
-                    startOfDay.setHours(0, 0, 0, 0);
-                    const endOfDay = new Date(today);
-                    endOfDay.setHours(23, 59, 59, 999);
-
-                    const countToday = await tx.transaction.count({
+                    // Find the highest existing sequence number for today
+                    // This handles gaps from deleted invoices
+                    const lastInvoice = await tx.transaction.findFirst({
                         where: {
-                            date: {
-                                gte: startOfDay,
-                                lte: endOfDay,
-                            },
+                            invoiceCode: { startsWith: prefix }
                         },
+                        orderBy: { invoiceCode: 'desc' },
+                        select: { invoiceCode: true }
                     });
 
-                    const sequence = (countToday + 1).toString().padStart(3, '0');
-                    const invoiceCode = `INV-${todayStr}-${sequence}`;
+                    let nextSeq = 1;
+                    if (lastInvoice) {
+                        const lastSeq = parseInt(lastInvoice.invoiceCode.slice(-3));
+                        nextSeq = lastSeq + 1;
+                    }
+
+                    const invoiceCode = `${prefix}${nextSeq.toString().padStart(3, '0')}`;
 
                     return await tx.transaction.create({
                         data: {
