@@ -32,30 +32,45 @@ export function DashboardHome() {
     const [bookingSummary, setBookingSummary] = useState<{ pending: any[]; upcoming: any[] } | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const [statsRes, bookingsRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/dashboard/stats`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch(`${API_BASE_URL}/bookings/summary`, { headers: { 'Authorization': `Bearer ${token}` } })
-                ]);
+    const fetchData = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const [statsRes, bookingsRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/dashboard/stats`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${API_BASE_URL}/bookings/summary`, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
 
-                if (statsRes.ok) {
-                    const json = await statsRes.json();
-                    setData(json);
-                }
-                if (bookingsRes.ok) {
-                    const json = await bookingsRes.json();
-                    setBookingSummary(json);
-                }
-            } catch (error) {
-                console.error('Failed to fetch dashboard data', error);
-            } finally {
-                setLoading(false);
+            if (statsRes.ok) {
+                const json = await statsRes.json();
+                setData(json);
             }
-        };
+            if (bookingsRes.ok) {
+                const json = await bookingsRes.json();
+                setBookingSummary(json);
+            }
+        } catch (error) {
+            console.error('Failed to fetch dashboard data', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchData();
+    }, []);
+
+    // Re-fetch when user navigates back to dashboard (e.g. after POS checkout)
+    useEffect(() => {
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') fetchData();
+        };
+        const handleFocus = () => fetchData();
+        document.addEventListener('visibilitychange', handleVisibility);
+        window.addEventListener('focus', handleFocus);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibility);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, []);
 
     if (loading) {
