@@ -81,7 +81,8 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         // Auto-complete booking if bookingId is provided, and link to transaction
-        if (req.body.bookingId) {
+        console.log(`[Transaction] bookingId in request body:`, req.body.bookingId, typeof req.body.bookingId);
+        if (req.body.bookingId != null) {
             try {
                 await prisma.booking.update({
                     where: { id: parseInt(req.body.bookingId) },
@@ -338,6 +339,21 @@ router.delete('/:id', authenticateToken, requireOwner, async (req, res) => {
                     totalRevenue: { decrement: transaction.totalAmount }
                 }
             });
+        }
+
+        // Revert linked booking status back to 'confirmed' if applicable
+        const linkedBooking = await prisma.booking.findFirst({
+            where: { transactionId: transactionId }
+        });
+        if (linkedBooking) {
+            await prisma.booking.update({
+                where: { id: linkedBooking.id },
+                data: {
+                    status: 'confirmed',
+                    transactionId: null,
+                }
+            });
+            console.log(`[Void] Booking #${linkedBooking.id} reverted to confirmed.`);
         }
 
         // Delete the transaction

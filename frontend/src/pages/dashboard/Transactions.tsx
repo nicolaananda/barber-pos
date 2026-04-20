@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { Loader2, Calendar, FileText, Download, Filter, Eye, DollarSign, Banknote, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Calendar, FileText, Download, Filter, Eye, DollarSign, Banknote, CreditCard, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { API_BASE_URL } from '@/lib/api';
@@ -43,6 +43,10 @@ export default function TransactionsPage() {
     const [pinDialogOpen, setPinDialogOpen] = useState(false);
     const [pin, setPin] = useState('');
     const [editForm, setEditForm] = useState<Transaction | null>(null);
+    // Delete Mode State
+    const [deletePinDialogOpen, setDeletePinDialogOpen] = useState(false);
+    const [deletePin, setDeletePin] = useState('');
+    const [deleteLoading, setDeleteLoading] = useState(false);
     const itemsPerPage = 10;
 
     useEffect(() => {
@@ -169,6 +173,63 @@ export default function TransactionsPage() {
         } catch (error) {
             console.error(error);
             toast.error('Failed to update transaction');
+        }
+    };
+
+    const handleDeleteClick = () => {
+        setDeletePin('');
+        setDeletePinDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!deletePin) {
+            toast.error('Please enter PIN');
+            return;
+        }
+        if (!selectedTransaction) return;
+
+        setDeleteLoading(true);
+        try {
+            // Verify PIN server-side first
+            const pinRes = await fetch(`${API_BASE_URL}/auth/verify-pin`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ pin: deletePin })
+            });
+
+            if (!pinRes.ok) {
+                const pinData = await pinRes.json();
+                toast.error(pinData.error || 'Invalid PIN Code');
+                return;
+            }
+
+            const res = await fetch(`${API_BASE_URL}/transactions/${selectedTransaction.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ reason: 'Voided via dashboard' })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to delete transaction');
+            }
+
+            toast.success(`Invoice ${selectedTransaction.invoiceCode} deleted`);
+            setDeletePinDialogOpen(false);
+            setSelectedTransaction(null);
+            setIsEditing(false);
+            fetchTransactions();
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || 'Failed to delete transaction');
+        } finally {
+            setDeleteLoading(false);
         }
     };
 
@@ -392,11 +453,17 @@ export default function TransactionsPage() {
                     <DialogHeader>
                         <DialogTitle className="flex justify-between items-center">
                             <span>Transaction Details</span>
-                            {!isEditing ? (
-                                <Button variant="ghost" size="sm" onClick={handleEditClick} className="text-blue-600 hover:text-blue-700">
-                                    Edit Invoice
-                                </Button>
-                            ) : (
+                            {!isEditing && (
+                                <div className="flex gap-1">
+                                    <Button variant="ghost" size="sm" onClick={handleDeleteClick} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                        <Trash2 className="h-4 w-4 mr-1" /> Delete
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={handleEditClick} className="text-blue-600 hover:text-blue-700">
+                                        Edit Invoice
+                                    </Button>
+                                </div>
+                            )}
+                            {isEditing && (
                                 <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">Editing Mode</span>
                             )}
                         </DialogTitle>
@@ -556,6 +623,33 @@ export default function TransactionsPage() {
                     </div>
                     <div className="flex justify-end">
                         <Button onClick={confirmSave} className="w-full bg-zinc-900 text-white">Confirm</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={deletePinDialogOpen} onOpenChange={setDeletePinDialogOpen}>
+                <DialogContent className="sm:max-w-[300px] bg-white">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600">Delete Invoice</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete <span className="font-mono font-bold text-zinc-900">{selectedTransaction?.invoiceCode}</span>? Enter your PIN to confirm.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-2">
+                        <Input
+                            type="password"
+                            placeholder="PIN"
+                            value={deletePin}
+                            onChange={(e) => setDeletePin(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && confirmDelete()}
+                            className="text-center tracking-widest text-lg font-bold"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="flex justify-end">
+                        <Button onClick={confirmDelete} disabled={deleteLoading} className="w-full bg-red-600 text-white hover:bg-red-700">
+                            {deleteLoading ? 'Deleting...' : 'Delete Invoice'}
+                        </Button>
                     </div>
                 </DialogContent>
             </Dialog>

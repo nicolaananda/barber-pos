@@ -104,6 +104,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
             }
 
             // 2. Create Transaction
+            console.log('[Checkout] Sending bookingId:', bookingId);
             const res = await fetch(`${API_BASE_URL}/transactions`, {
                 method: 'POST',
                 headers: {
