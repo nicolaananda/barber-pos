@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
+const requireOwner = require('../middleware/requireOwner');
 
 // POST /api/shifts (Open Shift)
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { openingCash } = req.body;
 
@@ -109,7 +110,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // PATCH /api/shifts/:id (Close Shift)
-router.patch('/:id', authenticateToken, async (req, res) => {
+router.patch('/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { id } = req.params;
         const { closingCash, closedBy, totalSystemRevenue } = req.body;

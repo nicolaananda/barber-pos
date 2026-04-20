@@ -87,7 +87,7 @@ export default function PendingBookingAlert({ className }: PendingBookingAlertPr
         fetchPendingBookings();
 
         // Fast polling (5s) for "real-time" feel
-        const interval = setInterval(fetchPendingBookings, 5000);
+        const interval = setInterval(fetchPendingBookings, 15000);
 
         // Also fetch on window focus
         const onFocus = () => fetchPendingBookings();

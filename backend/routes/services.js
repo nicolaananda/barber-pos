@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
+const requireOwner = require('../middleware/requireOwner');
 
 // GET /api/services
 // GET /api/services - Public
@@ -19,7 +20,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/services
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { name, price, commissionType, commissionValue } = req.body;
 
@@ -48,7 +49,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // PATCH /api/services/:id
-router.patch('/:id', authenticateToken, async (req, res) => {
+router.patch('/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, price, commissionType, commissionValue } = req.body;
@@ -78,7 +79,7 @@ router.patch('/:id', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/services/:id
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { id } = req.params;
         // Soft delete

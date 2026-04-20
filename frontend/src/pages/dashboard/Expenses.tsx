@@ -113,10 +113,9 @@ export default function ExpensesPage() {
         if (!confirm('Yakin ingin menghapus pengeluaran ini?')) return;
         try {
             const token = localStorage.getItem('token');
-            await fetch(`${API_BASE_URL}/expenses`, {
+            await fetch(`${API_BASE_URL}/expenses/${id}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ id })
+                headers: { 'Authorization': `Bearer ${token}` },
             });
             await fetchExpenses();
         } catch (error) {

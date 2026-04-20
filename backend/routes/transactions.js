@@ -124,7 +124,7 @@ router.post('/', authenticateToken, async (req, res) => {
 // GET /api/transactions
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const { date } = req.query;
+        const { date, month, method, phone } = req.query;
 
         const where = {};
 
@@ -133,28 +133,60 @@ router.get('/', authenticateToken, async (req, res) => {
             start.setHours(0, 0, 0, 0);
             const end = new Date(date);
             end.setHours(23, 59, 59, 999);
-            end.setHours(23, 59, 59, 999);
+            where.date = { gte: start, lte: end };
+        } else if (month) {
+            // month format: YYYY-MM
+            const [y, m] = month.split('-').map(Number);
+            const start = new Date(y, m - 1, 1);
+            const end = new Date(y, m, 0, 23, 59, 59, 999);
             where.date = { gte: start, lte: end };
         }
 
-        if (req.query.phone) {
-            where.customerPhone = req.query.phone;
+        if (phone) {
+            where.customerPhone = phone;
         }
 
-        const transactions = await prisma.transaction.findMany({
-            where,
-            orderBy: { date: 'desc' },
-            include: {
-                barber: {
-                    select: { name: true },
-                },
-            },
-        });
+        if (method && method !== 'all') {
+            where.paymentMethod = method;
+        }
+
+        const page = parseInt(req.query.page) || 0;
+        const limit = parseInt(req.query.limit) || 0;
+
+        let transactions;
+        let total;
+
+        if (page > 0 && limit > 0) {
+            const skip = (page - 1) * limit;
+            [transactions, total] = await Promise.all([
+                prisma.transaction.findMany({
+                    where,
+                    orderBy: { date: 'desc' },
+                    include: { barber: { select: { name: true } } },
+                    skip,
+                    take: limit,
+                }),
+                prisma.transaction.count({ where }),
+            ]);
+        } else {
+            transactions = await prisma.transaction.findMany({
+                where,
+                orderBy: { date: 'desc' },
+                include: { barber: { select: { name: true } } },
+            });
+        }
 
         const formatted = transactions.map((t) => ({
             ...t,
-            barberId: { name: t.barber.name }, // Mocking nested structure for frontend compat
+            barberId: { name: t.barber.name },
         }));
+
+        if (page > 0 && limit > 0) {
+            return res.json({
+                data: formatted,
+                pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+            });
+        }
 
         res.json(formatted);
     } catch (error) {

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
+const requireOwner = require('../middleware/requireOwner');
 
 // GET /api/expenses?month=3&year=2026
 router.get('/', authenticateToken, async (req, res) => {
@@ -43,7 +44,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST /api/expenses
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { description, amount, category } = req.body;
 
@@ -75,7 +76,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/expenses/:id
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -120,7 +121,7 @@ router.get('/export/csv', authenticateToken, async (req, res) => {
 });
 
 // PATCH /api/expenses/:id
-router.patch('/:id', authenticateToken, async (req, res) => {
+router.patch('/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { description, amount, category } = req.body;
         const { id } = req.params;

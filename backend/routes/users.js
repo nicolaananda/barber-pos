@@ -186,7 +186,7 @@ router.post('/barbers', authenticateToken, requireOwner, async (req, res) => {
                 password: hashedPassword,
                 name: name.trim(),
                 role: 'staff',
-                status: finalStatus,
+                status: status || 'active',
             },
             select: {
                 id: true,

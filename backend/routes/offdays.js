@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
+const requireOwner = require('../middleware/requireOwner');
 
 // GET /api/offdays
 // Query params: start (YYYY-MM-DD), end (YYYY-MM-DD), barberId (optional)
@@ -40,7 +41,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST /api/offdays
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { userId, date, reason } = req.body;
 
@@ -68,7 +69,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/offdays/:id
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { id } = req.params;
         await prisma.offDay.delete({

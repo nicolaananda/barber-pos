@@ -34,10 +34,12 @@ export default function TransactionsPage() {
     const [loading, setLoading] = useState(true);
     const [dateFilter, setDateFilter] = useState('');
     const [monthFilter, setMonthFilter] = useState('');
-    const [viewMode, setViewMode] = useState<'daily' | 'monthly' | 'all'>('all'); // 'daily', 'monthly', 'all'
+    const [viewMode, setViewMode] = useState<'daily' | 'monthly' | 'all'>('all');
     const [methodFilter, setMethodFilter] = useState('all');
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
     const [pinDialogOpen, setPinDialogOpen] = useState(false);
@@ -51,48 +53,47 @@ export default function TransactionsPage() {
 
     useEffect(() => {
         fetchTransactions();
-    }, []);
+    }, [currentPage, viewMode, dateFilter, monthFilter, methodFilter]);
 
     const fetchTransactions = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/transactions`, {
+            const params = new URLSearchParams();
+            params.set('page', currentPage.toString());
+            params.set('limit', itemsPerPage.toString());
+
+            if (viewMode === 'daily' && dateFilter) {
+                params.set('date', dateFilter);
+            } else if (viewMode === 'monthly' && monthFilter) {
+                params.set('month', monthFilter);
+            }
+
+            if (methodFilter !== 'all') {
+                params.set('method', methodFilter);
+            }
+
+            const res = await fetch(`${API_BASE_URL}/transactions?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch transactions');
-            const data = await res.json();
-            // Sort by date desc (newest first)
-            data.sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            setTransactions(data);
+            const json = await res.json();
+
+            if (json.pagination) {
+                setTransactions(json.data);
+                setTotalPages(json.pagination.totalPages);
+                setTotalRecords(json.pagination.total);
+            } else {
+                // Fallback for old API response
+                setTransactions(json);
+                setTotalPages(Math.ceil(json.length / itemsPerPage));
+                setTotalRecords(json.length);
+            }
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
     };
-
-    const filteredTransactions = transactions.filter(tx => {
-        const txDate = new Date(tx.date);
-
-        // Method Filter
-        if (methodFilter !== 'all' && tx.paymentMethod !== methodFilter) return false;
-
-        // Date/Month Filter
-        if (viewMode === 'daily' && dateFilter) {
-            return format(txDate, 'yyyy-MM-dd') === dateFilter;
-        }
-        if (viewMode === 'monthly' && monthFilter) {
-            return format(txDate, 'yyyy-MM') === monthFilter;
-        }
-        return true; // 'all' mode
-    });
-
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-    const paginatedTransactions = filteredTransactions.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -102,7 +103,7 @@ export default function TransactionsPage() {
         setViewMode(mode);
         if (mode === 'daily') setDateFilter(value);
         if (mode === 'monthly') setMonthFilter(value);
-        setCurrentPage(1); // Reset to page 1
+        setCurrentPage(1);
     };
 
     const handleEditClick = () => {
@@ -315,7 +316,7 @@ export default function TransactionsPage() {
                 <CardHeader>
                     <CardTitle className="flex justify-between items-center font-bold text-zinc-900">
                         <span>Invoice Log</span>
-                        <span className="text-sm font-normal text-zinc-500">Showing {filteredTransactions.length} records</span>
+                        <span className="text-sm font-normal text-zinc-500">Showing {totalRecords} records</span>
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -340,7 +341,7 @@ export default function TransactionsPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-100 bg-white">
-                                        {paginatedTransactions.length === 0 ? (
+                                        {transactions.length === 0 ? (
                                             <tr>
                                                 <td colSpan={7} className="p-12 text-center text-zinc-400 font-medium">
                                                     <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
@@ -348,7 +349,7 @@ export default function TransactionsPage() {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            paginatedTransactions.map((tx) => (
+                                            transactions.map((tx) => (
                                                 <tr key={tx.id} className="hover:bg-zinc-50 transition-colors cursor-pointer" onClick={() => { setSelectedTransaction(tx); setIsEditing(false); }}>
                                                     <td className="p-4 pl-6 text-zinc-500 font-mono text-xs">
                                                         {format(new Date(tx.date), 'dd MMM yyyy HH:mm')}
@@ -396,7 +397,7 @@ export default function TransactionsPage() {
                             {totalPages > 1 && (
                                 <div className="flex items-center justify-between border-t border-zinc-100 pt-4">
                                     <div className="text-xs text-zinc-500">
-                                        Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length}
+                                        Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Button

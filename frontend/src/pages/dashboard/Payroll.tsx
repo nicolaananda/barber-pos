@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, DollarSign, TrendingUp, Users, Calculator, Printer } from 'lucide-react';
+import { Loader2, DollarSign, TrendingUp, Users, Calculator, Printer, CheckCircle2 } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -10,8 +10,10 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { API_BASE_URL } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 interface PayrollData {
     barberId: number;
@@ -25,12 +27,15 @@ interface PayrollData {
 export default function PayrollPage() {
     const { token } = useAuth();
     const [payrollData, setPayrollData] = useState<PayrollData[]>([]);
+    const [paidStatus, setPaidStatus] = useState<Record<number, any>>({});
     const [loading, setLoading] = useState(true);
+    const [markingPaid, setMarkingPaid] = useState<number | null>(null);
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth().toString());
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
     useEffect(() => {
         fetchPayroll();
+        fetchPaidStatus();
     }, [selectedMonth, selectedYear]);
 
     const fetchPayroll = async () => {
@@ -46,6 +51,54 @@ export default function PayrollPage() {
             console.error(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchPaidStatus = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/payroll/paid?month=${selectedMonth}&year=${selectedYear}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setPaidStatus(data);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleMarkPaid = async (barber: PayrollData) => {
+        if (!confirm(`Mark ${barber.barberName}'s payroll as PAID for this period? (IDR ${barber.estimatedCommission.toLocaleString('id-ID')})`)) return;
+
+        setMarkingPaid(barber.barberId);
+        try {
+            const res = await fetch(`${API_BASE_URL}/payroll/mark-paid`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    barberId: barber.barberId,
+                    month: selectedMonth,
+                    year: selectedYear,
+                    totalServices: barber.totalTransactions,
+                    totalCommission: barber.estimatedCommission,
+                })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to mark as paid');
+            }
+
+            toast.success(`${barber.barberName}'s payroll marked as paid`);
+            fetchPaidStatus();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to mark as paid');
+        } finally {
+            setMarkingPaid(null);
         }
     };
 
@@ -490,6 +543,7 @@ export default function PayrollPage() {
                                         <th className="p-4 text-center">Transactions</th>
                                         <th className="p-4 text-right">Revenue</th>
                                         <th className="p-4 text-right">Commission</th>
+                                        <th className="p-4 text-center">Status</th>
                                         <th className="p-4 text-center">Action</th>
                                     </tr>
                                 </thead>
@@ -508,15 +562,42 @@ export default function PayrollPage() {
                                                 IDR {barber.estimatedCommission.toLocaleString('id-ID')}
                                             </td>
                                             <td className="p-4 text-center">
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => handlePrintBarber(barber)}
-                                                    className="h-8 border-zinc-200 hover:bg-zinc-100 text-zinc-900"
-                                                >
-                                                    <Printer className="w-3 h-3 mr-1" />
-                                                    Print
-                                                </Button>
+                                                {paidStatus[barber.barberId] ? (
+                                                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
+                                                        <CheckCircle2 className="w-3 h-3 mr-1" /> Paid
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50">
+                                                        Unpaid
+                                                    </Badge>
+                                                )}
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <div className="flex gap-1 justify-center">
+                                                    {!paidStatus[barber.barberId] && (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handleMarkPaid(barber)}
+                                                            disabled={markingPaid === barber.barberId}
+                                                            className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                        >
+                                                            {markingPaid === barber.barberId ? (
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                            ) : (
+                                                                <><CheckCircle2 className="w-3 h-3 mr-1" /> Mark Paid</>
+                                                            )}
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handlePrintBarber(barber)}
+                                                        className="h-8 border-zinc-200 hover:bg-zinc-100 text-zinc-900"
+                                                    >
+                                                        <Printer className="w-3 h-3 mr-1" />
+                                                        Print
+                                                    </Button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -533,6 +614,7 @@ export default function PayrollPage() {
                                         <td className="p-4 text-right font-bold text-zinc-900 font-mono text-lg">
                                             IDR {totalCommissions.toLocaleString('id-ID')}
                                         </td>
+                                        <td className="p-4"></td>
                                         <td className="p-4"></td>
                                     </tr>
                                 </tfoot>

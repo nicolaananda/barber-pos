@@ -340,7 +340,9 @@ router.get('/today', async (req, res) => {
             ]
         });
 
-        res.json(bookings);
+        // Strip sensitive data from public endpoint
+        const safeBookings = bookings.map(({ customerPhone, ...rest }) => rest);
+        res.json(safeBookings);
     } catch (error) {
         console.error('Error fetching today bookings:', error);
         res.status(500).json({ error: 'Failed to fetch bookings' });
@@ -378,7 +380,9 @@ router.get('/date/:date', async (req, res) => {
             ]
         });
 
-        res.json(bookings);
+        // Strip sensitive data from public endpoint
+        const safeBookings = bookings.map(({ customerPhone, ...rest }) => rest);
+        res.json(safeBookings);
     } catch (error) {
         console.error('Error fetching bookings for date:', error);
         res.status(500).json({ error: 'Failed to fetch bookings' });
@@ -531,6 +535,50 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Error updating booking status:', error);
         res.status(500).json({ error: 'Failed to update booking status' });
+    }
+});
+
+// GET /api/bookings/barber/:barberId/today - Get today's bookings for specific barber (for BarberDashboard)
+router.get('/barber/:barberId/today', authenticateToken, async (req, res) => {
+    try {
+        const { barberId } = req.params;
+        const today = new Date();
+        const startOfDay = new Date(today);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const bookings = await prisma.booking.findMany({
+            where: {
+                barberId: parseInt(barberId),
+                bookingDate: { gte: startOfDay, lte: endOfDay },
+            },
+            orderBy: [{ timeSlot: 'asc' }]
+        });
+
+        const confirmed = bookings.filter(b => b.status === 'confirmed').length;
+        const pending = bookings.filter(b => b.status === 'pending').length;
+        const completed = bookings.filter(b => b.status === 'completed').length;
+        const cancelled = bookings.filter(b => b.status === 'cancelled').length;
+        const estimatedRevenue = bookings
+            .filter(b => ['confirmed', 'pending'].includes(b.status))
+            .reduce((sum, b) => sum + (b.servicePrice || 0), 0);
+
+        res.json({
+            date: today.toISOString(),
+            bookings,
+            summary: {
+                totalBookings: bookings.length,
+                confirmed,
+                pending,
+                completed,
+                cancelled,
+                estimatedRevenue,
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching barber today bookings:', error);
+        res.status(500).json({ error: 'Failed to fetch barber today bookings' });
     }
 });
 

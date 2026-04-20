@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
+const requireOwner = require('../middleware/requireOwner');
 
 // GET /api/payroll
 router.get('/', authenticateToken, async (req, res) => {
@@ -89,6 +90,72 @@ router.get('/', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Payroll API Error:', error);
         res.status(500).json({ error: 'Failed to calculate payroll' });
+    }
+});
+
+// GET /api/payroll/paid - Get paid payroll records for a period
+router.get('/paid', authenticateToken, async (req, res) => {
+    try {
+        const month = parseInt(req.query.month || new Date().getMonth().toString());
+        const year = parseInt(req.query.year || new Date().getFullYear().toString());
+        const period = `${year}-${String(month + 1).padStart(2, '0')}`;
+
+        const records = await prisma.payroll.findMany({
+            where: { period, status: 'paid' }
+        });
+
+        // Return a map of barberId -> payroll record
+        const paidMap = {};
+        for (const r of records) {
+            paidMap[r.barberId] = r;
+        }
+
+        res.json(paidMap);
+    } catch (error) {
+        console.error('Payroll Paid Status Error:', error);
+        res.status(500).json({ error: 'Failed to fetch payroll status' });
+    }
+});
+
+// POST /api/payroll/mark-paid - Mark a barber's payroll as paid for a period
+router.post('/mark-paid', authenticateToken, requireOwner, async (req, res) => {
+    try {
+        const { barberId, month, year, totalServices, totalCommission, baseSalary, bonuses, deductions } = req.body;
+
+        if (!barberId || month === undefined || !year) {
+            return res.status(400).json({ error: 'barberId, month, and year are required' });
+        }
+
+        const period = `${year}-${String(parseInt(month) + 1).padStart(2, '0')}`;
+        const totalPayout = (totalCommission || 0) + (baseSalary || 0) + (bonuses || 0) - (deductions || 0);
+
+        // Check if already paid
+        const existing = await prisma.payroll.findFirst({
+            where: { barberId: parseInt(barberId), period, status: 'paid' }
+        });
+
+        if (existing) {
+            return res.status(400).json({ error: 'Payroll already marked as paid for this period' });
+        }
+
+        const payroll = await prisma.payroll.create({
+            data: {
+                barberId: parseInt(barberId),
+                period,
+                totalServices: totalServices || 0,
+                totalCommission: totalCommission || 0,
+                baseSalary: baseSalary || 0,
+                bonuses: bonuses || 0,
+                deductions: deductions || 0,
+                totalPayout,
+                status: 'paid',
+            }
+        });
+
+        res.status(201).json(payroll);
+    } catch (error) {
+        console.error('Mark Payroll Paid Error:', error);
+        res.status(500).json({ error: 'Failed to mark payroll as paid' });
     }
 });
 
