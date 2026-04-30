@@ -159,6 +159,34 @@ router.post('/mark-paid', authenticateToken, requireOwner, async (req, res) => {
     }
 });
 
+// DELETE /api/payroll/unmark-paid - Cancel a barber's paid payroll for a period
+router.delete('/unmark-paid', authenticateToken, requireOwner, async (req, res) => {
+    try {
+        const { barberId, month, year } = req.body;
+
+        if (!barberId || month === undefined || !year) {
+            return res.status(400).json({ error: 'barberId, month, and year are required' });
+        }
+
+        const period = `${year}-${String(parseInt(month) + 1).padStart(2, '0')}`;
+
+        const existing = await prisma.payroll.findFirst({
+            where: { barberId: parseInt(barberId), period, status: 'paid' }
+        });
+
+        if (!existing) {
+            return res.status(404).json({ error: 'No paid payroll record found for this period' });
+        }
+
+        await prisma.payroll.delete({ where: { id: existing.id } });
+
+        res.json({ message: 'Payroll payment cancelled successfully' });
+    } catch (error) {
+        console.error('Unmark Payroll Paid Error:', error);
+        res.status(500).json({ error: 'Failed to cancel payroll payment' });
+    }
+});
+
 // GET /api/payroll/export/csv - Export payroll as CSV
 router.get('/export/csv', authenticateToken, async (req, res) => {
     try {

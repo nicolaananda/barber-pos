@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, DollarSign, TrendingUp, Users, Calculator, Printer, CheckCircle2 } from 'lucide-react';
+import { Loader2, DollarSign, TrendingUp, Users, Calculator, Printer, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -30,6 +30,7 @@ export default function PayrollPage() {
     const [paidStatus, setPaidStatus] = useState<Record<number, any>>({});
     const [loading, setLoading] = useState(true);
     const [markingPaid, setMarkingPaid] = useState<number | null>(null);
+    const [unmarkingPaid, setUnmarkingPaid] = useState<number | null>(null);
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth().toString());
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
@@ -68,8 +69,25 @@ export default function PayrollPage() {
         }
     };
 
+    const isBeforeEndOfMonth = () => {
+        const now = new Date();
+        const lastDay = new Date(parseInt(selectedYear), parseInt(selectedMonth) + 1, 0).getDate();
+        const isCurrentMonth = now.getMonth() === parseInt(selectedMonth) && now.getFullYear() === parseInt(selectedYear);
+        return isCurrentMonth && now.getDate() < lastDay;
+    };
+
     const handleMarkPaid = async (barber: PayrollData) => {
-        if (!confirm(`Mark ${barber.barberName}'s payroll as PAID for this period? (IDR ${barber.estimatedCommission.toLocaleString('id-ID')})`)) return;
+        if (isBeforeEndOfMonth()) {
+            const confirmed = confirm(
+                `⚠️ PERHATIAN: Bulan ini belum berakhir!\n\n` +
+                `Jika ada transaksi setelah hari ini, komisi dari transaksi tersebut TIDAK akan masuk ke pembayaran ini.\n\n` +
+                `Disarankan untuk mark paid di akhir bulan.\n\n` +
+                `Tetap lanjutkan mark paid untuk ${barber.barberName}? (IDR ${barber.estimatedCommission.toLocaleString('id-ID')})`
+            );
+            if (!confirmed) return;
+        } else {
+            if (!confirm(`Mark ${barber.barberName}'s payroll as PAID for this period? (IDR ${barber.estimatedCommission.toLocaleString('id-ID')})`)) return;
+        }
 
         setMarkingPaid(barber.barberId);
         try {
@@ -99,6 +117,38 @@ export default function PayrollPage() {
             toast.error(error.message || 'Failed to mark as paid');
         } finally {
             setMarkingPaid(null);
+        }
+    };
+
+    const handleUnmarkPaid = async (barber: PayrollData) => {
+        if (!confirm(`Batalkan pembayaran ${barber.barberName} untuk periode ini?\n\nStatus akan kembali ke "Unpaid" dan bisa di-mark paid ulang nanti.`)) return;
+
+        setUnmarkingPaid(barber.barberId);
+        try {
+            const res = await fetch(`${API_BASE_URL}/payroll/unmark-paid`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    barberId: barber.barberId,
+                    month: selectedMonth,
+                    year: selectedYear,
+                })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to cancel payment');
+            }
+
+            toast.success(`Pembayaran ${barber.barberName} berhasil dibatalkan`);
+            fetchPaidStatus();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to cancel payment');
+        } finally {
+            setUnmarkingPaid(null);
         }
     };
 
@@ -574,7 +624,7 @@ export default function PayrollPage() {
                                             </td>
                                             <td className="p-4 text-center">
                                                 <div className="flex gap-1 justify-center">
-                                                    {!paidStatus[barber.barberId] && (
+                                                    {!paidStatus[barber.barberId] ? (
                                                         <Button
                                                             size="sm"
                                                             onClick={() => handleMarkPaid(barber)}
@@ -585,6 +635,20 @@ export default function PayrollPage() {
                                                                 <Loader2 className="w-3 h-3 animate-spin" />
                                                             ) : (
                                                                 <><CheckCircle2 className="w-3 h-3 mr-1" /> Mark Paid</>
+                                                            )}
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => handleUnmarkPaid(barber)}
+                                                            disabled={unmarkingPaid === barber.barberId}
+                                                            className="h-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                        >
+                                                            {unmarkingPaid === barber.barberId ? (
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                            ) : (
+                                                                <><XCircle className="w-3 h-3 mr-1" /> Batalkan</>
                                                             )}
                                                         </Button>
                                                     )}
