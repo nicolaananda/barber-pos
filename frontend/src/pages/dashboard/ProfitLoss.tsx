@@ -532,8 +532,8 @@ export default function ProfitLossPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                {/* Opex categories */}
-                                {data.breakdown.expenses.map((item, i) => {
+                                {/* Opex categories (exclude Salary as it's shown separately as Payroll) */}
+                                {data.breakdown.expenses.filter(item => item.category !== 'Salary').map((item, i) => {
                                     const pct = s.totalExpenses > 0 ? (item.amount / s.totalExpenses) * 100 : 0;
                                     return (
                                         <div key={i}>
