@@ -138,19 +138,38 @@ router.post('/mark-paid', authenticateToken, requireOwner, async (req, res) => {
             return res.status(400).json({ error: 'Payroll already marked as paid for this period' });
         }
 
-        const payroll = await prisma.payroll.create({
-            data: {
-                barberId: parseInt(barberId),
-                period,
-                totalServices: totalServices || 0,
-                totalCommission: totalCommission || 0,
-                baseSalary: baseSalary || 0,
-                bonuses: bonuses || 0,
-                deductions: deductions || 0,
-                totalPayout,
-                status: 'paid',
-            }
+        // Get barber name for expense description
+        const barber = await prisma.user.findUnique({
+            where: { id: parseInt(barberId) },
+            select: { name: true }
         });
+
+        const barberName = barber ? barber.name : `Barber #${barberId}`;
+
+        // Use transaction to ensure both records are created atomically
+        const [payroll, expense] = await prisma.$transaction([
+            prisma.payroll.create({
+                data: {
+                    barberId: parseInt(barberId),
+                    period,
+                    totalServices: totalServices || 0,
+                    totalCommission: totalCommission || 0,
+                    baseSalary: baseSalary || 0,
+                    bonuses: bonuses || 0,
+                    deductions: deductions || 0,
+                    totalPayout,
+                    status: 'paid',
+                }
+            }),
+            prisma.expense.create({
+                data: {
+                    description: `Gaji ${barberName} - ${period}`,
+                    amount: totalPayout,
+                    category: 'Salary',
+                    date: new Date(),
+                }
+            }),
+        ]);
 
         res.status(201).json(payroll);
     } catch (error) {
@@ -178,7 +197,26 @@ router.delete('/unmark-paid', authenticateToken, requireOwner, async (req, res) 
             return res.status(404).json({ error: 'No paid payroll record found for this period' });
         }
 
-        await prisma.payroll.delete({ where: { id: existing.id } });
+        const barber = await prisma.user.findUnique({
+            where: { id: parseInt(barberId) },
+            select: { name: true }
+        });
+        const barberName = barber ? barber.name : `Barber #${barberId}`;
+        const expenseDescription = `Gaji ${barberName} - ${period}`;
+
+        const matchingExpense = await prisma.expense.findFirst({
+            where: {
+                description: expenseDescription,
+                category: 'Salary',
+            }
+        });
+
+        const deleteOps = [prisma.payroll.delete({ where: { id: existing.id } })];
+        if (matchingExpense) {
+            deleteOps.push(prisma.expense.delete({ where: { id: matchingExpense.id } }));
+        }
+
+        await prisma.$transaction(deleteOps);
 
         res.json({ message: 'Payroll payment cancelled successfully' });
     } catch (error) {

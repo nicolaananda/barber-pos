@@ -248,61 +248,40 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
         const prevStart = new Date(prevEnd.getTime() - durationMs);
         prevStart.setHours(0, 0, 0, 0);
 
-        // Get YYYY-MM period strings that overlap with a date range (for payroll lookup)
-        const getPayrollPeriods = (s, e) => {
-            const periods = [];
-            const cur = new Date(s.getFullYear(), s.getMonth(), 1);
-            const last = new Date(e.getFullYear(), e.getMonth(), 1);
-            while (cur <= last) {
-                periods.push(format(cur, 'yyyy-MM'));
-                cur.setMonth(cur.getMonth() + 1);
-            }
-            return periods;
-        };
-
-        const currentPeriods = getPayrollPeriods(start, end);
-        const prevPeriods = getPayrollPeriods(prevStart, prevEnd);
-
-        // Run all queries in parallel
         const [
-            revenueAgg, opexAgg, capitalAgg, payrollAgg,
-            expensesByCategory, revenueByMethod, payrollRecords,
-            prevRevenueAgg, prevOpexAgg, prevPayrollAgg,
+            revenueAgg, expensesAgg, capitalAgg,
+            expensesByCategory, revenueByMethod,
+            prevRevenueAgg, prevExpensesAgg,
             dailyTransactions, dailyExpenses,
         ] = await Promise.all([
             prisma.transaction.aggregate({ _sum: { totalAmount: true }, where: { date: { gte: start, lte: end } } }),
             prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: start, lte: end } } }),
             prisma.capital.aggregate({ _sum: { amount: true }, where: { date: { gte: start, lte: end } } }),
-            prisma.payroll.aggregate({ _sum: { totalPayout: true }, where: { period: { in: currentPeriods }, status: 'paid' } }),
             prisma.expense.groupBy({ by: ['category'], _sum: { amount: true }, where: { date: { gte: start, lte: end } } }),
             prisma.transaction.groupBy({ by: ['paymentMethod'], _sum: { totalAmount: true }, where: { date: { gte: start, lte: end } } }),
-            prisma.payroll.findMany({ where: { period: { in: currentPeriods }, status: 'paid' }, select: { barberId: true, period: true, totalPayout: true } }),
-            // Previous period
             prisma.transaction.aggregate({ _sum: { totalAmount: true }, where: { date: { gte: prevStart, lte: prevEnd } } }),
             prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: prevStart, lte: prevEnd } } }),
-            prisma.payroll.aggregate({ _sum: { totalPayout: true }, where: { period: { in: prevPeriods }, status: 'paid' } }),
-            // Daily trend data
             prisma.transaction.findMany({ where: { date: { gte: start, lte: end } }, select: { date: true, totalAmount: true } }),
-            prisma.expense.findMany({ where: { date: { gte: start, lte: end } }, select: { date: true, amount: true } }),
+            prisma.expense.findMany({ where: { date: { gte: start, lte: end } }, select: { date: true, amount: true, category: true } }),
         ]);
 
         const totalRevenue = revenueAgg._sum.totalAmount || 0;
-        const totalOpex = opexAgg._sum.amount || 0;
-        const totalPayroll = payrollAgg._sum.totalPayout || 0;
-        const totalExpenses = totalOpex + totalPayroll;
+        const totalExpenses = expensesAgg._sum.amount || 0;
         const totalCapital = capitalAgg._sum.amount || 0;
         const netProfit = totalRevenue - totalExpenses;
         const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
+        // Derive opex vs payroll from expense categories
+        const salaryCategory = expensesByCategory.find(e => e.category === 'Salary');
+        const totalPayroll = salaryCategory ? salaryCategory._sum.amount : 0;
+        const totalOpex = totalExpenses - totalPayroll;
+
         const prevRevenue = prevRevenueAgg._sum.totalAmount || 0;
-        const prevOpex = prevOpexAgg._sum.amount || 0;
-        const prevPayroll = prevPayrollAgg._sum.totalPayout || 0;
-        const prevExpenses = prevOpex + prevPayroll;
+        const prevExpenses = prevExpensesAgg._sum.amount || 0;
         const prevNetProfit = prevRevenue - prevExpenses;
 
         const pctChange = (cur, prev) => prev !== 0 ? ((cur - prev) / Math.abs(prev)) * 100 : null;
 
-        // Build daily trend (revenue and opex by day; payroll is monthly so not in daily)
         const trendMap = {};
         dailyTransactions.forEach(tx => {
             const day = format(new Date(tx.date), 'yyyy-MM-dd');
@@ -315,12 +294,6 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
             trendMap[day].expenses += exp.amount;
         });
         const dailyTrend = Object.values(trendMap).sort((a, b) => a.date.localeCompare(b.date));
-
-        // Group payroll by period for breakdown display
-        const payrollByPeriod = payrollRecords.reduce((acc, p) => {
-            acc[p.period] = (acc[p.period] || 0) + p.totalPayout;
-            return acc;
-        }, {});
 
         res.json({
             range: { start, end },
@@ -344,7 +317,7 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
             breakdown: {
                 expenses: expensesByCategory.map(e => ({ category: e.category, amount: e._sum.amount })),
                 revenue: revenueByMethod.map(r => ({ method: r.paymentMethod, amount: r._sum.totalAmount })),
-                payroll: Object.entries(payrollByPeriod).map(([period, amount]) => ({ period, amount })),
+                payroll: [],
             },
             dailyTrend,
         });
@@ -356,21 +329,20 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
 });
 
 // GET /api/dashboard/total-balance-all
-// Returns lifetime total balance (all capital + all revenue - all expenses - all paid payroll)
 router.get('/total-balance-all', authenticateToken, async (req, res) => {
     try {
-        const [capitalAgg, revenueAgg, expensesAgg, payrollAgg] = await Promise.all([
+        const [capitalAgg, revenueAgg, expensesAgg, salaryAgg] = await Promise.all([
             prisma.capital.aggregate({ _sum: { amount: true } }),
             prisma.transaction.aggregate({ _sum: { totalAmount: true } }),
             prisma.expense.aggregate({ _sum: { amount: true } }),
-            prisma.payroll.aggregate({ _sum: { totalPayout: true }, where: { status: 'paid' } }),
+            prisma.expense.aggregate({ _sum: { amount: true }, where: { category: 'Salary' } }),
         ]);
 
         const totalCapital = capitalAgg._sum.amount || 0;
         const totalRevenue = revenueAgg._sum.totalAmount || 0;
-        const totalOpex = expensesAgg._sum.amount || 0;
-        const totalPayroll = payrollAgg._sum.totalPayout || 0;
-        const totalExpenses = totalOpex + totalPayroll;
+        const totalExpenses = expensesAgg._sum.amount || 0;
+        const totalPayroll = salaryAgg._sum.amount || 0;
+        const totalOpex = totalExpenses - totalPayroll;
         const totalBalance = totalCapital + totalRevenue - totalExpenses;
 
         res.json({
