@@ -46,7 +46,7 @@ router.get('/', authenticateToken, async (req, res) => {
 // POST /api/expenses
 router.post('/', authenticateToken, requireOwner, async (req, res) => {
     try {
-        const { description, amount, category } = req.body;
+        const { description, amount, category, date } = req.body;
 
         // Input validation
         if (!description || typeof description !== 'string' || description.trim().length === 0) {
@@ -59,12 +59,14 @@ router.post('/', authenticateToken, requireOwner, async (req, res) => {
             return res.status(400).json({ error: 'Category is required' });
         }
 
+        const expenseDate = date ? new Date(date) : new Date();
+
         const expense = await prisma.expense.create({
             data: {
                 description,
                 amount,
                 category,
-                date: new Date(),
+                date: expenseDate,
             },
         });
 

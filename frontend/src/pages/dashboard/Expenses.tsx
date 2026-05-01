@@ -55,6 +55,7 @@ export default function ExpensesPage() {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState('Operational');
+    const [expenseDate, setExpenseDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
     useEffect(() => {
         fetchExpenses();
@@ -98,7 +99,7 @@ export default function ExpensesPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ description, amount: Number(amount), category })
+                body: JSON.stringify({ description, amount: Number(amount), category, date: expenseDate })
             });
             await fetchExpenses();
             handleClose();
@@ -126,7 +127,10 @@ export default function ExpensesPage() {
     const handleClose = () => {
         setIsDialogOpen(false);
         setTimeout(() => {
-            setDescription(''); setAmount(''); setCategory('Operational');
+            setDescription(''); 
+            setAmount(''); 
+            setCategory('Operational');
+            setExpenseDate(format(new Date(), 'yyyy-MM-dd'));
         }, 150);
     };
 
@@ -170,6 +174,15 @@ export default function ExpensesPage() {
                     <DialogContent>
                         <DialogHeader><DialogTitle>Catat Pengeluaran Baru</DialogTitle></DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                            <div className="space-y-2">
+                                <Label>Date</Label>
+                                <Input 
+                                    type="date" 
+                                    value={expenseDate} 
+                                    onChange={(e) => setExpenseDate(e.target.value)} 
+                                    required 
+                                />
+                            </div>
                             <div className="space-y-2">
                                 <Label>Description</Label>
                                 <Input value={description} onChange={(e) => setDescription(e.target.value)} required />
