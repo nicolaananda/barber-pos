@@ -271,9 +271,8 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
         const netProfit = totalRevenue - totalExpenses;
         const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
-        // Derive opex vs payroll from expense categories
-        const salaryCategory = expensesByCategory.find(e => e.category === 'Salary');
-        const totalPayroll = salaryCategory ? salaryCategory._sum.amount : 0;
+        const salaryCategories = expensesByCategory.filter(e => e.category.toLowerCase() === 'salary');
+        const totalPayroll = salaryCategories.reduce((sum, e) => sum + (e._sum.amount || 0), 0);
         const totalOpex = totalExpenses - totalPayroll;
 
         const prevRevenue = prevRevenueAgg._sum.totalAmount || 0;
@@ -331,18 +330,23 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
 // GET /api/dashboard/total-balance-all
 router.get('/total-balance-all', authenticateToken, async (req, res) => {
     try {
-        const [capitalAgg, revenueAgg, expensesAgg, salaryAgg] = await Promise.all([
+        const [capitalAgg, revenueAgg, expensesByCategory] = await Promise.all([
             prisma.capital.aggregate({ _sum: { amount: true } }),
             prisma.transaction.aggregate({ _sum: { totalAmount: true } }),
-            prisma.expense.aggregate({ _sum: { amount: true } }),
-            prisma.expense.aggregate({ _sum: { amount: true }, where: { category: 'Salary' } }),
+            prisma.expense.groupBy({
+                by: ['category'],
+                _sum: { amount: true },
+            }),
         ]);
 
         const totalCapital = capitalAgg._sum.amount || 0;
         const totalRevenue = revenueAgg._sum.totalAmount || 0;
-        const totalExpenses = expensesAgg._sum.amount || 0;
-        const totalPayroll = salaryAgg._sum.amount || 0;
+
+        const totalExpenses = expensesByCategory.reduce((sum, e) => sum + (e._sum.amount || 0), 0);
+        const salaryCategories = expensesByCategory.filter(e => e.category.toLowerCase() === 'salary');
+        const totalPayroll = salaryCategories.reduce((sum, e) => sum + (e._sum.amount || 0), 0);
         const totalOpex = totalExpenses - totalPayroll;
+
         const totalBalance = totalCapital + totalRevenue - totalExpenses;
 
         res.json({

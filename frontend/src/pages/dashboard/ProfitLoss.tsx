@@ -463,32 +463,17 @@ export default function ProfitLossPage() {
                             </CardContent>
                         </Card>
 
-                        {s.totalCapital > 0 && (
-                            <Card className="border-zinc-900 bg-zinc-900 shadow-sm text-white">
+                        {totalBalanceAll && (
+                            <Card className="border-zinc-900 bg-black shadow-lg text-white ring-1 ring-zinc-800">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-xs font-bold text-zinc-300 uppercase tracking-wide">Total Balance</CardTitle>
                                     <DollarSign className="h-4 w-4 text-yellow-400" />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-black text-white">
-                                        {formatIDR(s.totalCapital + s.netProfit)}
-                                    </div>
-                                    <p className="text-xs text-zinc-400 mt-1">Capital + Net Profit</p>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {totalBalanceAll && (
-                            <Card className="border-zinc-900 bg-black shadow-lg text-white ring-1 ring-zinc-800">
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-xs font-bold text-zinc-300 uppercase tracking-wide">Total Balance All</CardTitle>
-                                    <DollarSign className="h-4 w-4 text-white" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-black text-white">
                                         {formatIDR(totalBalanceAll.totalBalance)}
                                     </div>
-                                    <p className="text-xs text-zinc-400 mt-1">Lifetime</p>
+                                    <p className="text-xs text-zinc-400 mt-1">Capital + Revenue - Expenses (Lifetime)</p>
                                 </CardContent>
                             </Card>
                         )}
@@ -549,48 +534,30 @@ export default function ProfitLossPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                {/* Opex categories (exclude Salary as it's shown separately as Payroll) */}
-                                {data.breakdown.expenses.filter(item => item.category !== 'Salary').map((item, i) => {
-                                    const pct = s.totalExpenses > 0 ? (item.amount / s.totalExpenses) * 100 : 0;
-                                    return (
-                                        <div key={i}>
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-sm font-medium text-zinc-700 capitalize">{item.category}</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs text-zinc-400">{pct.toFixed(1)}%</span>
-                                                    <span className="font-bold font-mono text-sm text-zinc-900">{formatIDR(item.amount)}</span>
+                                {data.breakdown.expenses.length === 0 ? (
+                                    <div className="py-8 text-center text-zinc-400 italic text-sm">No expense data for this period</div>
+                                ) : (
+                                    data.breakdown.expenses.map((item, i) => {
+                                        const pct = s.totalExpenses > 0 ? (item.amount / s.totalExpenses) * 100 : 0;
+                                        const isSalary = item.category.toLowerCase() === 'salary';
+                                        return (
+                                            <div key={i}>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className={`text-sm font-medium capitalize flex items-center gap-1 ${isSalary ? 'text-violet-700' : 'text-zinc-700'}`}>
+                                                        {isSalary && <Users className="w-3.5 h-3.5" />}
+                                                        {isSalary ? 'Payroll (Gaji)' : item.category}
+                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs text-zinc-400">{pct.toFixed(1)}%</span>
+                                                        <span className={`font-bold font-mono text-sm ${isSalary ? 'text-violet-700' : 'text-zinc-900'}`}>{formatIDR(item.amount)}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="h-2 rounded-full bg-zinc-100 overflow-hidden">
+                                                    <div className={`h-full rounded-full transition-all ${isSalary ? 'bg-violet-400' : 'bg-red-400'}`} style={{ width: `${pct}%` }} />
                                                 </div>
                                             </div>
-                                            <div className="h-2 rounded-full bg-zinc-100 overflow-hidden">
-                                                <div className="h-full rounded-full bg-red-400 transition-all" style={{ width: `${pct}%` }} />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                {/* Payroll as separate line */}
-                                {s.totalPayroll > 0 && (
-                                    <div>
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="text-sm font-medium text-violet-700 flex items-center gap-1">
-                                                <Users className="w-3.5 h-3.5" /> Payroll (Gaji)
-                                            </span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs text-zinc-400">
-                                                    {s.totalExpenses > 0 ? ((s.totalPayroll / s.totalExpenses) * 100).toFixed(1) : 0}%
-                                                </span>
-                                                <span className="font-bold font-mono text-sm text-violet-700">{formatIDR(s.totalPayroll)}</span>
-                                            </div>
-                                        </div>
-                                        <div className="h-2 rounded-full bg-zinc-100 overflow-hidden">
-                                            <div
-                                                className="h-full rounded-full bg-violet-400 transition-all"
-                                                style={{ width: `${s.totalExpenses > 0 ? (s.totalPayroll / s.totalExpenses) * 100 : 0}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                                {data.breakdown.expenses.length === 0 && s.totalPayroll === 0 && (
-                                    <div className="py-8 text-center text-zinc-400 italic text-sm">No expense data for this period</div>
+                                        );
+                                    })
                                 )}
                             </CardContent>
                         </Card>
