@@ -69,28 +69,9 @@ interface ProfitLossData {
     dailyTrend: { date: string; revenue: number; expenses: number }[];
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
 const DATE_PRESETS = [
-    {
-        label: 'Bulan Ini',
-        getRange: () => ({
-            startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-            endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
-        }),
-    },
-    {
-        label: 'Bulan Lalu',
-        getRange: () => ({
-            startDate: format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'),
-            endDate: format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'),
-        }),
-    },
-    {
-        label: '3 Bulan',
-        getRange: () => ({
-            startDate: format(startOfMonth(subMonths(new Date(), 2)), 'yyyy-MM-dd'),
-            endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
-        }),
-    },
     {
         label: 'Tahun Ini',
         getRange: () => ({
@@ -348,8 +329,44 @@ export default function ProfitLossPage() {
 
             {/* Date Filter */}
             <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm space-y-3">
-                {/* Quick presets */}
+                {/* Month buttons */}
                 <div className="flex flex-wrap gap-2">
+                    {MONTH_NAMES.map((monthName, monthIndex) => {
+                        const now = new Date();
+                        const currentYear = now.getFullYear();
+                        const currentMonth = now.getMonth();
+                        const isFutureMonth = monthIndex > currentMonth;
+                        
+                        const monthDate = new Date(currentYear, monthIndex, 1);
+                        const monthStart = format(startOfMonth(monthDate), 'yyyy-MM-dd');
+                        const monthEnd = format(endOfMonth(monthDate), 'yyyy-MM-dd');
+                        
+                        const isActive = activePreset === monthName;
+                        
+                        return (
+                            <button
+                                key={monthName}
+                                onClick={() => {
+                                    if (!isFutureMonth) {
+                                        setStartDate(monthStart);
+                                        setEndDate(monthEnd);
+                                        setActivePreset(monthName);
+                                        fetchData(monthStart, monthEnd);
+                                    }
+                                }}
+                                disabled={isFutureMonth}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                    isFutureMonth
+                                        ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed'
+                                        : isActive
+                                        ? 'bg-zinc-900 text-white'
+                                        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                                }`}
+                            >
+                                {monthName}
+                            </button>
+                        );
+                    })}
                     {DATE_PRESETS.map(preset => (
                         <button
                             key={preset.label}
