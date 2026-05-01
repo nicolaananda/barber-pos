@@ -56,6 +56,10 @@ export default function CustomersPage() {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalCustomers, setTotalCustomers] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    const ITEMS_PER_PAGE = 20;
 
     // Edit State
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -70,20 +74,47 @@ export default function CustomersPage() {
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchCustomers(searchTerm);
+            if (searchTerm) {
+                setCurrentPage(1);
+                fetchCustomers(searchTerm, 1);
+            } else {
+                fetchCustomers('', 1);
+                setCurrentPage(1);
+            }
         }, 500);
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm]);
 
-    const fetchCustomers = async (search: string = '') => {
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        fetchCustomers('', page);
+    };
+
+    const fetchCustomers = async (search: string = '', page: number = 1) => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/customers?q=${search}`, {
+            let url: string;
+            if (search) {
+                url = `${API_BASE_URL}/customers?q=${search}`;
+            } else {
+                url = `${API_BASE_URL}/customers?page=${page}&limit=${ITEMS_PER_PAGE}`;
+            }
+
+            const res = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch customers');
             const data = await res.json();
-            setCustomers(data);
+
+            if (search) {
+                setCustomers(data);
+                setTotalCustomers(data.length);
+                setTotalPages(1);
+            } else {
+                setCustomers(data.data);
+                setTotalCustomers(data.pagination.total);
+                setTotalPages(data.pagination.totalPages);
+            }
         } catch (error) {
             console.error(error);
         } finally {
@@ -113,7 +144,7 @@ export default function CustomersPage() {
 
             if (!res.ok) throw new Error('Failed to update');
 
-            await fetchCustomers(searchTerm);
+            await fetchCustomers(searchTerm, currentPage);
             setEditingCustomer(null);
         } catch (error) {
             console.error(error);
@@ -155,7 +186,7 @@ export default function CustomersPage() {
                         <CardTitle className="text-sm font-medium text-zinc-500 uppercase tracking-wider">Total Customers</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-zinc-900">{customers.length}</div>
+                        <div className="text-3xl font-bold text-zinc-900">{totalCustomers}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -266,6 +297,33 @@ export default function CustomersPage() {
                                 </tbody>
                             </table>
                         </div>
+                        {!searchTerm && totalPages > 1 && (
+                            <div className="flex items-center justify-between pt-4">
+                                <p className="text-sm text-zinc-500">
+                                    Halaman {currentPage} dari {totalPages} ({totalCustomers} customers)
+                                </p>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handlePageChange(currentPage - 1)}
+                                        disabled={currentPage <= 1}
+                                        className="border-zinc-200 text-zinc-700 hover:bg-zinc-50"
+                                    >
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handlePageChange(currentPage + 1)}
+                                        disabled={currentPage >= totalPages}
+                                        className="border-zinc-200 text-zinc-700 hover:bg-zinc-50"
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                         </>
                     )}
                 </CardContent>
