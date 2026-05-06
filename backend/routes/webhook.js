@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const gowaAdapter = require('../lib/gowa-adapter');
 
-// POST /api/webhook - Receive webhook events from Go-WA
 router.post('/', (req, res) => {
     try {
         const secret = process.env.WA_WEBHOOK_SECRET;
         const incomingSecret = req.headers['x-webhook-secret'] || req.headers['authorization'];
 
         if (!secret) {
-            console.error('❌ WA_WEBHOOK_SECRET not configured');
+            console.error('[Webhook] WA_WEBHOOK_SECRET not configured');
             return res.status(500).json({ error: 'Webhook not configured' });
         }
         if (!incomingSecret || incomingSecret !== secret) {
@@ -19,24 +19,41 @@ router.post('/', (req, res) => {
         const eventType = payload?.event || payload?.type || 'unknown';
 
         switch (eventType) {
-            case 'message':
-            case 'message.any':
-                // Incoming message dari pelanggan — abaikan untuk sekarang
+            case 'message': {
+                const baileysMessage = gowaAdapter.handleWebhook(payload);
+                if (baileysMessage) {
+                    if (baileysMessage.key.fromMe) break;
+
+                    console.log('[Webhook] Incoming message from:', baileysMessage.pushName, '|', baileysMessage.key.remoteJid);
+
+                    if (router.onMessage) {
+                        router.onMessage(baileysMessage);
+                    }
+                }
                 break;
+            }
+
+            case 'message.any': {
+                const baileysMessage = gowaAdapter.handleWebhook(payload);
+                if (baileysMessage && !baileysMessage.key.fromMe) {
+                    console.log('[Webhook] Incoming message from:', baileysMessage.pushName, '|', baileysMessage.key.remoteJid);
+                    if (router.onMessage) {
+                        router.onMessage(baileysMessage);
+                    }
+                }
+                break;
+            }
 
             case 'message.ack':
-                // Delivery/read receipt — tidak perlu ditangani
                 break;
 
             case 'session.status':
-                // Status koneksi WA berubah
                 if (payload?.payload?.status === 'STOPPED') {
-                    console.error('[Webhook] Sesi WhatsApp terputus:', payload?.payload);
+                    console.error('[Webhook] WhatsApp session disconnected:', payload?.payload);
                 }
                 break;
 
             default:
-                // Event tidak dikenal, abaikan
                 break;
         }
 
