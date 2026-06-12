@@ -24,6 +24,7 @@ import {
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import { Progress } from "@/components/ui/progress"
 import { API_BASE_URL } from '@/lib/api';
+import { moneyToNumber } from '@/lib/money';
 
 
 interface Expense {
@@ -70,7 +71,7 @@ export default function ExpensesPage() {
             });
             if (!res.ok) throw new Error('Gagal mengambil data pengeluaran');
             const data = await res.json();
-            setExpenses(data);
+            setExpenses(data.map((expense: Expense) => ({ ...expense, amount: moneyToNumber(expense.amount) })));
         } catch (error) {
             console.error(error);
         } finally {
@@ -134,13 +135,13 @@ export default function ExpensesPage() {
         }, 150);
     };
 
-    const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
+    const totalExpenses = expenses.reduce((sum, item) => sum + moneyToNumber(item.amount), 0);
     const monthlyBudget = 10000000; // Mocked Monthly Budget
     const budgetUsage = Math.min((totalExpenses / monthlyBudget) * 100, 100);
 
     // Chart Data
     const pieData = CATEGORIES.map(cat => {
-        const val = expenses.filter(e => e.category === cat).reduce((sum, e) => sum + e.amount, 0);
+        const val = expenses.filter(e => e.category === cat).reduce((sum, e) => sum + moneyToNumber(e.amount), 0);
         return { name: cat, value: val };
     }).filter(d => d.value > 0);
 

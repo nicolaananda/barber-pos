@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, subDays } from 'date-fns';
 import { API_BASE_URL } from '@/lib/api';
+import { moneyToNumber } from '@/lib/money';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
@@ -185,8 +186,32 @@ export default function ProfitLossPage() {
             ]);
             if (!plRes.ok || !capitalRes.ok) throw new Error('Failed to fetch data');
             const [plData, capitalData] = await Promise.all([plRes.json(), capitalRes.json()]);
-            setData(plData);
-            setCapitalHistory(capitalData);
+            setData({
+                ...plData,
+                summary: {
+                    ...plData.summary,
+                    totalRevenue: moneyToNumber(plData.summary.totalRevenue),
+                    totalExpenses: moneyToNumber(plData.summary.totalExpenses),
+                    totalOpex: moneyToNumber(plData.summary.totalOpex),
+                    totalPayroll: moneyToNumber(plData.summary.totalPayroll),
+                    totalCapital: moneyToNumber(plData.summary.totalCapital),
+                    netProfit: moneyToNumber(plData.summary.netProfit),
+                    profitMargin: Number(plData.summary.profitMargin) || 0,
+                },
+                comparison: {
+                    ...plData.comparison,
+                    prevRevenue: moneyToNumber(plData.comparison.prevRevenue),
+                    prevExpenses: moneyToNumber(plData.comparison.prevExpenses),
+                    prevNetProfit: moneyToNumber(plData.comparison.prevNetProfit),
+                },
+                breakdown: {
+                    expenses: plData.breakdown.expenses.map((item: any) => ({ ...item, amount: moneyToNumber(item.amount) })),
+                    revenue: plData.breakdown.revenue.map((item: any) => ({ ...item, amount: moneyToNumber(item.amount) })),
+                    payroll: plData.breakdown.payroll.map((item: any) => ({ ...item, amount: moneyToNumber(item.amount) })),
+                },
+                dailyTrend: plData.dailyTrend.map((item: any) => ({ ...item, revenue: moneyToNumber(item.revenue), expenses: moneyToNumber(item.expenses) })),
+            });
+            setCapitalHistory(capitalData.map((item: any) => ({ ...item, amount: moneyToNumber(item.amount) })));
         } catch (error) {
             console.error(error);
         } finally {
@@ -246,7 +271,7 @@ export default function ProfitLossPage() {
 
     const handleEditCapital = (item: any) => {
         setCapitalForm({
-            amount: item.amount.toString(),
+            amount: moneyToNumber(item.amount).toString(),
             description: item.description,
             date: format(new Date(item.date), 'yyyy-MM-dd'),
         });

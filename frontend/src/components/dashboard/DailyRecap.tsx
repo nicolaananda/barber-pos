@@ -2,6 +2,7 @@
 
 import useSWR from 'swr';
 import { API_BASE_URL } from '@/lib/api';
+import { moneyToNumber } from '@/lib/money';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarCheck, DollarSign, Trophy, Wallet } from 'lucide-react';
 
@@ -27,10 +28,22 @@ interface DailyStats {
     }[];
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = async (url: string) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
+    return res.json();
+};
 
 export default function DailyRecap() {
-    const { data: stats, error, isLoading } = useSWR<DailyStats>(`${API_BASE_URL}/dashboard/daily`, fetcher);
+    const { data: rawStats, error, isLoading } = useSWR<DailyStats>(`${API_BASE_URL}/dashboard/daily`, fetcher);
+    const stats = rawStats ? {
+        ...rawStats,
+        totalRevenue: moneyToNumber(rawStats.totalRevenue),
+        cashTotal: moneyToNumber(rawStats.cashTotal),
+        qrisTotal: moneyToNumber(rawStats.qrisTotal),
+        topBarber: rawStats.topBarber ? { ...rawStats.topBarber, revenue: moneyToNumber(rawStats.topBarber.revenue) } : null,
+        recentTransactions: rawStats.recentTransactions.map((tx) => ({ ...tx, totalAmount: moneyToNumber(tx.totalAmount) })),
+    } : null;
 
     if (isLoading) return <div className="h-[200px] flex items-center justify-center animate-pulse text-muted-foreground">Loading Daily Recap...</div>;
     if (error) return <div className="h-[200px] flex items-center justify-center text-destructive">Failed to load daily recap</div>;

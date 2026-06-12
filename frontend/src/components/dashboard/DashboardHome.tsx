@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { CreditCard, Receipt } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { moneyToNumber } from '@/lib/money';
 
 interface DashboardData {
     stats: {
@@ -42,7 +43,15 @@ export function DashboardHome() {
 
             if (statsRes.ok) {
                 const json = await statsRes.json();
-                setData(json);
+                setData({
+                    ...json,
+                    stats: {
+                        ...json.stats,
+                        totalRevenue: moneyToNumber(json.stats.totalRevenue),
+                    },
+                    chartData: json.chartData.map((item: any) => ({ ...item, total: moneyToNumber(item.total) })),
+                    recentActivity: json.recentActivity.map((item: any) => ({ ...item, amount: moneyToNumber(item.amount) })),
+                });
             }
             if (bookingsRes.ok) {
                 const json = await bookingsRes.json();
