@@ -6,9 +6,9 @@ const path = require('path');
 
 try {
     // Get Git metadata
-    const commitCount = execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim();
-    const commitHash = execSync('git log -1 --format=%h', { encoding: 'utf-8' }).trim();
-    const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
+    const commitCount = process.env.GIT_COMMIT_COUNT || execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim();
+    const commitHash = process.env.GIT_COMMIT_HASH || execSync('git log -1 --format=%h', { encoding: 'utf-8' }).trim();
+    const branch = process.env.GIT_BRANCH || execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
     const timestamp = new Date().toISOString();
 
     // Generate version object

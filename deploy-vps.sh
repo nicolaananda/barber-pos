@@ -19,6 +19,13 @@ echo "🚀 Deploying Staycool Hairlab..."
 echo "📥 Pulling latest code..."
 git pull origin main
 
+export GIT_COMMIT_COUNT
+GIT_COMMIT_COUNT="$(git rev-list --count HEAD)"
+export GIT_COMMIT_HASH
+GIT_COMMIT_HASH="$(git log -1 --format=%h)"
+export GIT_BRANCH
+GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
 # 2. Install backend dependencies reproducibly
 echo "📦 Installing backend dependencies..."
 npm ci --prefix "$BACKEND_DIR"

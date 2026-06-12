@@ -4,6 +4,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        GIT_COMMIT_COUNT: ${GIT_COMMIT_COUNT:-0}
+        GIT_COMMIT_HASH: ${GIT_COMMIT_HASH:-unknown}
+        GIT_BRANCH: ${GIT_BRANCH:-unknown}
     restart: always
     ports:
       - "8541:80"
