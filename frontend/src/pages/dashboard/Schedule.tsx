@@ -34,6 +34,7 @@ export default function SchedulePage() {
 
     const [selectedBarber, setSelectedBarber] = useState<string>('');
     const [selectedDate, setSelectedDate] = useState<string>(''); // YYYY-MM-DD
+    const [selectedEndDate, setSelectedEndDate] = useState<string>(''); // YYYY-MM-DD
     const [reason, setReason] = useState('');
 
     // Recurring Off-Day State
@@ -93,8 +94,13 @@ export default function SchedulePage() {
     };
 
     const handleAddOffDay = async () => {
-        if (!selectedBarber || !selectedDate) {
-            toast.error('Please select a barber and a date');
+        if (!selectedBarber || !selectedDate || !selectedEndDate) {
+            toast.error('Please select a barber, start date, and end date');
+            return;
+        }
+
+        if (selectedEndDate < selectedDate) {
+            toast.error('End date must be after start date');
             return;
         }
 
@@ -108,13 +114,18 @@ export default function SchedulePage() {
                 body: JSON.stringify({
                     userId: selectedBarber,
                     date: selectedDate, // selectedDate is already "YYYY-MM-DD" from input
+                    endDate: selectedEndDate,
                     reason: reason || 'Manual Off Day'
                 })
             });
 
             if (res.ok) {
-                toast.success('Off day added successfully');
+                const data = await res.json();
+                const skippedCount = data.skippedExistingDates?.length || 0;
+                toast.success(skippedCount > 0 ? `Off days added. ${skippedCount} existing date(s) skipped.` : 'Off day added successfully');
                 fetchOffDays();
+                setSelectedDate('');
+                setSelectedEndDate('');
                 setReason('');
             } else {
                 const error = await res.json();
@@ -313,12 +324,27 @@ export default function SchedulePage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Select Date</label>
+                            <label className="text-sm font-medium">Start Date</label>
                             <Input
                                 type="date"
                                 value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
+                                onChange={(e) => {
+                                    setSelectedDate(e.target.value);
+                                    if (!selectedEndDate || selectedEndDate < e.target.value) {
+                                        setSelectedEndDate(e.target.value);
+                                    }
+                                }}
                                 min={new Date().toISOString().split('T')[0]}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">End Date</label>
+                            <Input
+                                type="date"
+                                value={selectedEndDate}
+                                onChange={(e) => setSelectedEndDate(e.target.value)}
+                                min={selectedDate || new Date().toISOString().split('T')[0]}
                             />
                         </div>
 
@@ -332,7 +358,7 @@ export default function SchedulePage() {
                         </div>
 
                         <Button onClick={handleAddOffDay} className="w-full bg-zinc-900 text-white hover:bg-zinc-800">
-                            Set as Off Day
+                            Set Off Day Duration
                         </Button>
                     </CardContent>
                 </Card>
