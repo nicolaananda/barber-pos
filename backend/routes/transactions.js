@@ -11,7 +11,7 @@ const { logAudit } = require('../lib/auditLogger');
 // POST /api/transactions
 router.post('/', authenticateToken, async (req, res) => {
     try {
-        const { items, totalAmount, paymentMethod, customerName, customerPhone, barberId } = req.body;
+        const { items, totalAmount, paymentMethod, customerName, customerPhone, barberId, bookingId } = req.body;
 
         const bId = parseInt(barberId);
         if (isNaN(bId)) {
@@ -21,15 +21,33 @@ router.post('/', authenticateToken, async (req, res) => {
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: 'Items are required' });
         }
-        const calculatedTotal = items.reduce((sum, item) => sum + (Number(item.price) * Number(item.qty || 1)), 0);
-        if (Math.abs(calculatedTotal - totalAmount) > 1) {
+        const normalizedItems = items.map((item) => ({
+            ...item,
+            price: Number(item.price),
+            qty: Number(item.qty || 1)
+        }));
+
+        const hasInvalidItem = normalizedItems.some((item) => (
+            !Number.isFinite(item.price) ||
+            item.price < 0 ||
+            !Number.isFinite(item.qty) ||
+            item.qty <= 0
+        ));
+
+        if (hasInvalidItem) {
+            return res.status(400).json({ error: 'Invalid item price or quantity' });
+        }
+
+        const calculatedTotal = normalizedItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const requestedTotal = Number(totalAmount);
+        if (!Number.isFinite(requestedTotal) || Math.abs(calculatedTotal - requestedTotal) > 1) {
             return res.status(400).json({ error: 'Total amount does not match items' });
         }
 
-        // Find active shift
-        const activeShift = await prisma.cashShift.findFirst({
-            where: { status: 'open' },
-        });
+        const parsedBookingId = bookingId != null ? parseInt(bookingId) : null;
+        if (bookingId != null && Number.isNaN(parsedBookingId)) {
+            return res.status(400).json({ error: 'Invalid booking ID' });
+        }
 
         // Wrap invoice generation + transaction creation in a transaction with retry on P2002
         let transaction;
@@ -60,52 +78,78 @@ router.post('/', authenticateToken, async (req, res) => {
 
                     const invoiceCode = `${prefix}${nextSeq.toString().padStart(3, '0')}`;
 
-                    return await tx.transaction.create({
+                    const createdTransaction = await tx.transaction.create({
                         data: {
                             invoiceCode,
                             date: new Date(),
                             customerName,
                             customerPhone,
                             barberId: bId,
-                            items, // Json type
-                            totalAmount,
+                            items: normalizedItems, // Json type
+                            totalAmount: requestedTotal,
                             paymentMethod,
                         },
                     });
-                });
+
+                    if (parsedBookingId !== null) {
+                        const booking = await tx.booking.findUnique({
+                            where: { id: parsedBookingId },
+                            select: { id: true, barberId: true, status: true, transactionId: true }
+                        });
+
+                        if (!booking) {
+                            const bookingError = new Error('Booking not found');
+                            bookingError.statusCode = 404;
+                            throw bookingError;
+                        }
+
+                        if (booking.barberId !== bId) {
+                            const bookingError = new Error('Booking barber does not match transaction barber');
+                            bookingError.statusCode = 400;
+                            throw bookingError;
+                        }
+
+                        if (booking.transactionId) {
+                            const bookingError = new Error('Booking already linked to a transaction');
+                            bookingError.statusCode = 409;
+                            throw bookingError;
+                        }
+
+                        await tx.booking.update({
+                            where: { id: parsedBookingId },
+                            data: {
+                                status: 'completed',
+                                activeSlotKey: null,
+                                transactionId: createdTransaction.id,
+                            }
+                        });
+                    }
+
+                    const activeShift = await tx.cashShift.findFirst({
+                        where: { status: 'open' },
+                    });
+
+                    if (activeShift) {
+                        await tx.cashShift.update({
+                            where: { id: activeShift.id },
+                            data: {
+                                totalRevenue: { increment: requestedTotal },
+                            },
+                        });
+                    }
+
+                    return createdTransaction;
+                }, { isolationLevel: 'Serializable' });
                 break; // Success, exit retry loop
             } catch (err) {
                 if (err.code === 'P2002' && attempt < MAX_RETRIES - 1) {
                     continue; // Retry on unique constraint violation
                 }
+                if (err.statusCode) {
+                    throw err;
+                }
                 throw err;
             }
-        }
-
-        // Auto-complete booking if bookingId is provided, and link to transaction
-        console.log(`[Transaction] bookingId in request body:`, req.body.bookingId, typeof req.body.bookingId);
-        if (req.body.bookingId != null) {
-            try {
-                await prisma.booking.update({
-                    where: { id: parseInt(req.body.bookingId) },
-                    data: {
-                        status: 'completed',
-                    }
-                });
-                console.log(`[Auto] Booking #${req.body.bookingId} marked as completed.`);
-            } catch (err) {
-                console.error(`Failed to mark booking #${req.body.bookingId} as completed:`, err);
-            }
-        }
-
-        // Update Shift Revenue if active
-        if (activeShift) {
-            await prisma.cashShift.update({
-                where: { id: activeShift.id },
-                data: {
-                    totalRevenue: { increment: totalAmount },
-                },
-            });
         }
 
         // 🔒 AUTOMATIC BACKUP: Trigger backup after transaction
@@ -116,6 +160,9 @@ router.post('/', authenticateToken, async (req, res) => {
 
         res.status(201).json(transaction);
     } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ error: error.message });
+        }
         console.error('Transaction Error:', error);
         res.status(500).json({ error: 'Failed to create transaction' });
     }

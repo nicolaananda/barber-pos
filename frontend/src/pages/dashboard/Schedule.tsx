@@ -53,8 +53,12 @@ export default function SchedulePage() {
 
     useEffect(() => {
         fetchBarbers();
-        fetchOffDays();
     }, []);
+
+    useEffect(() => {
+        if (!token) return;
+        fetchOffDays();
+    }, [token]);
 
     const fetchBarbers = async () => {
         try {
@@ -80,11 +84,18 @@ export default function SchedulePage() {
 
             console.log('Fetching offdays:', startStr, endStr);
 
-            const res = await fetch(`${API_BASE_URL}/offdays?start=${startStr}&end=${endStr}`);
+            const res = await fetch(`${API_BASE_URL}/offdays?start=${startStr}&end=${endStr}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             if (res.ok) {
                 const data = await res.json();
                 console.log('Offdays data:', data);
                 setOffDays(data);
+            } else {
+                const error = await res.json().catch(() => ({ error: 'Failed to fetch off days' }));
+                toast.error(error.error || 'Failed to fetch off days');
             }
         } catch (error) {
             console.error('Error fetching off days:', error);

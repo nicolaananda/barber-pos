@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   frontend:
     container_name: staycool-frontend
@@ -11,3 +9,9 @@ services:
       - "8541:80"
     environment:
       - TZ=Asia/Jakarta
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

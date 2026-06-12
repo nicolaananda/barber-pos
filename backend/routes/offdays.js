@@ -90,27 +90,33 @@ router.post('/', authenticateToken, requireOwner, async (req, res) => {
                 userId: parsedUserId,
                 date: day,
                 reason
-            }))
+            })),
+            skipDuplicates: true
         });
 
-        const createdOffDays = await prisma.offDay.findMany({
+        const offDaysInRange = await prisma.offDay.findMany({
             where: {
                 userId: parsedUserId,
                 date: {
-                    in: datesToCreate
+                    in: dates
                 }
             },
             orderBy: { date: 'asc' }
         });
 
+        const storedDates = new Set(offDaysInRange.map((offDay) => offDay.date.toISOString().slice(0, 10)));
+        const requestedDates = dates.map((day) => day.toISOString().slice(0, 10));
+        const skippedExistingDates = requestedDates.filter((day) => existingDates.has(day));
+        const createdDates = requestedDates.filter((day) => !existingDates.has(day) && storedDates.has(day));
+
         res.status(201).json({
-            created: createdOffDays,
-            skippedExistingDates: Array.from(existingDates)
+            created: offDaysInRange.filter((offDay) => createdDates.includes(offDay.date.toISOString().slice(0, 10))),
+            skippedExistingDates
         });
     } catch (error) {
         // Unique constraint violation P2002
         if (error.code === 'P2002') {
-            return res.status(409).json({ error: 'Off day for this user and date already exists' });
+            return res.status(409).json({ error: 'Selected off day dates already exist for this user' });
         }
         console.error('Error creating off day:', error);
         res.status(500).json({ error: 'Failed to create off day' });

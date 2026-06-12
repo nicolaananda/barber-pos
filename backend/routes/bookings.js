@@ -14,6 +14,15 @@ const securityLogger = require('../lib/securityLogger');
 const { sanitizeText, sanitizePhone, isValidIndonesianPhone } = require('../lib/sanitizer');
 const requireOwner = require('../middleware/requireOwner');
 
+const ACTIVE_BOOKING_STATUSES = new Set(['pending', 'confirmed']);
+
+const toSlotDate = (date) => format(new Date(date), 'yyyy-MM-dd');
+
+const buildActiveSlotKey = (barberId, bookingDate, timeSlot, status) => {
+    if (!ACTIVE_BOOKING_STATUSES.has(status)) return null;
+    return `${barberId}:${toSlotDate(bookingDate)}:${timeSlot}`;
+};
+
 // GET /api/bookings/config - Public endpoint for booking configuration (blackout dates, etc.)
 router.get('/config', async (req, res) => {
     try {
@@ -141,57 +150,78 @@ router.post('/', upload.single('proof'), async (req, res) => {
             }
         }
 
-        // Check if time slot is already booked (Check the whole day)
+        const parsedBarberId = parseInt(barberId);
+        if (Number.isNaN(parsedBarberId)) {
+            return res.status(400).json({ error: 'Invalid barber ID' });
+        }
+
+        const parsedServiceId = serviceId ? parseInt(serviceId) : null;
+        if (serviceId && Number.isNaN(parsedServiceId)) {
+            return res.status(400).json({ error: 'Invalid service ID' });
+        }
+
+        // Check and create in one serializable transaction to reduce double-booking races.
         const checkDate = new Date(bookingDate);
         const startOfDay = new Date(checkDate);
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(checkDate);
         endOfDay.setHours(23, 59, 59, 999);
 
-        const existingBooking = await prisma.booking.findFirst({
-            where: {
-                barberId: parseInt(barberId),
-                bookingDate: {
-                    gte: startOfDay,
-                    lte: endOfDay
-                },
-                timeSlot,
-                status: { in: ['pending', 'confirmed'] }
+        const booking = await prisma.$transaction(async (tx) => {
+            const existingBooking = await tx.booking.findFirst({
+                where: {
+                    barberId: parsedBarberId,
+                    bookingDate: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    },
+                    timeSlot,
+                    status: { in: ['pending', 'confirmed'] }
+                }
+            });
+
+            if (existingBooking) {
+                const conflictError = new Error('Time slot already booked');
+                conflictError.statusCode = 409;
+                throw conflictError;
             }
-        });
 
-        if (existingBooking) {
-            return res.status(409).json({ error: 'Time slot already booked' });
-        }
-
-        const booking = await prisma.booking.create({
-            data: {
-                barberId: parseInt(barberId),
-                customerName: sanitizedName,
-                customerPhone: sanitizedPhone,
-                bookingDate: new Date(bookingDate),
-                timeSlot,
-                serviceId: serviceId ? parseInt(serviceId) : null,
-                serviceName,
-                servicePrice,
-                status: 'pending',
-                paymentProof: paymentProof
-            },
-            include: {
-                barber: {
-                    select: {
-                        id: true,
-                        name: true
+            return tx.booking.create({
+                data: {
+                    barberId: parsedBarberId,
+                    customerName: sanitizedName,
+                    customerPhone: sanitizedPhone,
+                    bookingDate: new Date(bookingDate),
+                    timeSlot,
+                    serviceId: parsedServiceId,
+                    serviceName,
+                    servicePrice,
+                    status: 'pending',
+                    activeSlotKey: buildActiveSlotKey(parsedBarberId, bookingDate, timeSlot, 'pending'),
+                    paymentProof: paymentProof
+                },
+                include: {
+                    barber: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
                     }
                 }
-            }
-        });
+            });
+        }, { isolationLevel: 'Serializable' });
 
         // NOTE: No WA sent on booking creation per client request.
         // WA is only sent when admin confirms the booking (status -> confirmed).
 
         res.status(201).json(booking);
     } catch (error) {
+        if (error.code === 'P2002') {
+            return res.status(409).json({ error: 'Time slot already booked' });
+        }
+        if (error.statusCode === 409) {
+            return res.status(409).json({ error: error.message });
+        }
         console.error('Error creating booking:', error);
         res.status(500).json({ error: 'Failed to create booking' });
     }
@@ -480,18 +510,38 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
             return res.json(bookingWithBarber);
         }
 
-        const booking = await prisma.booking.update({
-            where: { id: parseInt(id) },
-            data: { status },
-            include: {
-                barber: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
+        const booking = await prisma.$transaction(async (tx) => {
+            const activeSlotKey = buildActiveSlotKey(currentBooking.barberId, currentBooking.bookingDate, currentBooking.timeSlot, status);
+
+            if (activeSlotKey) {
+                const conflictingBooking = await tx.booking.findFirst({
+                    where: {
+                        id: { not: currentBooking.id },
+                        activeSlotKey
+                    },
+                    select: { id: true }
+                });
+
+                if (conflictingBooking) {
+                    const conflictError = new Error('Time slot already booked');
+                    conflictError.statusCode = 409;
+                    throw conflictError;
                 }
             }
-        });
+
+            return tx.booking.update({
+                where: { id: parseInt(id) },
+                data: { status, activeSlotKey },
+                include: {
+                    barber: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
+                    }
+                }
+            });
+        }, { isolationLevel: 'Serializable' });
 
         // AUTOMATION: If status is CONFIRMED
         if (status === 'confirmed') {
@@ -533,6 +583,9 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 
         res.json(booking);
     } catch (error) {
+        if (error.statusCode === 409 || error.code === 'P2002') {
+            return res.status(409).json({ error: error.message || 'Time slot already booked' });
+        }
         console.error('Error updating booking status:', error);
         res.status(500).json({ error: 'Failed to update booking status' });
     }
