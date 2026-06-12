@@ -1,45 +1,56 @@
-/**
- * Simple in-memory token blacklist for logout revocation.
- * Tokens are stored with their expiry time and cleaned up periodically.
- * 
- * NOTE: This is in-memory only. If the server restarts, the blacklist is cleared.
- * For a multi-instance deployment, use Redis instead.
- */
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const prisma = require('./prisma');
 
-const blacklist = new Map(); // token -> expiresAt (timestamp)
-
-// Clean up expired tokens every 10 minutes
-setInterval(() => {
-    const now = Date.now();
-    for (const [token, expiresAt] of blacklist) {
-        if (expiresAt < now) {
-            blacklist.delete(token);
-        }
-    }
-}, 10 * 60 * 1000);
-
-/**
- * Add a token to the blacklist
- * @param {string} token - JWT token to blacklist
- * @param {number} expiresInMs - Time until token naturally expires (default 24h)
- */
-function addToBlacklist(token, expiresInMs = 24 * 60 * 60 * 1000) {
-    blacklist.set(token, Date.now() + expiresInMs);
+function hashToken(token) {
+    return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-/**
- * Check if a token is blacklisted
- * @param {string} token - JWT token to check
- * @returns {boolean}
- */
-function isBlacklisted(token) {
-    if (!blacklist.has(token)) return false;
-    // Also check if the blacklist entry has expired
-    if (blacklist.get(token) < Date.now()) {
-        blacklist.delete(token);
+function getTokenExpiry(token) {
+    const decoded = jwt.decode(token);
+    if (decoded && typeof decoded.exp === 'number') {
+        return new Date(decoded.exp * 1000);
+    }
+
+    return new Date(Date.now() + 4 * 60 * 60 * 1000);
+}
+
+async function addToBlacklist(token, userId) {
+    await prisma.revokedToken.upsert({
+        where: { tokenHash: hashToken(token) },
+        create: {
+            tokenHash: hashToken(token),
+            userId: userId || null,
+            expiresAt: getTokenExpiry(token)
+        },
+        update: {
+            userId: userId || null,
+            expiresAt: getTokenExpiry(token)
+        }
+    });
+}
+
+async function isBlacklisted(token) {
+    const tokenHash = hashToken(token);
+    const revoked = await prisma.revokedToken.findUnique({
+        where: { tokenHash },
+        select: { id: true, expiresAt: true }
+    });
+
+    if (!revoked) return false;
+
+    if (revoked.expiresAt < new Date()) {
+        await prisma.revokedToken.delete({ where: { id: revoked.id } }).catch(() => {});
         return false;
     }
+
     return true;
 }
 
-module.exports = { addToBlacklist, isBlacklisted };
+async function cleanupExpiredTokens() {
+    await prisma.revokedToken.deleteMany({
+        where: { expiresAt: { lt: new Date() } }
+    });
+}
+
+module.exports = { addToBlacklist, cleanupExpiredTokens, isBlacklisted };

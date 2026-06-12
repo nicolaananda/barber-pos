@@ -17,6 +17,7 @@ model User {
   status          String   @default("active")
   availability    String   @default("available") // 'available' | 'working' | 'offday'
   defaultOffDay   Int?     // 0=Sunday, 1=Monday, ..., 6=Saturday, null=no recurring off-day
+  tokenVersion    Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -26,6 +27,17 @@ model User {
   transactions Transaction[]
   bookings     Booking[]
   offDays      OffDay[]
+}
+
+model RevokedToken {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique
+  userId    Int?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([userId])
 }
 
 model OffDay {

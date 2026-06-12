@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const { validate, requiredString, optionalString, requiredInt, requiredEnum } = require('../lib/validators');
+const { logAudit } = require('../lib/auditLogger');
 
 // GET /api/users/barbers - Get all barbers (PUBLIC - for Status page)
 router.get('/barbers', async (req, res) => {
@@ -66,6 +67,8 @@ router.patch('/:id/availability', authenticateToken, validate((req) => ({
             data: { availability: status }
         });
 
+        logAudit('user.availability.update', req.user.id, { targetId, status });
+
         console.log('User updated successfully:', user.id);
         res.json(user);
     } catch (error) {
@@ -99,6 +102,8 @@ router.patch('/:id/default-offday', authenticateToken, validate((req) => ({
                 defaultOffDay: true
             }
         });
+
+        logAudit('user.defaultOffDay.update', req.user.id, { targetId, defaultOffDay });
 
         res.json(user);
     } catch (error) {
@@ -196,6 +201,8 @@ router.post('/barbers', authenticateToken, requireOwner, validate((req) => ({
             }
         });
 
+        logAudit('user.barber.create', req.user.id, { targetId: barber.id, username: barber.username });
+
         res.status(201).json(barber);
     } catch (error) {
         console.error('Error creating barber:', error);
@@ -239,6 +246,7 @@ router.put('/barbers/:id', authenticateToken, requireOwner, validate((req) => ({
             const validStatuses = ['active', 'inactive'];
             if (validStatuses.includes(status)) {
                 updateData.status = status;
+                updateData.tokenVersion = { increment: 1 };
             } else {
                 return res.status(400).json({ error: 'Invalid status. Must be "active" or "inactive"' });
             }
@@ -248,6 +256,7 @@ router.put('/barbers/:id', authenticateToken, requireOwner, validate((req) => ({
         if (password && password.trim() !== '') {
             const bcrypt = require('bcryptjs');
             updateData.password = await bcrypt.hash(password, 10);
+            updateData.tokenVersion = { increment: 1 };
         }
 
         // Check if username already exists (if changing username)
@@ -274,6 +283,13 @@ router.put('/barbers/:id', authenticateToken, requireOwner, validate((req) => ({
                 createdAt: true,
                 updatedAt: true,
             }
+        });
+
+        logAudit('user.barber.update', req.user.id, {
+            targetId,
+            username: barber.username,
+            passwordChanged: Boolean(password),
+            statusChanged: Boolean(status)
         });
 
         res.json(barber);
@@ -313,6 +329,8 @@ router.delete('/barbers/:id', authenticateToken, requireOwner, validate((req) =>
         await prisma.user.delete({
             where: { id: targetId }
         });
+
+        logAudit('user.barber.delete', req.user.id, { targetId });
 
         res.json({ message: 'Barber deleted successfully' });
     } catch (error) {

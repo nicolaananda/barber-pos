@@ -143,6 +143,16 @@ const server = app.listen(PORT, () => {
     } catch (err) {
         console.error('Failed to start reminder service:', err);
     }
+
+    try {
+        const { cleanupExpiredTokens } = require('./lib/tokenBlacklist');
+        cleanupExpiredTokens().catch(err => console.error('Failed to clean expired tokens:', err));
+        setInterval(() => {
+            cleanupExpiredTokens().catch(err => console.error('Failed to clean expired tokens:', err));
+        }, 60 * 60 * 1000);
+    } catch (err) {
+        console.error('Failed to start token cleanup:', err);
+    }
 });
 
 // Graceful shutdown
