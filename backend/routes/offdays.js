@@ -6,7 +6,7 @@ const requireOwner = require('../middleware/requireOwner');
 
 // GET /api/offdays
 // Query params: start (YYYY-MM-DD), end (YYYY-MM-DD), barberId (optional)
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const { start, end, barberId } = req.query;
 

@@ -168,6 +168,34 @@ router.post('/', upload.single('proof'), async (req, res) => {
         endOfDay.setHours(23, 59, 59, 999);
 
         const booking = await prisma.$transaction(async (tx) => {
+            const barber = await tx.user.findUnique({
+                where: { id: parsedBarberId },
+                select: { id: true, defaultOffDay: true }
+            });
+
+            if (!barber) {
+                const notFoundError = new Error('Barber not found');
+                notFoundError.statusCode = 404;
+                throw notFoundError;
+            }
+
+            const manualOffDay = await tx.offDay.findFirst({
+                where: {
+                    userId: parsedBarberId,
+                    date: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    }
+                },
+                select: { id: true }
+            });
+
+            if (manualOffDay || barber.defaultOffDay === checkDate.getDay()) {
+                const offDayError = new Error('Barber is off on this date');
+                offDayError.statusCode = 409;
+                throw offDayError;
+            }
+
             const existingBooking = await tx.booking.findFirst({
                 where: {
                     barberId: parsedBarberId,
@@ -218,6 +246,9 @@ router.post('/', upload.single('proof'), async (req, res) => {
     } catch (error) {
         if (error.code === 'P2002') {
             return res.status(409).json({ error: 'Time slot already booked' });
+        }
+        if (error.statusCode === 404) {
+            return res.status(404).json({ error: error.message });
         }
         if (error.statusCode === 409) {
             return res.status(409).json({ error: error.message });
