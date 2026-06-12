@@ -19,6 +19,7 @@ interface Barber {
 
 interface ServiceSummary {
     id: number;
+    name: string;
     price: number;
 }
 
@@ -74,6 +75,7 @@ export default function StatusPage() {
     const [statusError, setStatusError] = useState('');
     const [statusSectionOpen, setStatusSectionOpen] = useState(false);
     const [startingPrice, setStartingPrice] = useState<number | null>(null);
+    const [services, setServices] = useState<ServiceSummary[]>([]);
     const bookingSectionRef = useRef<HTMLDivElement | null>(null);
     const statusSectionRef = useRef<HTMLDivElement | null>(null);
 
@@ -146,8 +148,13 @@ export default function StatusPage() {
             const res = await fetch(`${API_BASE_URL}/services`);
             if (!res.ok) return;
             const data = await res.json();
-            const activeServices = (data as ServiceSummary[])
-                .map((service) => moneyToNumber(service.price))
+            const normalizedServices = (data as ServiceSummary[]).map((service) => ({
+                ...service,
+                price: moneyToNumber(service.price),
+            }));
+            setServices(normalizedServices);
+            const activeServices = normalizedServices
+                .map((service) => service.price)
                 .filter((price) => price > 0);
             setStartingPrice(activeServices.length ? Math.min(...activeServices) : null);
         } catch (err) {
@@ -241,6 +248,24 @@ export default function StatusPage() {
     const prioritizedStatusResults = statusResults
         ? [...statusResults].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         : null;
+    const blackoutMessage = blackout.start && blackout.end
+        ? `Periode ${blackout.start} s/d ${blackout.end}: booking online ditutup, hanya walk-in langsung ke tempat.`
+        : null;
+
+    const getBarberStartingPrice = (username: string) => {
+        const isHeadBarber = username === 'bagus';
+        const filtered = services.filter((service) => {
+            const lower = service.name.toLowerCase();
+            const isHeadBarberService = lower.includes('head barber') || lower.includes('by head');
+            const isBasicHaircut = lower.includes('haircut') || lower.includes('cukur');
+
+            if (isHeadBarber) return !isBasicHaircut || isHeadBarberService;
+            return !isHeadBarberService;
+        });
+
+        if (filtered.length === 0) return startingPrice;
+        return Math.min(...filtered.map((service) => service.price).filter((price) => price > 0));
+    };
 
     const getSlotDisabledReason = (isBooked: boolean, isOffday: boolean, isBlackoutActive: boolean) => {
         if (isBlackoutActive) return 'Booking online tutup';
@@ -261,7 +286,7 @@ export default function StatusPage() {
             {/* Blackout Banner (driven by backend config) */}
             {blackout.enabled && blackout.start && blackout.end && new Date() <= new Date(blackout.end + 'T23:59:59') && (
                 <div className="bg-amber-400 text-amber-900 text-center py-3 px-4 text-sm font-bold sticky top-0 z-40 flex items-center justify-center gap-2 shadow-md">
-                    <span>Periode {blackout.start} s/d {blackout.end}: <span className="underline">booking online ditutup</span>, hanya walk-in langsung ke tempat.</span>
+                    <span>{blackoutMessage}</span>
                 </div>
             )}
 
@@ -371,7 +396,7 @@ export default function StatusPage() {
                                 Booking Online Tidak Tersedia ({blackout.start}–{blackout.end})
                             </p>
                             <p className="text-amber-700 text-sm mt-1 leading-relaxed">
-                                Selama periode ini kami hanya melayani <span className="font-bold">walk-in langsung</span> ke barbershop.
+                                {blackoutMessage || 'Selama periode ini kami hanya melayani walk-in langsung ke barbershop.'}
                                 Silakan datang ke <span className="font-bold">Jl. Imam Bonjol Pertigaan No.370 Kediri</span>.
                             </p>
                         </div>
@@ -407,7 +432,7 @@ export default function StatusPage() {
                 ) : (
                     <div className="grid gap-6">
                         {isAvailabilityLoading && (
-                            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
+                            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500 animate-pulse">
                                 Menyegarkan ketersediaan barber dan slot...
                             </div>
                         )}
@@ -476,12 +501,17 @@ export default function StatusPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="text-left md:text-center w-full">
-                                                <h3 className="text-2xl font-bold text-zinc-900 tracking-tight">{barber.name}</h3>
-                                                <p className="text-xs text-zinc-400 font-medium uppercase tracking-widest mt-1">
-                                                    {barber.username === 'bagus' ? 'Head Barber' : 'Barber'}
-                                                </p>
-                                            </div>
+                                             <div className="text-left md:text-center w-full">
+                                                 <h3 className="text-2xl font-bold text-zinc-900 tracking-tight">{barber.name}</h3>
+                                                 <p className="text-xs text-zinc-400 font-medium uppercase tracking-widest mt-1">
+                                                     {barber.username === 'bagus' ? 'Head Barber' : 'Barber'}
+                                                 </p>
+                                                 {getBarberStartingPrice(barber.username) !== null && (
+                                                     <p className="text-xs text-zinc-500 mt-2">
+                                                         Mulai dari <span className="font-bold text-zinc-900">IDR {getBarberStartingPrice(barber.username)?.toLocaleString('id-ID')}</span>
+                                                     </p>
+                                                 )}
+                                             </div>
                                         </div>
 
                                         {/* Slots */}

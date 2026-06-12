@@ -29,6 +29,15 @@ model User {
   offDays      OffDay[]
 }
 
+model BookingConfig {
+  id               Int       @id @default(1)
+  blackoutEnabled  Boolean   @default(false)
+  blackoutStart    DateTime? @db.Date
+  blackoutEnd      DateTime? @db.Date
+  blackoutMessage  String?
+  updatedAt        DateTime  @updatedAt
+}
+
 model RevokedToken {
   id        Int      @id @default(autoincrement())
   tokenHash String   @unique

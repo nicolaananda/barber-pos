@@ -14,7 +14,7 @@ const securityLogger = require('../lib/securityLogger');
 const { sanitizeText, sanitizePhone, isValidIndonesianPhone } = require('../lib/sanitizer');
 const requireOwner = require('../middleware/requireOwner');
 const { validate, requiredString, requiredInt, optionalInt, requiredDate } = require('../lib/validators');
-const { readBookingConfig, writeBookingConfig } = require('../lib/bookingConfig');
+const { getBookingConfig, saveBookingConfig } = require('../lib/bookingConfig');
 
 const ACTIVE_BOOKING_STATUSES = new Set(['pending', 'confirmed']);
 
@@ -28,7 +28,7 @@ const buildActiveSlotKey = (barberId, bookingDate, timeSlot, status) => {
 // GET /api/bookings/config - Public endpoint for booking configuration (blackout dates, etc.)
 router.get('/config', async (req, res) => {
     try {
-        res.json(readBookingConfig());
+        res.json(await getBookingConfig());
     } catch (error) {
         console.error('Error fetching booking config:', error);
         res.status(500).json({ error: 'Failed to fetch config' });
@@ -47,11 +47,12 @@ router.patch('/config', authenticateToken, requireOwner, async (req, res) => {
             return res.status(400).json({ error: 'Blackout end date must be after start date' });
         }
 
-        const config = writeBookingConfig({
+        const config = await saveBookingConfig({
             blackout: {
                 enabled: Boolean(enabled && start && end),
                 start: enabled ? start : null,
                 end: enabled ? end : null,
+                message: req.body.blackout?.message || null,
             }
         });
 
@@ -78,7 +79,7 @@ router.post('/', upload.single('proof'), validate((req) => ({
         const { barberId, customerName, customerPhone, bookingDate, timeSlot, serviceId } = req.validated;
 
         // 🚫 Blackout period — configured via env BLACKOUT_START / BLACKOUT_END
-        const bookingConfig = readBookingConfig();
+        const bookingConfig = await getBookingConfig();
         if (bookingDate && bookingConfig.blackout?.enabled && bookingConfig.blackout?.start && bookingConfig.blackout?.end) {
             const d = new Date(bookingDate);
             const blackoutStart = new Date(bookingConfig.blackout.start + 'T00:00:00');

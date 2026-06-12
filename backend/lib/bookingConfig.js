@@ -1,42 +1,53 @@
-const fs = require('fs');
-const path = require('path');
+const prisma = require('./prisma');
 
-const CONFIG_DIR = path.join(__dirname, '../data');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'booking-config.json');
+async function getBookingConfig() {
+    const config = await prisma.bookingConfig.upsert({
+        where: { id: 1 },
+        update: {},
+        create: {
+            id: 1,
+            blackoutEnabled: false,
+        }
+    });
 
-function ensureConfigDir() {
-    if (!fs.existsSync(CONFIG_DIR)) {
-        fs.mkdirSync(CONFIG_DIR, { recursive: true });
-    }
-}
-
-function readBookingConfig() {
-    ensureConfigDir();
-
-    const envBlackout = {
-        enabled: !!(process.env.BLACKOUT_START && process.env.BLACKOUT_END),
-        start: process.env.BLACKOUT_START || null,
-        end: process.env.BLACKOUT_END || null,
+    return {
+        blackout: {
+            enabled: config.blackoutEnabled,
+            start: config.blackoutStart ? config.blackoutStart.toISOString().slice(0, 10) : null,
+            end: config.blackoutEnd ? config.blackoutEnd.toISOString().slice(0, 10) : null,
+            message: config.blackoutMessage || null,
+        }
     };
-
-    if (!fs.existsSync(CONFIG_FILE)) {
-        return { blackout: envBlackout };
-    }
-
-    try {
-        const fileConfig = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
-        return {
-            blackout: fileConfig.blackout || envBlackout,
-        };
-    } catch {
-        return { blackout: envBlackout };
-    }
 }
 
-function writeBookingConfig(config) {
-    ensureConfigDir();
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-    return config;
+async function saveBookingConfig(input) {
+    const blackout = input.blackout || {};
+
+    const config = await prisma.bookingConfig.upsert({
+        where: { id: 1 },
+        update: {
+            blackoutEnabled: Boolean(blackout.enabled && blackout.start && blackout.end),
+            blackoutStart: blackout.enabled && blackout.start ? new Date(`${blackout.start}T00:00:00`) : null,
+            blackoutEnd: blackout.enabled && blackout.end ? new Date(`${blackout.end}T00:00:00`) : null,
+            blackoutMessage: blackout.message || null,
+        },
+        create: {
+            id: 1,
+            blackoutEnabled: Boolean(blackout.enabled && blackout.start && blackout.end),
+            blackoutStart: blackout.enabled && blackout.start ? new Date(`${blackout.start}T00:00:00`) : null,
+            blackoutEnd: blackout.enabled && blackout.end ? new Date(`${blackout.end}T00:00:00`) : null,
+            blackoutMessage: blackout.message || null,
+        }
+    });
+
+    return {
+        blackout: {
+            enabled: config.blackoutEnabled,
+            start: config.blackoutStart ? config.blackoutStart.toISOString().slice(0, 10) : null,
+            end: config.blackoutEnd ? config.blackoutEnd.toISOString().slice(0, 10) : null,
+            message: config.blackoutMessage || null,
+        }
+    };
 }
 
-module.exports = { readBookingConfig, writeBookingConfig };
+module.exports = { getBookingConfig, saveBookingConfig };
