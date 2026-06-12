@@ -160,6 +160,13 @@ const server = app.listen(PORT, () => {
     } catch (err) {
         console.error('Failed to start token cleanup:', err);
     }
+
+    try {
+        const backupService = require('./lib/backupService');
+        backupService.startScheduledBackups();
+    } catch (err) {
+        console.error('Failed to start scheduled backups:', err);
+    }
 });
 
 // Graceful shutdown

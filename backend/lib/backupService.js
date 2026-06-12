@@ -1,6 +1,7 @@
 const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const cron = require('node-cron');
 
 /**
  * Automatic backup service triggered by transactions
@@ -10,12 +11,17 @@ class BackupService {
         this.isBackingUp = false;
         this.lastBackupTime = null;
         this.minBackupInterval = 5 * 60 * 1000; // 5 minutes minimum between backups
+        this.cronStarted = false;
     }
 
     /**
      * Trigger backup after transaction
      */
     async backupAfterTransaction(transactionData) {
+        if ((process.env.BACKUP_MODE || 'transaction') !== 'transaction') {
+            return;
+        }
+
         // Skip if already backing up
         if (this.isBackingUp) {
             console.log('⏭️  Backup already in progress, skipping...');
@@ -46,6 +52,26 @@ class BackupService {
         } finally {
             this.isBackingUp = false;
         }
+    }
+
+    startScheduledBackups() {
+        if (this.cronStarted) return;
+
+        const schedule = process.env.BACKUP_SCHEDULE;
+        if (!schedule) return;
+
+        cron.schedule(schedule, async () => {
+            try {
+                await this.executeBackup();
+            } catch (error) {
+                console.error('❌ Scheduled backup error:', error);
+            }
+        }, {
+            timezone: process.env.TZ || 'Asia/Jakarta'
+        });
+
+        this.cronStarted = true;
+        console.log(`🗓️ Scheduled backup enabled: ${schedule}`);
     }
 
     /**

@@ -143,9 +143,9 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                 // ⚡ AUTO-COMPRESS before upload
                 const options = {
                     maxSizeMB: 0.2,          // Target 200KB
-                    maxWidthOrHeight: 1920,  // Max dimension
+                    maxWidthOrHeight: 1280,  // Max dimension for proof screenshots
                     useWebWorker: true,
-                    fileType: 'image/jpeg',  // Convert all to JPEG
+                    fileType: 'image/webp',  // Convert all to WebP
                 };
 
                 const compressedFile = await imageCompression(file, options);

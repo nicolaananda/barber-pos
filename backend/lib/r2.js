@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 require('dotenv').config();
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
@@ -35,6 +35,27 @@ async function uploadFile(buffer, filename, contentType) {
     }
 }
 
+async function listFiles(prefix = '') {
+    const command = new ListObjectsV2Command({
+        Bucket: BUCKET_NAME,
+        Prefix: prefix,
+    });
+
+    const result = await s3Client.send(command);
+    return result.Contents || [];
+}
+
+async function deleteFile(key) {
+    const command = new DeleteObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+    });
+
+    await s3Client.send(command);
+}
+
 module.exports = {
-    uploadFile
+    uploadFile,
+    listFiles,
+    deleteFile,
 };

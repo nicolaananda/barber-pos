@@ -577,11 +577,6 @@ export default function StatusPage() {
                                                             `}
                                                         >
                                                             {slot.start}
-                                                            {disabledReason && (
-                                                                <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-medium text-zinc-400">
-                                                                    {disabledReason}
-                                                                </span>
-                                                            )}
                                                         </button>
                                                     );
                                                 })}
