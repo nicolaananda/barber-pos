@@ -36,6 +36,9 @@ export default function SchedulePage() {
     const [selectedDate, setSelectedDate] = useState<string>(''); // YYYY-MM-DD
     const [selectedEndDate, setSelectedEndDate] = useState<string>(''); // YYYY-MM-DD
     const [reason, setReason] = useState('');
+    const [blackoutEnabled, setBlackoutEnabled] = useState(false);
+    const [blackoutStart, setBlackoutStart] = useState('');
+    const [blackoutEnd, setBlackoutEnd] = useState('');
 
     // Recurring Off-Day State
     const [recurringBarber, setRecurringBarber] = useState<string>('');
@@ -53,6 +56,7 @@ export default function SchedulePage() {
 
     useEffect(() => {
         fetchBarbers();
+        fetchBookingConfig();
     }, []);
 
     useEffect(() => {
@@ -101,6 +105,56 @@ export default function SchedulePage() {
             console.error('Error fetching off days:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchBookingConfig = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/bookings/config`);
+            if (!res.ok) return;
+            const data = await res.json();
+            setBlackoutEnabled(Boolean(data.blackout?.enabled));
+            setBlackoutStart(data.blackout?.start || '');
+            setBlackoutEnd(data.blackout?.end || '');
+        } catch (error) {
+            console.error('Error fetching booking config:', error);
+        }
+    };
+
+    const handleSaveBlackout = async () => {
+        if (blackoutEnabled && (!blackoutStart || !blackoutEnd)) {
+            toast.error('Please set blackout start and end dates');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/bookings/config`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    blackout: {
+                        enabled: blackoutEnabled,
+                        start: blackoutStart || null,
+                        end: blackoutEnd || null,
+                    }
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error || 'Failed to save blackout setting');
+                return;
+            }
+
+            setBlackoutEnabled(Boolean(data.blackout?.enabled));
+            setBlackoutStart(data.blackout?.start || '');
+            setBlackoutEnd(data.blackout?.end || '');
+            toast.success('Blackout setting updated');
+        } catch (error) {
+            console.error('Error saving blackout setting:', error);
         }
     };
 
@@ -308,6 +362,35 @@ export default function SchedulePage() {
                             </div>
                         )}
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Online Booking Blackout</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <label className="flex items-center gap-3 text-sm font-medium">
+                        <input
+                            type="checkbox"
+                            checked={blackoutEnabled}
+                            onChange={(e) => setBlackoutEnabled(e.target.checked)}
+                        />
+                        Enable blackout period
+                    </label>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Start Date</label>
+                            <Input type="date" value={blackoutStart} onChange={(e) => setBlackoutStart(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">End Date</label>
+                            <Input type="date" value={blackoutEnd} onChange={(e) => setBlackoutEnd(e.target.value)} />
+                        </div>
+                    </div>
+                    <Button onClick={handleSaveBlackout} className="w-full bg-zinc-900 text-white hover:bg-zinc-800">
+                        Save Blackout Setting
+                    </Button>
                 </CardContent>
             </Card>
 

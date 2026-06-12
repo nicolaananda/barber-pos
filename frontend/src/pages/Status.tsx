@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { API_BASE_URL } from '@/lib/api';
+import { moneyToNumber } from '@/lib/money';
 import { MapPin, Instagram, MessageCircle, Clock, Search, CheckCircle2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import BookingModal from '@/components/booking/BookingModal';
 import ServicesModal from '@/components/pos/ServicesModal';
@@ -14,6 +15,11 @@ interface Barber {
     username: string;
     availability: string;
     defaultOffDay?: number | null;
+}
+
+interface ServiceSummary {
+    id: number;
+    price: number;
 }
 
 interface BookingData {
@@ -52,6 +58,7 @@ export default function StatusPage() {
     const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
     const [existingBookings, setExistingBookings] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentOffDays, setCurrentOffDays] = useState<any[]>([]);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -66,6 +73,9 @@ export default function StatusPage() {
     const [statusLoading, setStatusLoading] = useState(false);
     const [statusError, setStatusError] = useState('');
     const [statusSectionOpen, setStatusSectionOpen] = useState(false);
+    const [startingPrice, setStartingPrice] = useState<number | null>(null);
+    const bookingSectionRef = useRef<HTMLDivElement | null>(null);
+    const statusSectionRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -88,15 +98,22 @@ export default function StatusPage() {
 
     useEffect(() => {
         const fetchData = async () => {
+            setIsAvailabilityLoading(true);
             await Promise.all([
                 fetchBarbers(),
                 fetchBookingsForDate(selectedDate),
                 fetchOffDaysForDate(selectedDate),
+                fetchServicesSummary(),
             ]);
             setIsLoading(false);
+            setIsAvailabilityLoading(false);
         };
         fetchData();
-        const interval = setInterval(fetchData, 30000);
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                fetchData();
+            }
+        }, 30000);
         return () => clearInterval(interval);
     }, [selectedDate]);
 
@@ -121,6 +138,20 @@ export default function StatusPage() {
             }
         } catch (err) {
             console.error('Error fetching barbers:', err);
+        }
+    };
+
+    const fetchServicesSummary = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/services`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const activeServices = (data as ServiceSummary[])
+                .map((service) => moneyToNumber(service.price))
+                .filter((price) => price > 0);
+            setStartingPrice(activeServices.length ? Math.min(...activeServices) : null);
+        } catch (err) {
+            console.error('Error fetching services:', err);
         }
     };
 
@@ -203,9 +234,20 @@ export default function StatusPage() {
 
     const timeSlots = generateTimeSlots(selectedDate);
     const isBlackout = isBlackoutDate(selectedDate);
+    const availableBarberCount = barbers.filter((barber) => !isBarberOffday(barber.username, selectedDate)).length;
 
     const bookingDaysAhead = parseInt(import.meta.env.VITE_BOOKING_DAYS_AHEAD || '3', 10);
     const dateOptions = Array.from({ length: bookingDaysAhead }, (_, i) => addDays(new Date(), i));
+    const prioritizedStatusResults = statusResults
+        ? [...statusResults].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        : null;
+
+    const getSlotDisabledReason = (isBooked: boolean, isOffday: boolean, isBlackoutActive: boolean) => {
+        if (isBlackoutActive) return 'Booking online tutup';
+        if (isOffday) return 'Barber libur';
+        if (isBooked) return 'Sudah terisi';
+        return null;
+    };
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white pb-20">
@@ -251,6 +293,11 @@ export default function StatusPage() {
                     <p className="text-zinc-500 max-w-lg mx-auto text-base leading-relaxed">
                         Pilih barber dan slot waktu yang tersedia di bawah.
                     </p>
+                    {startingPrice !== null && (
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-zinc-200 shadow-sm text-xs text-zinc-700 font-semibold">
+                            Mulai dari <span className="font-black text-zinc-900">IDR {startingPrice.toLocaleString('id-ID')}</span>
+                        </div>
+                    )}
 
                     {/* Jam Operasional (#4) */}
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-zinc-200 shadow-sm text-xs text-zinc-600 font-medium">
@@ -260,6 +307,27 @@ export default function StatusPage() {
                         <span>Jumat: <strong>13:00–22:00</strong></span>
                     </div>
 
+                </div>
+
+                <div className="md:hidden sticky bottom-4 z-30 mb-6">
+                    <div className="mx-auto max-w-sm rounded-2xl border border-zinc-200 bg-white/95 backdrop-blur px-4 py-3 shadow-xl flex items-center gap-3">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[10px] uppercase tracking-widest text-zinc-400">Tanggal dipilih</p>
+                            <p className="text-sm font-bold text-zinc-900">{format(selectedDate, 'EEEE, d MMM', { locale: idLocale })}</p>
+                        </div>
+                        <button
+                            onClick={() => bookingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                            className="px-3 py-2 rounded-xl bg-zinc-900 text-white text-xs font-bold"
+                        >
+                            Pilih Slot
+                        </button>
+                        <button
+                            onClick={() => statusSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                            className="px-3 py-2 rounded-xl bg-zinc-100 text-zinc-700 text-xs font-bold"
+                        >
+                            Cek Booking
+                        </button>
+                    </div>
                 </div>
 
                 {/* Date Selector — 7 hari */}
@@ -300,7 +368,7 @@ export default function StatusPage() {
                         <span className="text-2xl mt-0.5">🚫</span>
                         <div>
                             <p className="font-black text-amber-800 text-base leading-snug">
-                                Booking Online Tidak Tersedia (10–26 Maret 2026)
+                                Booking Online Tidak Tersedia ({blackout.start}–{blackout.end})
                             </p>
                             <p className="text-amber-700 text-sm mt-1 leading-relaxed">
                                 Selama periode ini kami hanya melayani <span className="font-bold">walk-in langsung</span> ke barbershop.
@@ -310,7 +378,25 @@ export default function StatusPage() {
                     </div>
                 )}
 
+                {(!isLoading && (isBlackout || availableBarberCount === 0)) && (
+                    <div className="mb-8 rounded-2xl border border-zinc-200 bg-white px-6 py-5 shadow-sm">
+                        <p className="font-black text-zinc-900 text-base mb-2">
+                            {isBlackout ? 'Booking online sedang ditutup.' : 'Tidak ada barber yang tersedia di tanggal ini.'}
+                        </p>
+                        <p className="text-zinc-600 text-sm leading-relaxed mb-4">
+                            {isBlackout
+                                ? 'Selama periode blackout kami hanya melayani walk-in langsung ke barbershop atau konfirmasi lewat WhatsApp.'
+                                : 'Coba pindah ke tanggal lain, atau datang langsung ke tempat untuk cek ketersediaan terbaru.'}
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                            <a href="https://wa.me/6287770995270" className="px-4 py-2 rounded-xl bg-zinc-900 text-white text-sm font-bold">WhatsApp Admin</a>
+                            <a href="https://maps.app.goo.gl/AitnhHiAY3Ka9fAM9" target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-xl bg-zinc-100 text-zinc-700 text-sm font-bold">Lihat Lokasi</a>
+                        </div>
+                    </div>
+                )}
+
                 {/* Barbers Grid */}
+                <div ref={bookingSectionRef} />
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <div className="w-8 h-8 border-4 border-zinc-900 border-t-transparent rounded-full animate-spin" />
@@ -320,6 +406,11 @@ export default function StatusPage() {
                     <div className="text-center py-20 text-zinc-400">No barbers available.</div>
                 ) : (
                     <div className="grid gap-6">
+                        {isAvailabilityLoading && (
+                            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
+                                Menyegarkan ketersediaan barber dan slot...
+                            </div>
+                        )}
                         {barbers.map((barber) => {
                             const onOffday = isBarberOffday(barber.username, selectedDate);
                             const isToday = selectedDate.toDateString() === new Date().toDateString();
@@ -430,12 +521,14 @@ export default function StatusPage() {
                                                         booking.timeSlot === slot.label
                                                     );
                                                     const isLocked = isBooked || isOffday || isBlackout;
+                                                    const disabledReason = getSlotDisabledReason(isBooked, isOffday, isBlackout);
 
                                                     return (
                                                         <button
                                                             key={idx}
                                                             disabled={isLocked}
-                                                            aria-label={`Book ${barber.name} at ${slot.label}${isBooked ? ' (booked)' : isOffday ? ' (off day)' : ''}`}
+                                                            title={disabledReason || undefined}
+                                                            aria-label={`Book ${barber.name} at ${slot.label}${disabledReason ? ` (${disabledReason})` : ''}`}
                                                             onClick={() => {
                                                                 if (!isLocked) {
                                                                     setSelectedBooking({
@@ -454,6 +547,11 @@ export default function StatusPage() {
                                                             `}
                                                         >
                                                             {slot.start}
+                                                            {disabledReason && (
+                                                                <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-medium text-zinc-400">
+                                                                    {disabledReason}
+                                                                </span>
+                                                            )}
                                                         </button>
                                                     );
                                                 })}
@@ -467,7 +565,7 @@ export default function StatusPage() {
                 )}
 
                 {/* Cek Status Booking (#5) */}
-                <div className="mt-16 border border-zinc-200 rounded-3xl bg-white shadow-sm overflow-hidden">
+                <div ref={statusSectionRef} className="mt-16 border border-zinc-200 rounded-3xl bg-white shadow-sm overflow-hidden">
                     <button
                         onClick={() => setStatusSectionOpen(prev => !prev)}
                         className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-zinc-50 transition-colors"
@@ -510,20 +608,22 @@ export default function StatusPage() {
                                 </div>
                             )}
 
-                            {statusResults && statusResults.length > 0 && (
+                            {prioritizedStatusResults && prioritizedStatusResults.length > 0 && (
                                 <div className="mt-4 space-y-3">
                                     <p className="text-xs text-zinc-400 font-medium uppercase tracking-wide">
-                                        {statusResults.length} riwayat ditemukan (90 hari terakhir)
+                                        {prioritizedStatusResults.length} riwayat ditemukan (90 hari terakhir)
                                     </p>
-                                    {statusResults.map((item, idx) => {
+                                    {prioritizedStatusResults.map((item, idx) => {
                                         const st = STATUS_LABEL[item.status] ?? { label: item.status, color: 'text-zinc-500 bg-zinc-50 border-zinc-200' };
                                         const isBooking = item.type === 'booking';
+                                        const isNearest = idx === 0;
                                         return (
-                                            <div key={idx} className="border border-zinc-100 rounded-2xl p-4 bg-zinc-50">
+                                            <div key={idx} className={`border rounded-2xl p-4 ${isNearest ? 'border-zinc-900 bg-white shadow-sm' : 'border-zinc-100 bg-zinc-50'}`}>
                                                 <div className="flex items-start justify-between gap-2 mb-2">
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-0.5">
                                                             <p className="font-bold text-zinc-900">{item.customerName}</p>
+                                                            {isNearest && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide bg-zinc-900 text-white">Terdekat</span>}
                                                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${isBooking ? 'bg-blue-100 text-blue-600' : 'bg-zinc-200 text-zinc-600'}`}>
                                                                 {isBooking ? 'Booking' : 'Walk-in'}
                                                             </span>
@@ -588,7 +688,7 @@ export default function StatusPage() {
                             <MessageCircle className="w-5 h-5" />
                         </a>
                     </div>
-                    <VersionFooter />
+                    <VersionFooter compact />
                 </footer>
             </main>
 

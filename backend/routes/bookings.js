@@ -14,6 +14,7 @@ const securityLogger = require('../lib/securityLogger');
 const { sanitizeText, sanitizePhone, isValidIndonesianPhone } = require('../lib/sanitizer');
 const requireOwner = require('../middleware/requireOwner');
 const { validate, requiredString, requiredInt, optionalInt, requiredDate } = require('../lib/validators');
+const { readBookingConfig, writeBookingConfig } = require('../lib/bookingConfig');
 
 const ACTIVE_BOOKING_STATUSES = new Set(['pending', 'confirmed']);
 
@@ -27,16 +28,37 @@ const buildActiveSlotKey = (barberId, bookingDate, timeSlot, status) => {
 // GET /api/bookings/config - Public endpoint for booking configuration (blackout dates, etc.)
 router.get('/config', async (req, res) => {
     try {
-        res.json({
-            blackout: {
-                enabled: !!(process.env.BLACKOUT_START && process.env.BLACKOUT_END),
-                start: process.env.BLACKOUT_START || null,
-                end: process.env.BLACKOUT_END || null,
-            },
-        });
+        res.json(readBookingConfig());
     } catch (error) {
         console.error('Error fetching booking config:', error);
         res.status(500).json({ error: 'Failed to fetch config' });
+    }
+});
+
+router.patch('/config', authenticateToken, requireOwner, async (req, res) => {
+    try {
+        const { enabled, start, end } = req.body.blackout || {};
+
+        if (enabled && (!start || !end)) {
+            return res.status(400).json({ error: 'Blackout start and end dates are required' });
+        }
+
+        if (start && end && new Date(`${end}T00:00:00`) < new Date(`${start}T00:00:00`)) {
+            return res.status(400).json({ error: 'Blackout end date must be after start date' });
+        }
+
+        const config = writeBookingConfig({
+            blackout: {
+                enabled: Boolean(enabled && start && end),
+                start: enabled ? start : null,
+                end: enabled ? end : null,
+            }
+        });
+
+        res.json(config);
+    } catch (error) {
+        console.error('Error updating booking config:', error);
+        res.status(500).json({ error: 'Failed to update booking config' });
     }
 });
 
@@ -56,13 +78,14 @@ router.post('/', upload.single('proof'), validate((req) => ({
         const { barberId, customerName, customerPhone, bookingDate, timeSlot, serviceId } = req.validated;
 
         // 🚫 Blackout period — configured via env BLACKOUT_START / BLACKOUT_END
-        if (bookingDate && process.env.BLACKOUT_START && process.env.BLACKOUT_END) {
+        const bookingConfig = readBookingConfig();
+        if (bookingDate && bookingConfig.blackout?.enabled && bookingConfig.blackout?.start && bookingConfig.blackout?.end) {
             const d = new Date(bookingDate);
-            const blackoutStart = new Date(process.env.BLACKOUT_START + 'T00:00:00');
-            const blackoutEnd = new Date(process.env.BLACKOUT_END + 'T23:59:59');
+            const blackoutStart = new Date(bookingConfig.blackout.start + 'T00:00:00');
+            const blackoutEnd = new Date(bookingConfig.blackout.end + 'T23:59:59');
             if (d >= blackoutStart && d <= blackoutEnd) {
                 return res.status(400).json({
-                    error: `Booking online tidak tersedia untuk tanggal ${process.env.BLACKOUT_START} – ${process.env.BLACKOUT_END}. Silakan datang langsung (walk-in).`
+                    error: `Booking online tidak tersedia untuk tanggal ${bookingConfig.blackout.start} – ${bookingConfig.blackout.end}. Silakan datang langsung (walk-in).`
                 });
             }
         }
