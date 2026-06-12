@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "start": "concurrently \"npm run server --prefix backend\" \"npm run dev --prefix frontend\"",
-        "build": "npm run build --prefix frontend && npm ci --prefix backend && npm exec --prefix backend -- prisma generate",
+        "build": "npm run build --prefix frontend && npm ci --prefix backend && cd backend && npm exec -- prisma generate --schema prisma/schema.prisma",
         "deploy:vps": "bash deploy-vps.sh",
         "install:all": "npm install --prefix frontend && npm install --prefix backend"
     },

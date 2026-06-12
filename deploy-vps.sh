@@ -6,6 +6,7 @@ set -Eeuo pipefail
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$APP_DIR/backend"
+PRISMA_SCHEMA="$BACKEND_DIR/prisma/schema.prisma"
 FRONTEND_SERVICE="frontend"
 PM2_APP="${PM2_APP:-bagus-engine}"
 HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:3001/health}"
@@ -24,7 +25,7 @@ npm ci --prefix "$BACKEND_DIR"
 
 # 3. Prepare Prisma client and apply committed migrations when present
 echo "🧬 Preparing database client..."
-npm exec --prefix "$BACKEND_DIR" -- prisma generate
+(cd "$BACKEND_DIR" && npm exec -- prisma generate --schema "$PRISMA_SCHEMA")
 if [ -d "$BACKEND_DIR/prisma/migrations" ] && [ "$(find "$BACKEND_DIR/prisma/migrations" -mindepth 1 -maxdepth 1 -type d | wc -l)" -gt 0 ]; then
     if [ -f "$BACKEND_DIR/scripts/preflight-phase2.js" ]; then
         echo "🔎 Running Phase 2 database preflight..."
@@ -32,7 +33,7 @@ if [ -d "$BACKEND_DIR/prisma/migrations" ] && [ "$(find "$BACKEND_DIR/prisma/mig
     fi
 
     echo "🗄️  Applying Prisma migrations..."
-    npm exec --prefix "$BACKEND_DIR" -- prisma migrate deploy
+    (cd "$BACKEND_DIR" && npm exec -- prisma migrate deploy --schema "$PRISMA_SCHEMA")
 else
     echo "ℹ️  No Prisma migration history found; skipping migrate deploy."
 fi
@@ -73,4 +74,4 @@ echo "📊 PM2 status:"
 pm2 status
 echo ""
 echo "📋 Backend logs:"
-pm2 logs bagus-engine --lines 10 --nostream
+pm2 logs "$PM2_APP" --lines 10 --nostream
