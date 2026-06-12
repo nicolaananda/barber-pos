@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const { startOfWeek, endOfWeek, eachDayOfInterval, format, subMonths, startOfMonth, endOfMonth } = require('date-fns');
+const { toNumber } = require('../lib/money');
 
 // GET /api/dashboard/daily
 router.get('/daily', authenticateToken, async (req, res) => {
@@ -37,19 +38,19 @@ router.get('/daily', authenticateToken, async (req, res) => {
                 date: { gte: yesterday, lte: yesterdayEnd },
             },
         });
-        const yesterdayRevenue = yesterdayAgg._sum.totalAmount || 0;
+        const yesterdayRevenue = toNumber(yesterdayAgg._sum.totalAmount);
 
         // Calculate Totals
-        const totalRevenue = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
+        const totalRevenue = transactions.reduce((sum, t) => sum + toNumber(t.totalAmount), 0);
         const transactionCount = transactions.length;
 
         const cashTotal = transactions
             .filter((t) => t.paymentMethod === 'cash')
-            .reduce((sum, t) => sum + t.totalAmount, 0);
+            .reduce((sum, t) => sum + toNumber(t.totalAmount), 0);
 
         const qrisTotal = transactions
             .filter((t) => t.paymentMethod === 'qris')
-            .reduce((sum, t) => sum + t.totalAmount, 0);
+            .reduce((sum, t) => sum + toNumber(t.totalAmount), 0);
 
         // Find Top Barber
         const barberStats = {};
@@ -59,7 +60,7 @@ router.get('/daily', authenticateToken, async (req, res) => {
             if (!barberStats[bId]) {
                 barberStats[bId] = { revenue: 0, count: 0, name: t.barber.name };
             }
-            barberStats[bId].revenue += t.totalAmount;
+            barberStats[bId].revenue += toNumber(t.totalAmount);
             barberStats[bId].count += 1;
         });
 
@@ -132,8 +133,8 @@ router.get('/stats', authenticateToken, async (req, res) => {
             },
         });
 
-        const currentMonthRevenue = currentMonthRevenueAgg._sum.totalAmount || 0;
-        const currentMonthExpenses = currentMonthExpensesAgg._sum.amount || 0;
+        const currentMonthRevenue = toNumber(currentMonthRevenueAgg._sum.totalAmount);
+        const currentMonthExpenses = toNumber(currentMonthExpensesAgg._sum.amount);
         const currentMonthTxCount = currentMonthRevenueAgg._count.id || 0;
 
         // 2. Last Month Revenue (for comparison)
@@ -150,7 +151,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
             },
         });
 
-        const lastMonthRevenue = lastMonthRevenueAgg._sum.totalAmount || 0;
+        const lastMonthRevenue = toNumber(lastMonthRevenueAgg._sum.totalAmount);
         const revenueGrowth =
             lastMonthRevenue === 0
                 ? 100
@@ -186,7 +187,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
                     (tx) =>
                         format(new Date(tx.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
                 )
-                .reduce((sum, tx) => sum + tx.totalAmount, 0);
+                .reduce((sum, tx) => sum + toNumber(tx.totalAmount), 0);
             return { name: dayStr, total: dayTotal };
         });
 
@@ -265,18 +266,18 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
             prisma.expense.findMany({ where: { date: { gte: start, lte: end } }, select: { date: true, amount: true, category: true } }),
         ]);
 
-        const totalRevenue = revenueAgg._sum.totalAmount || 0;
-        const totalExpenses = expensesAgg._sum.amount || 0;
-        const totalCapital = capitalAgg._sum.amount || 0;
+        const totalRevenue = toNumber(revenueAgg._sum.totalAmount);
+        const totalExpenses = toNumber(expensesAgg._sum.amount);
+        const totalCapital = toNumber(capitalAgg._sum.amount);
         const netProfit = totalRevenue - totalExpenses;
         const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
         const salaryCategories = expensesByCategory.filter(e => e.category.toLowerCase() === 'salary');
-        const totalPayroll = salaryCategories.reduce((sum, e) => sum + (e._sum.amount || 0), 0);
+        const totalPayroll = salaryCategories.reduce((sum, e) => sum + toNumber(e._sum.amount), 0);
         const totalOpex = totalExpenses - totalPayroll;
 
-        const prevRevenue = prevRevenueAgg._sum.totalAmount || 0;
-        const prevExpenses = prevExpensesAgg._sum.amount || 0;
+        const prevRevenue = toNumber(prevRevenueAgg._sum.totalAmount);
+        const prevExpenses = toNumber(prevExpensesAgg._sum.amount);
         const prevNetProfit = prevRevenue - prevExpenses;
 
         const pctChange = (cur, prev) => prev !== 0 ? ((cur - prev) / Math.abs(prev)) * 100 : null;
@@ -285,12 +286,12 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
         dailyTransactions.forEach(tx => {
             const day = format(new Date(tx.date), 'yyyy-MM-dd');
             if (!trendMap[day]) trendMap[day] = { date: day, revenue: 0, expenses: 0 };
-            trendMap[day].revenue += tx.totalAmount;
+            trendMap[day].revenue += toNumber(tx.totalAmount);
         });
         dailyExpenses.forEach(exp => {
             const day = format(new Date(exp.date), 'yyyy-MM-dd');
             if (!trendMap[day]) trendMap[day] = { date: day, revenue: 0, expenses: 0 };
-            trendMap[day].expenses += exp.amount;
+            trendMap[day].expenses += toNumber(exp.amount);
         });
         const dailyTrend = Object.values(trendMap).sort((a, b) => a.date.localeCompare(b.date));
 
@@ -314,8 +315,8 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
                 netProfitChange: pctChange(netProfit, prevNetProfit),
             },
             breakdown: {
-                expenses: expensesByCategory.map(e => ({ category: e.category, amount: e._sum.amount })),
-                revenue: revenueByMethod.map(r => ({ method: r.paymentMethod, amount: r._sum.totalAmount })),
+                expenses: expensesByCategory.map(e => ({ category: e.category, amount: toNumber(e._sum.amount) })),
+                revenue: revenueByMethod.map(r => ({ method: r.paymentMethod, amount: toNumber(r._sum.totalAmount) })),
                 payroll: [],
             },
             dailyTrend,
@@ -339,12 +340,12 @@ router.get('/total-balance-all', authenticateToken, async (req, res) => {
             }),
         ]);
 
-        const totalCapital = capitalAgg._sum.amount || 0;
-        const totalRevenue = revenueAgg._sum.totalAmount || 0;
+        const totalCapital = toNumber(capitalAgg._sum.amount);
+        const totalRevenue = toNumber(revenueAgg._sum.totalAmount);
 
-        const totalExpenses = expensesByCategory.reduce((sum, e) => sum + (e._sum.amount || 0), 0);
+        const totalExpenses = expensesByCategory.reduce((sum, e) => sum + toNumber(e._sum.amount), 0);
         const salaryCategories = expensesByCategory.filter(e => e.category.toLowerCase() === 'salary');
-        const totalPayroll = salaryCategories.reduce((sum, e) => sum + (e._sum.amount || 0), 0);
+        const totalPayroll = salaryCategories.reduce((sum, e) => sum + toNumber(e._sum.amount), 0);
         const totalOpex = totalExpenses - totalPayroll;
 
         const totalBalance = totalCapital + totalRevenue - totalExpenses;

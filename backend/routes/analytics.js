@@ -10,6 +10,7 @@ const {
     calculateChurnRate,
     calculateCLV
 } = require('../lib/analytics');
+const { toNumber } = require('../lib/money');
 
 /**
  * GET /api/analytics/profit-margin
@@ -98,7 +99,7 @@ router.get('/revenue-forecast', authenticateToken, async (req, res) => {
             if (!dailyRevenue[dateKey]) {
                 dailyRevenue[dateKey] = 0;
             }
-            dailyRevenue[dateKey] += t.totalAmount;
+            dailyRevenue[dateKey] += toNumber(t.totalAmount);
         });
 
         const historicalData = Object.entries(dailyRevenue).map(([date, revenue]) => ({
@@ -417,7 +418,7 @@ router.get('/barber-comparison', authenticateToken, async (req, res) => {
 
         const comparison = barbers.map(barber => {
             const barberTxs = transactions.filter(t => t.barberId === barber.id);
-            const totalRevenue = barberTxs.reduce((sum, t) => sum + t.totalAmount, 0);
+        const totalRevenue = barberTxs.reduce((sum, t) => sum + toNumber(t.totalAmount), 0);
             const totalTransactions = barberTxs.length;
             const avgTicket = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 

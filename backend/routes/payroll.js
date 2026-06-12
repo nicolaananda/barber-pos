@@ -4,6 +4,7 @@ const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const requireOwner = require('../middleware/requireOwner');
 const { validate, requiredInt, optionalMoney } = require('../lib/validators');
+const { toNumber } = require('../lib/money');
 
 // GET /api/payroll
 router.get('/', authenticateToken, async (req, res) => {
@@ -51,7 +52,7 @@ router.get('/', authenticateToken, async (req, res) => {
                 let totalTransactions = transactions.length;
 
                 for (const t of transactions) {
-                    totalRevenue += t.totalAmount;
+                    totalRevenue += toNumber(t.totalAmount);
                     if (Array.isArray(t.items)) {
                         for (const item of t.items) {
                             const qty = item.qty || 1;
@@ -60,10 +61,10 @@ router.get('/', authenticateToken, async (req, res) => {
                             if (service) {
                                 if (service.commissionType === 'percentage') {
                                     // Calculate based on item price * qty
-                                    estimatedCommission += ((item.price * qty) * service.commissionValue) / 100;
+                                    estimatedCommission += ((item.price * qty) * toNumber(service.commissionValue)) / 100;
                                 } else {
                                     // Flat rate * qty
-                                    estimatedCommission += service.commissionValue * qty;
+                                    estimatedCommission += toNumber(service.commissionValue) * qty;
                                 }
                             } else {
                                 // Fallback or log if service not found (maybe deleted)
@@ -253,16 +254,16 @@ router.get('/export/csv', authenticateToken, async (req, res) => {
             let totalRevenue = 0;
             let estimatedCommission = 0;
             for (const t of transactions) {
-                totalRevenue += t.totalAmount;
+                totalRevenue += toNumber(t.totalAmount);
                 if (Array.isArray(t.items)) {
                     for (const item of t.items) {
                         const qty = item.qty || 1;
                         const service = (item.serviceId && serviceByIdMap[item.serviceId]) || serviceByNameMap[item.name];
                         if (service) {
                             if (service.commissionType === 'percentage') {
-                                estimatedCommission += ((item.price * qty) * service.commissionValue) / 100;
+                                estimatedCommission += ((item.price * qty) * toNumber(service.commissionValue)) / 100;
                             } else {
-                                estimatedCommission += service.commissionValue * qty;
+                                estimatedCommission += toNumber(service.commissionValue) * qty;
                             }
                         }
                     }

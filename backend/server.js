@@ -19,6 +19,7 @@ const seedRoutes = require('./routes/seed');
 const bookingsRoutes = require('./routes/bookings');
 const analyticsRoutes = require('./routes/analytics');
 const { sendError } = require('./lib/apiError');
+const { serializeMoney } = require('./lib/money');
 
 // Rate limiting middleware
 const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
@@ -69,6 +70,12 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json({ limit: '1mb' }));
+
+app.use((req, res, next) => {
+    const originalJson = res.json.bind(res);
+    res.json = (body) => originalJson(serializeMoney(body));
+    next();
+});
 
 // Apply rate limiting to auth routes (stricter)
 app.use('/api/auth', authLimiter);

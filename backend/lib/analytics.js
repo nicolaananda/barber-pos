@@ -1,3 +1,5 @@
+const { toNumber } = require('./money');
+
 /**
  * Analytics Business Logic
  * Core calculation functions for business intelligence and reporting
@@ -12,10 +14,10 @@
  */
 function calculateProfitMargin(transactions, expenses, services) {
     // Calculate total revenue
-    const totalRevenue = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
+    const totalRevenue = transactions.reduce((sum, t) => sum + toNumber(t.totalAmount), 0);
 
     // Calculate total expenses
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalExpenses = expenses.reduce((sum, e) => sum + toNumber(e.amount), 0);
 
     // Calculate gross profit
     const grossProfit = totalRevenue - totalExpenses;
@@ -44,8 +46,8 @@ function calculateProfitMargin(transactions, expenses, services) {
         // Calculate commission cost for this service
         const commissionCost = serviceCount * (
             service.commissionType === 'percentage'
-                ? service.price * (service.commissionValue / 100)
-                : service.commissionValue
+                ? toNumber(service.price) * (toNumber(service.commissionValue) / 100)
+                : toNumber(service.commissionValue)
         );
 
         const serviceProfit = serviceRevenue - commissionCost;
@@ -57,7 +59,7 @@ function calculateProfitMargin(transactions, expenses, services) {
             commissionCost,
             profit: serviceProfit,
             margin: serviceMargin,
-            avgPrice: service.price
+            avgPrice: toNumber(service.price)
         };
     });
 
@@ -75,7 +77,7 @@ function calculateProfitMargin(transactions, expenses, services) {
         }
 
         const items = Array.isArray(t.items) ? t.items : JSON.parse(t.items);
-        barberAnalysis[t.barberId].revenue += t.totalAmount;
+        barberAnalysis[t.barberId].revenue += toNumber(t.totalAmount);
         barberAnalysis[t.barberId].transactionCount += 1;
 
         // Calculate commission for this transaction
@@ -83,8 +85,8 @@ function calculateProfitMargin(transactions, expenses, services) {
             const service = services.find(s => s.name === item.name);
             if (service) {
                 const commission = service.commissionType === 'percentage'
-                    ? item.price * (service.commissionValue / 100) * item.qty
-                    : service.commissionValue * item.qty;
+                    ? item.price * (toNumber(service.commissionValue) / 100) * item.qty
+                    : toNumber(service.commissionValue) * item.qty;
                 barberAnalysis[t.barberId].totalCommission += commission;
             }
         });
@@ -218,7 +220,7 @@ function segmentCustomers(customers, transactions) {
         const frequency = customerTxns.length;
 
         // Monetary: Total amount spent
-        const monetary = customerTxns.reduce((sum, t) => sum + t.totalAmount, 0);
+        const monetary = customerTxns.reduce((sum, t) => sum + toNumber(t.totalAmount), 0);
 
         // RFM Scoring (1-5 scale)
         const recencyScore = recencyDays <= 30 ? 5 : recencyDays <= 60 ? 4 : recencyDays <= 90 ? 3 : recencyDays <= 180 ? 2 : 1;
@@ -306,13 +308,13 @@ function analyzePeakHours(transactions) {
         }
 
         dailyData[day][hour].count += 1;
-        dailyData[day][hour].revenue += t.totalAmount;
+        dailyData[day][hour].revenue += toNumber(t.totalAmount);
 
         if (!hourlyData[hour]) {
             hourlyData[hour] = { count: 0, revenue: 0 };
         }
         hourlyData[hour].count += 1;
-        hourlyData[hour].revenue += t.totalAmount;
+        hourlyData[hour].revenue += toNumber(t.totalAmount);
     });
 
     // Find peak hours
@@ -434,7 +436,7 @@ function calculateCLV(customers, transactions) {
         }
 
         // Total revenue from customer
-        const totalRevenue = customerTxns.reduce((sum, t) => sum + t.totalAmount, 0);
+        const totalRevenue = customerTxns.reduce((sum, t) => sum + toNumber(t.totalAmount), 0);
 
         // Average order value
         const avgOrderValue = totalRevenue / customerTxns.length;

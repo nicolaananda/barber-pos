@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, installAuthFetchInterceptor } from '@/lib/api';
 
 interface User {
     id: string;
@@ -39,6 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
+        installAuthFetchInterceptor();
+
         const initAuth = async () => {
             const storedToken = localStorage.getItem('token');
 
@@ -50,6 +52,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
 
         initAuth();
+    }, []);
+
+    useEffect(() => {
+        const clearAuth = () => {
+            setToken(null);
+            setUser(null);
+            localStorage.removeItem('token');
+        };
+
+        window.addEventListener('auth-expired', clearAuth);
+        return () => window.removeEventListener('auth-expired', clearAuth);
     }, []);
 
     const login = async (newToken: string, newUser: User) => {
