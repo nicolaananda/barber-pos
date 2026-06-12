@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const requireOwner = require('../middleware/requireOwner');
+const { validate, requiredString, requiredMoney, optionalDate } = require('../lib/validators');
 
 // GET all capital entries
 router.get('/', authenticateToken, async (req, res) => {
@@ -42,23 +43,19 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST new capital entry
-router.post('/', authenticateToken, requireOwner, async (req, res) => {
+router.post('/', authenticateToken, requireOwner, validate((req) => ({
+    description: requiredString(req.body.description, 'description', { max: 200 }),
+    amount: requiredMoney(req.body.amount, 'amount', { min: 0 }),
+    date: optionalDate(req.body.date, 'date')
+})), async (req, res) => {
     try {
-        const { description, amount, date } = req.body;
-
-        // Input validation
-        if (!description || typeof description !== 'string' || description.trim().length === 0) {
-            return res.status(400).json({ error: 'Description is required' });
-        }
-        if (amount === undefined || amount === null || isNaN(Number(amount)) || Number(amount) < 0) {
-            return res.status(400).json({ error: 'Valid amount is required' });
-        }
+        const { description, amount, date } = req.validated;
 
         const newCapital = await prisma.capital.create({
             data: {
                 description,
-                amount: parseFloat(amount),
-                date: date ? new Date(date) : new Date(),
+                amount,
+                date: date || new Date(),
                 type: 'injection'
             },
         });
@@ -70,16 +67,20 @@ router.post('/', authenticateToken, requireOwner, async (req, res) => {
 });
 
 // PUT update capital entry
-router.put('/:id', authenticateToken, requireOwner, async (req, res) => {
+router.put('/:id', authenticateToken, requireOwner, validate((req) => ({
+    description: requiredString(req.body.description, 'description', { max: 200 }),
+    amount: requiredMoney(req.body.amount, 'amount', { min: 0 }),
+    date: optionalDate(req.body.date, 'date')
+})), async (req, res) => {
     try {
         const { id } = req.params;
-        const { description, amount, date } = req.body;
+        const { description, amount, date } = req.validated;
         const updatedCapital = await prisma.capital.update({
             where: { id: parseInt(id) },
             data: {
                 description,
-                amount: parseFloat(amount),
-                date: date ? new Date(date) : undefined,
+                amount,
+                date,
             },
         });
         res.json(updatedCapital);

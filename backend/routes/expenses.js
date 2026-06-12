@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const requireOwner = require('../middleware/requireOwner');
+const { validate, requiredString, requiredMoney, optionalDate } = require('../lib/validators');
 
 // GET /api/expenses?month=3&year=2026
 router.get('/', authenticateToken, async (req, res) => {
@@ -44,22 +45,15 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST /api/expenses
-router.post('/', authenticateToken, requireOwner, async (req, res) => {
+router.post('/', authenticateToken, requireOwner, validate((req) => ({
+    description: requiredString(req.body.description, 'description', { max: 200 }),
+    amount: requiredMoney(req.body.amount, 'amount', { min: 0 }),
+    category: requiredString(req.body.category, 'category', { max: 80 }),
+    date: optionalDate(req.body.date, 'date')
+})), async (req, res) => {
     try {
-        const { description, amount, category, date } = req.body;
-
-        // Input validation
-        if (!description || typeof description !== 'string' || description.trim().length === 0) {
-            return res.status(400).json({ error: 'Description is required' });
-        }
-        if (amount === undefined || amount === null || isNaN(Number(amount)) || Number(amount) < 0) {
-            return res.status(400).json({ error: 'Valid amount is required' });
-        }
-        if (!category || typeof category !== 'string' || category.trim().length === 0) {
-            return res.status(400).json({ error: 'Category is required' });
-        }
-
-        const expenseDate = date ? new Date(date) : new Date();
+        const { description, amount, category, date } = req.validated;
+        const expenseDate = date || new Date();
 
         const expense = await prisma.expense.create({
             data: {
@@ -123,27 +117,20 @@ router.get('/export/csv', authenticateToken, async (req, res) => {
 });
 
 // PATCH /api/expenses/:id
-router.patch('/:id', authenticateToken, requireOwner, async (req, res) => {
+router.patch('/:id', authenticateToken, requireOwner, validate((req) => ({
+    description: requiredString(req.body.description, 'description', { max: 200 }),
+    amount: requiredMoney(req.body.amount, 'amount', { min: 0 }),
+    category: requiredString(req.body.category, 'category', { max: 80 })
+})), async (req, res) => {
     try {
-        const { description, amount, category } = req.body;
+        const { description, amount, category } = req.validated;
         const { id } = req.params;
-
-        // Input validation
-        if (!description || typeof description !== 'string' || description.trim().length === 0) {
-            return res.status(400).json({ error: 'Description is required' });
-        }
-        if (amount === undefined || amount === null || isNaN(Number(amount)) || Number(amount) < 0) {
-            return res.status(400).json({ error: 'Valid amount is required' });
-        }
-        if (!category || typeof category !== 'string' || category.trim().length === 0) {
-            return res.status(400).json({ error: 'Category is required' });
-        }
 
         const expense = await prisma.expense.update({
             where: { id: Number(id) },
             data: {
                 description,
-                amount: Number(amount),
+                amount,
                 category,
             },
         });

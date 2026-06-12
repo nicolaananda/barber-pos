@@ -7,16 +7,22 @@ const { format } = require('date-fns');
 const whatsappService = require('../lib/whatsapp');
 const backupService = require('../lib/backupService');
 const { logAudit } = require('../lib/auditLogger');
+const { validate, requiredInt, optionalInt, requiredMoney, optionalString, requiredEnum } = require('../lib/validators');
 
 // POST /api/transactions
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, validate((req) => ({
+    barberId: requiredInt(req.body.barberId, 'barberId', { min: 1 }),
+    items: req.body.items,
+    totalAmount: requiredMoney(req.body.totalAmount, 'totalAmount', { min: 0 }),
+    paymentMethod: requiredEnum(req.body.paymentMethod || 'cash', 'paymentMethod', ['cash', 'qris']),
+    customerName: optionalString(req.body.customerName, 'customerName', { max: 120 }),
+    customerPhone: optionalString(req.body.customerPhone, 'customerPhone', { max: 30 }),
+    bookingId: optionalInt(req.body.bookingId, 'bookingId', { min: 1 })
+})), async (req, res) => {
     try {
-        const { items, totalAmount, paymentMethod, customerName, customerPhone, barberId, bookingId } = req.body;
+        const { items, totalAmount, paymentMethod, customerName, customerPhone, barberId, bookingId } = req.validated;
 
-        const bId = parseInt(barberId);
-        if (isNaN(bId)) {
-            return res.status(400).json({ error: 'Invalid Barber ID' });
-        }
+        const bId = barberId;
 
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: 'Items are required' });
@@ -39,15 +45,12 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         const calculatedTotal = normalizedItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
-        const requestedTotal = Number(totalAmount);
+        const requestedTotal = totalAmount;
         if (!Number.isFinite(requestedTotal) || Math.abs(calculatedTotal - requestedTotal) > 1) {
             return res.status(400).json({ error: 'Total amount does not match items' });
         }
 
-        const parsedBookingId = bookingId != null ? parseInt(bookingId) : null;
-        if (bookingId != null && Number.isNaN(parsedBookingId)) {
-            return res.status(400).json({ error: 'Invalid booking ID' });
-        }
+        const parsedBookingId = bookingId || null;
 
         // Wrap invoice generation + transaction creation in a transaction with retry on P2002
         let transaction;

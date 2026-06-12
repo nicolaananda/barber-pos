@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const requireOwner = require('../middleware/requireOwner');
+const { validate, requiredInt, optionalMoney } = require('../lib/validators');
 
 // GET /api/payroll
 router.get('/', authenticateToken, async (req, res) => {
@@ -118,13 +119,18 @@ router.get('/paid', authenticateToken, async (req, res) => {
 });
 
 // POST /api/payroll/mark-paid - Mark a barber's payroll as paid for a period
-router.post('/mark-paid', authenticateToken, requireOwner, async (req, res) => {
+router.post('/mark-paid', authenticateToken, requireOwner, validate((req) => ({
+    barberId: requiredInt(req.body.barberId, 'barberId', { min: 1 }),
+    month: requiredInt(req.body.month, 'month', { min: 0, max: 11 }),
+    year: requiredInt(req.body.year, 'year', { min: 2020, max: 2100 }),
+    totalServices: requiredInt(req.body.totalServices || 0, 'totalServices', { min: 0 }),
+    totalCommission: optionalMoney(req.body.totalCommission || 0, 'totalCommission', { min: 0 }),
+    baseSalary: optionalMoney(req.body.baseSalary || 0, 'baseSalary', { min: 0 }),
+    bonuses: optionalMoney(req.body.bonuses || 0, 'bonuses', { min: 0 }),
+    deductions: optionalMoney(req.body.deductions || 0, 'deductions', { min: 0 })
+})), async (req, res) => {
     try {
-        const { barberId, month, year, totalServices, totalCommission, baseSalary, bonuses, deductions } = req.body;
-
-        if (!barberId || month === undefined || !year) {
-            return res.status(400).json({ error: 'barberId, month, and year are required' });
-        }
+        const { barberId, month, year, totalServices, totalCommission, baseSalary, bonuses, deductions } = req.validated;
 
         const period = `${year}-${String(parseInt(month) + 1).padStart(2, '0')}`;
         const totalPayout = (totalCommission || 0) + (baseSalary || 0) + (bonuses || 0) - (deductions || 0);
@@ -179,13 +185,13 @@ router.post('/mark-paid', authenticateToken, requireOwner, async (req, res) => {
 });
 
 // DELETE /api/payroll/unmark-paid - Cancel a barber's paid payroll for a period
-router.delete('/unmark-paid', authenticateToken, requireOwner, async (req, res) => {
+router.delete('/unmark-paid', authenticateToken, requireOwner, validate((req) => ({
+    barberId: requiredInt(req.body.barberId, 'barberId', { min: 1 }),
+    month: requiredInt(req.body.month, 'month', { min: 0, max: 11 }),
+    year: requiredInt(req.body.year, 'year', { min: 2020, max: 2100 })
+})), async (req, res) => {
     try {
-        const { barberId, month, year } = req.body;
-
-        if (!barberId || month === undefined || !year) {
-            return res.status(400).json({ error: 'barberId, month, and year are required' });
-        }
+        const { barberId, month, year } = req.validated;
 
         const period = `${year}-${String(parseInt(month) + 1).padStart(2, '0')}`;
 

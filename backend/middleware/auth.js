@@ -43,9 +43,7 @@ const authenticateToken = (req, res, next) => {
             next();
         } catch (dbError) {
             console.error('Auth DB lookup error:', dbError);
-            // Fallback to JWT data if DB is temporarily unavailable
-            req.user = decoded;
-            next();
+            return res.status(503).json({ error: 'Authentication service temporarily unavailable', code: 'AUTH_DB_UNAVAILABLE' });
         }
     });
 };

@@ -13,6 +13,7 @@ const { uploadFile } = require('../lib/r2');
 const securityLogger = require('../lib/securityLogger');
 const { sanitizeText, sanitizePhone, isValidIndonesianPhone } = require('../lib/sanitizer');
 const requireOwner = require('../middleware/requireOwner');
+const { validate, requiredString, requiredInt, optionalInt, requiredDate } = require('../lib/validators');
 
 const ACTIVE_BOOKING_STATUSES = new Set(['pending', 'confirmed']);
 
@@ -40,12 +41,19 @@ router.get('/config', async (req, res) => {
 });
 
 // POST /api/bookings - Create new booking
-router.post('/', upload.single('proof'), async (req, res) => {
+router.post('/', upload.single('proof'), validate((req) => ({
+    barberId: requiredInt(req.body.barberId, 'barberId', { min: 1 }),
+    customerName: requiredString(req.body.customerName, 'customerName', { min: 2, max: 100 }),
+    customerPhone: requiredString(req.body.customerPhone, 'customerPhone', { min: 6, max: 30 }),
+    bookingDate: requiredDate(req.body.bookingDate, 'bookingDate'),
+    timeSlot: requiredString(req.body.timeSlot, 'timeSlot', { max: 30 }),
+    serviceId: optionalInt(req.body.serviceId, 'serviceId', { min: 1 })
+})), async (req, res) => {
     try {
         // Safety check for req.body
         req.body = req.body || {};
 
-        const { barberId, customerName, customerPhone, bookingDate, timeSlot, serviceId } = req.body;
+        const { barberId, customerName, customerPhone, bookingDate, timeSlot, serviceId } = req.validated;
 
         // 🚫 Blackout period — configured via env BLACKOUT_START / BLACKOUT_END
         if (bookingDate && process.env.BLACKOUT_START && process.env.BLACKOUT_END) {
@@ -150,12 +158,12 @@ router.post('/', upload.single('proof'), async (req, res) => {
             }
         }
 
-        const parsedBarberId = parseInt(barberId);
+        const parsedBarberId = barberId;
         if (Number.isNaN(parsedBarberId)) {
             return res.status(400).json({ error: 'Invalid barber ID' });
         }
 
-        const parsedServiceId = serviceId ? parseInt(serviceId) : null;
+        const parsedServiceId = serviceId || null;
         if (serviceId && Number.isNaN(parsedServiceId)) {
             return res.status(400).json({ error: 'Invalid service ID' });
         }

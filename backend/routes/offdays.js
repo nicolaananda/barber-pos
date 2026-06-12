@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const requireOwner = require('../middleware/requireOwner');
+const { validate, requiredInt, requiredDate, optionalString } = require('../lib/validators');
 
 // GET /api/offdays
 // Query params: start (YYYY-MM-DD), end (YYYY-MM-DD), barberId (optional)
@@ -41,15 +42,18 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/offdays
-router.post('/', authenticateToken, requireOwner, async (req, res) => {
+router.post('/', authenticateToken, requireOwner, validate((req) => ({
+    userId: requiredInt(req.body.userId, 'userId', { min: 1 }),
+    date: requiredDate(req.body.date, 'date'),
+    endDate: req.body.endDate ? requiredDate(req.body.endDate, 'endDate') : undefined,
+    reason: optionalString(req.body.reason, 'reason', { max: 200 })
+})), async (req, res) => {
     try {
-        const { userId, date, endDate, reason } = req.body;
+        const { userId, reason } = req.validated;
+        const date = req.body.date;
+        const endDate = req.body.endDate;
 
-        if (!userId || !date) {
-            return res.status(400).json({ error: 'User ID and Date are required' });
-        }
-
-        const parsedUserId = parseInt(userId);
+        const parsedUserId = userId;
         const startDate = new Date(`${date}T00:00:00`);
         const finishDate = new Date(`${endDate || date}T00:00:00`);
 

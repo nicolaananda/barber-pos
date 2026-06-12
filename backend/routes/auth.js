@@ -6,16 +6,16 @@ const jwt = require('jsonwebtoken');
 const authenticateToken = require('../middleware/auth');
 const { authLimiter, pinLimiter } = require('../middleware/rateLimiter');
 const { addToBlacklist } = require('../lib/tokenBlacklist');
+const { validate, requiredString } = require('../lib/validators');
 
 // POST /api/auth/login - with rate limiting
-router.post('/login', authLimiter, async (req, res) => {
-    const { username, password } = req.body;
+router.post('/login', authLimiter, validate((req) => ({
+    username: requiredString(req.body.username, 'username', { max: 80 }),
+    password: requiredString(req.body.password, 'password', { max: 200 })
+})), async (req, res) => {
+    const { username, password } = req.validated;
 
     try {
-        if (!username || !password) {
-            return res.status(400).json({ error: 'Missing credentials' });
-        }
-
         const user = await prisma.user.findUnique({
             where: { username },
         });
@@ -84,13 +84,11 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 // POST /api/auth/verify-pin - Verify edit PIN server-side
-router.post('/verify-pin', pinLimiter, authenticateToken, async (req, res) => {
+router.post('/verify-pin', pinLimiter, authenticateToken, validate((req) => ({
+    pin: requiredString(req.body.pin, 'PIN', { max: 20 })
+})), async (req, res) => {
     try {
-        const { pin } = req.body;
-
-        if (!pin) {
-            return res.status(400).json({ error: 'PIN is required' });
-        }
+        const { pin } = req.validated;
 
         // Only owners can verify edit PIN
         if (req.user.role !== 'owner') {

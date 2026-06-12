@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const requireOwner = require('../middleware/requireOwner');
+const { validate, requiredString, requiredMoney, optionalMoney, optionalEnum } = require('../lib/validators');
 
 // GET /api/services
 // GET /api/services - Public
@@ -20,24 +21,21 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/services
-router.post('/', authenticateToken, requireOwner, async (req, res) => {
+router.post('/', authenticateToken, requireOwner, validate((req) => ({
+    name: requiredString(req.body.name, 'name', { max: 100 }),
+    price: requiredMoney(req.body.price, 'price', { min: 0 }),
+    commissionType: optionalEnum(req.body.commissionType || 'percentage', 'commissionType', ['percentage', 'flat']),
+    commissionValue: optionalMoney(req.body.commissionValue || 0, 'commissionValue', { min: 0 })
+})), async (req, res) => {
     try {
-        const { name, price, commissionType, commissionValue } = req.body;
-
-        // Input validation
-        if (!name || typeof name !== 'string' || name.trim().length === 0) {
-            return res.status(400).json({ error: 'Name is required' });
-        }
-        if (price === undefined || price === null || isNaN(Number(price)) || Number(price) < 0) {
-            return res.status(400).json({ error: 'Valid price is required' });
-        }
+        const { name, price, commissionType, commissionValue } = req.validated;
 
         const service = await prisma.service.create({
             data: {
                 name,
-                price: parseInt(price),
+                price,
                 commissionType: commissionType || 'percentage',
-                commissionValue: parseFloat(commissionValue) || 0,
+                commissionValue: commissionValue || 0,
                 isActive: true
             }
         });
@@ -49,26 +47,23 @@ router.post('/', authenticateToken, requireOwner, async (req, res) => {
 });
 
 // PATCH /api/services/:id
-router.patch('/:id', authenticateToken, requireOwner, async (req, res) => {
+router.patch('/:id', authenticateToken, requireOwner, validate((req) => ({
+    name: requiredString(req.body.name, 'name', { max: 100 }),
+    price: requiredMoney(req.body.price, 'price', { min: 0 }),
+    commissionType: optionalEnum(req.body.commissionType || 'percentage', 'commissionType', ['percentage', 'flat']),
+    commissionValue: optionalMoney(req.body.commissionValue || 0, 'commissionValue', { min: 0 })
+})), async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, price, commissionType, commissionValue } = req.body;
-
-        // Input validation
-        if (!name || typeof name !== 'string' || name.trim().length === 0) {
-            return res.status(400).json({ error: 'Name is required' });
-        }
-        if (price === undefined || price === null || isNaN(Number(price)) || Number(price) < 0) {
-            return res.status(400).json({ error: 'Valid price is required' });
-        }
+        const { name, price, commissionType, commissionValue } = req.validated;
 
         const service = await prisma.service.update({
             where: { id: parseInt(id) },
             data: {
                 name,
-                price: parseInt(price),
+                price,
                 commissionType,
-                commissionValue: parseFloat(commissionValue)
+                commissionValue
             }
         });
         res.json(service);

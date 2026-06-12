@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { API_BASE_URL } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 
 interface User {
     id: string;
@@ -27,20 +27,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const fetchUserFromAPI = async (authToken: string) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/auth/me`, {
-                headers: { 'Authorization': `Bearer ${authToken}` }
-            });
-            if (res.ok) {
-                const userData = await res.json();
-                setUser(userData);
-            } else {
-                // Token invalid, clear auth
-                localStorage.removeItem('token');
-                setToken(null);
-                setUser(null);
-            }
+            localStorage.setItem('token', authToken);
+            const userData = await apiFetch<User>('/auth/me');
+            setUser(userData);
         } catch (error) {
             console.error('Failed to fetch user', error);
+            localStorage.removeItem('token');
+            setToken(null);
+            setUser(null);
         }
     };
 
@@ -70,10 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Revoke token server-side before clearing locally
         if (token) {
             try {
-                await fetch(`${API_BASE_URL}/auth/logout`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                await apiFetch('/auth/logout', { method: 'POST' });
             } catch (error) {
                 // Non-blocking: still logout locally even if server call fails
                 console.error('Server logout failed:', error);

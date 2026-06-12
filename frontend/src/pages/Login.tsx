@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL } from '@/lib/api';
+import { ApiClientError, apiFetch } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardTitle, CardFooter } from '@/components/ui/card';
@@ -19,20 +19,10 @@ export default function LoginPage() {
         setError('');
 
         try {
-            const res = await fetch(`${API_BASE_URL}/auth/login`, {
+            const data = await apiFetch<{ token: string; user: { id: string; name: string; username: string; role: string } }>('/auth/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({ username, password }),
             });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                setError(data.error || 'Login failed');
-                return;
-            }
 
             login(data.token, data.user);
 
@@ -43,7 +33,7 @@ export default function LoginPage() {
             }
         } catch (err) {
             console.error(err);
-            setError('Something went wrong. Please try again.');
+            setError(err instanceof ApiClientError ? err.message : 'Something went wrong. Please try again.');
         }
     };
 

@@ -18,6 +18,7 @@ const transactionsRoutes = require('./routes/transactions');
 const seedRoutes = require('./routes/seed');
 const bookingsRoutes = require('./routes/bookings');
 const analyticsRoutes = require('./routes/analytics');
+const { sendError } = require('./lib/apiError');
 
 // Rate limiting middleware
 const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
@@ -102,6 +103,10 @@ app.use('/api/offdays', require('./routes/offdays'));
 app.use('/api/slots', require('./routes/slots'));
 app.use('/api/analytics', analyticsRoutes);
 
+app.use('/api', (req, res) => {
+    res.status(404).json({ error: 'API route not found', code: 'NOT_FOUND' });
+});
+
 // Health check (with database connectivity verification)
 app.get('/health', async (req, res) => {
     try {
@@ -125,9 +130,7 @@ app.use((req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
-    res.status(err.status || 500).json({
-        error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message
-    });
+    sendError(res, err);
 });
 
 const server = app.listen(PORT, () => {

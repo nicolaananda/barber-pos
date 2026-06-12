@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
+const { validate, requiredString, optionalString, requiredInt, requiredEnum } = require('../lib/validators');
 
 // GET /api/users/barbers - Get all barbers (PUBLIC - for Status page)
 router.get('/barbers', async (req, res) => {
@@ -46,25 +47,22 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // PATCH /api/users/:id/availability
-router.patch('/:id/availability', authenticateToken, async (req, res) => {
+router.patch('/:id/availability', authenticateToken, validate((req) => ({
+    targetId: requiredInt(req.params.id, 'id', { min: 1 }),
+    status: requiredEnum(req.body.status, 'status', ['available', 'working', 'offday'])
+})), async (req, res) => {
     try {
-        const { id } = req.params;
-        const { status } = req.body;
+        const { targetId, status } = req.validated;
 
         // IDOR protection: only owner or self can update
-        const targetId = parseInt(id);
         if (req.user.role !== 'owner' && req.user.id !== targetId) {
             return res.status(403).json({ error: 'You can only update your own availability' });
         }
 
-        console.log('Updating availability for user:', id, 'to:', status);
-
-        if (!status || !['available', 'working', 'offday'].includes(status)) {
-            return res.status(400).json({ error: 'Invalid status. Must be "available", "working", or "offday"' });
-        }
+        console.log('Updating availability for user:', targetId, 'to:', status);
 
         const user = await prisma.user.update({
-            where: { id: parseInt(id) },
+            where: { id: targetId },
             data: { availability: status }
         });
 
@@ -77,28 +75,21 @@ router.patch('/:id/availability', authenticateToken, async (req, res) => {
 });
 
 // PATCH /api/users/:id/default-offday - Update recurring weekly off-day
-router.patch('/:id/default-offday', authenticateToken, async (req, res) => {
+router.patch('/:id/default-offday', authenticateToken, validate((req) => ({
+    targetId: requiredInt(req.params.id, 'id', { min: 1 }),
+    defaultOffDay: req.body.defaultOffDay === null ? null : requiredInt(req.body.defaultOffDay, 'defaultOffDay', { min: 0, max: 6 })
+})), async (req, res) => {
     try {
-        const { id } = req.params;
+        const { targetId, defaultOffDay } = req.validated;
 
         // IDOR protection: only owner can update default off-day
         if (req.user.role !== 'owner') {
             return res.status(403).json({ error: 'Only owners can update default off-day' });
         }
 
-        const { defaultOffDay } = req.body;
-
-        // Validate: must be 0-6 or null
-        if (defaultOffDay !== null && defaultOffDay !== undefined) {
-            const day = parseInt(defaultOffDay);
-            if (isNaN(day) || day < 0 || day > 6) {
-                return res.status(400).json({ error: 'Invalid day value. Must be 0-6 (Sunday-Saturday) or null' });
-            }
-        }
-
         const user = await prisma.user.update({
-            where: { id: parseInt(id) },
-            data: { defaultOffDay: defaultOffDay === null ? null : parseInt(defaultOffDay) },
+            where: { id: targetId },
+            data: { defaultOffDay },
             select: {
                 id: true,
                 username: true,
@@ -157,12 +148,17 @@ router.get('/barbers-list', authenticateToken, requireOwner, async (req, res) =>
 });
 
 // POST /api/users/barbers - Create new barber (owner only)
-router.post('/barbers', authenticateToken, requireOwner, async (req, res) => {
+router.post('/barbers', authenticateToken, requireOwner, validate((req) => ({
+    username: requiredString(req.body.username, 'username', { min: 3, max: 80 }),
+    password: requiredString(req.body.password, 'password', { min: 6, max: 200 }),
+    name: requiredString(req.body.name, 'name', { min: 2, max: 100 }),
+    status: optionalString(req.body.status || 'active', 'status', { max: 20 })
+})), async (req, res) => {
     try {
-        const { username, password, name, status } = req.body;
+        const { username, password, name, status } = req.validated;
 
-        if (!username || !password || !name) {
-            return res.status(400).json({ error: 'Username, password, and name are required' });
+        if (!['active', 'inactive'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status', code: 'VALIDATION_ERROR' });
         }
 
 
@@ -214,10 +210,15 @@ router.post('/barbers', authenticateToken, requireOwner, async (req, res) => {
 });
 
 // PUT /api/users/barbers/:id - Update barber (owner only)
-router.put('/barbers/:id', authenticateToken, requireOwner, async (req, res) => {
+router.put('/barbers/:id', authenticateToken, requireOwner, validate((req) => ({
+    targetId: requiredInt(req.params.id, 'id', { min: 1 }),
+    username: optionalString(req.body.username, 'username', { min: 3, max: 80 }),
+    password: optionalString(req.body.password, 'password', { min: 6, max: 200 }),
+    name: optionalString(req.body.name, 'name', { min: 2, max: 100 }),
+    status: optionalString(req.body.status, 'status', { max: 20 })
+})), async (req, res) => {
     try {
-        const { id } = req.params;
-        const { username, password, name, status } = req.body;
+        const { targetId, username, password, name, status } = req.validated;
 
         const updateData = {};
 
@@ -255,13 +256,13 @@ router.put('/barbers/:id', authenticateToken, requireOwner, async (req, res) => 
                 where: { username: username.trim() }
             });
 
-            if (existingUser && existingUser.id !== parseInt(id)) {
+            if (existingUser && existingUser.id !== targetId) {
                 return res.status(400).json({ error: 'Username already exists' });
             }
         }
 
         const barber = await prisma.user.update({
-            where: { id: parseInt(id) },
+            where: { id: targetId },
             data: updateData,
             select: {
                 id: true,
@@ -292,13 +293,15 @@ router.put('/barbers/:id', authenticateToken, requireOwner, async (req, res) => 
 });
 
 // DELETE /api/users/barbers/:id - Delete barber (owner only)
-router.delete('/barbers/:id', authenticateToken, requireOwner, async (req, res) => {
+router.delete('/barbers/:id', authenticateToken, requireOwner, validate((req) => ({
+    targetId: requiredInt(req.params.id, 'id', { min: 1 })
+})), async (req, res) => {
     try {
-        const { id } = req.params;
+        const { targetId } = req.validated;
 
         // Check if barber has transactions
         const transactionCount = await prisma.transaction.count({
-            where: { barberId: parseInt(id) }
+            where: { barberId: targetId }
         });
 
         if (transactionCount > 0) {
@@ -308,7 +311,7 @@ router.delete('/barbers/:id', authenticateToken, requireOwner, async (req, res) 
         }
 
         await prisma.user.delete({
-            where: { id: parseInt(id) }
+            where: { id: targetId }
         });
 
         res.json({ message: 'Barber deleted successfully' });
