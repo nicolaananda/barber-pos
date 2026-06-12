@@ -12,6 +12,7 @@ import ServiceGrid from '@/components/pos/ServiceGrid';
 import Cart from '@/components/pos/Cart';
 import CheckoutModal from '@/components/pos/CheckoutModal';
 import PendingBookingAlert from '@/components/pos/PendingBookingAlert';
+import { moneyToNumber } from '@/lib/money';
 import {
     Sheet,
     SheetContent,
@@ -32,7 +33,7 @@ export default function PosPage() {
     const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
     const cart = usePosStore((state: any) => state.cart);
-    const cartTotal = cart.reduce((sum: number, item: any) => sum + item.price * item.qty, 0);
+    const cartTotal = cart.reduce((sum: number, item: any) => sum + moneyToNumber(item.price) * item.qty, 0);
     const cartCount = cart.reduce((sum: number, item: any) => sum + item.qty, 0);
 
     useEffect(() => {
@@ -61,7 +62,7 @@ export default function PosPage() {
                 setBarber({ id: String(b.barberId), name: b.barberName, username: b.barberUsername || '' });
             }
             if (b.serviceId && b.serviceName) {
-                addToCart({ id: String(b.serviceId), name: b.serviceName, price: b.servicePrice || 0, qty: 1 });
+                addToCart({ id: String(b.serviceId), name: b.serviceName, price: moneyToNumber(b.servicePrice), qty: 1 });
             }
             navigate(location.pathname, { replace: true, state: {} });
         }

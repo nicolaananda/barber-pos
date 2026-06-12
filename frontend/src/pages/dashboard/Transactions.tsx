@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { API_BASE_URL } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { moneyToNumber } from '@/lib/money';
 import {
     Dialog,
     DialogContent,
@@ -26,6 +27,20 @@ interface Transaction {
     customerName?: string;
     items: any[];
     barberId: { name: string };
+}
+
+function normalizeTransaction(transaction: Transaction): Transaction {
+    return {
+        ...transaction,
+        totalAmount: moneyToNumber(transaction.totalAmount),
+        items: Array.isArray(transaction.items)
+            ? transaction.items.map((item) => ({
+                ...item,
+                price: moneyToNumber(item.price),
+                qty: Number(item.qty || 1),
+            }))
+            : [],
+    };
 }
 
 export default function TransactionsPage() {
@@ -79,12 +94,12 @@ export default function TransactionsPage() {
             const json = await res.json();
 
             if (json.pagination) {
-                setTransactions(json.data);
+                setTransactions(json.data.map(normalizeTransaction));
                 setTotalPages(json.pagination.totalPages);
                 setTotalRecords(json.pagination.total);
             } else {
                 // Fallback for old API response
-                setTransactions(json);
+                setTransactions(json.map(normalizeTransaction));
                 setTotalPages(Math.ceil(json.length / itemsPerPage));
                 setTotalRecords(json.length);
             }
@@ -108,7 +123,7 @@ export default function TransactionsPage() {
 
     const handleEditClick = () => {
         if (selectedTransaction) {
-            setEditForm(JSON.parse(JSON.stringify(selectedTransaction))); // Deep copy
+            setEditForm(normalizeTransaction(JSON.parse(JSON.stringify(selectedTransaction)))); // Deep copy
             setIsEditing(true);
         }
     };

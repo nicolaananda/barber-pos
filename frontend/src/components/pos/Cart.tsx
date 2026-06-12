@@ -1,13 +1,14 @@
 import { usePosStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Trash2, Plus, Minus } from 'lucide-react';
+import { moneyToNumber } from '@/lib/money';
 
 export default function Cart() {
     const cart = usePosStore((state) => state.cart);
     const removeFromCart = usePosStore((state) => state.removeFromCart);
     const updateQty = usePosStore((state) => state.updateQty);
 
-    const totalAmount = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const totalAmount = cart.reduce((sum, item) => sum + moneyToNumber(item.price) * item.qty, 0);
 
     if (cart.length === 0) {
         return (
@@ -25,7 +26,7 @@ export default function Cart() {
                     <div className="flex-1">
                         <div className="font-bold text-zinc-900 text-sm">{item.name}</div>
                         <div className="text-xs text-zinc-500 font-mono mt-0.5">
-                            @ {item.price.toLocaleString('id-ID')}
+                            @ {moneyToNumber(item.price).toLocaleString('id-ID')}
                         </div>
                     </div>
                     <div className="flex items-center gap-2">

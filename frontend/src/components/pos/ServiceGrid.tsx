@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { usePosStore } from '@/lib/store';
 import { useAuth } from '@/context/AuthContext';
 import { API_BASE_URL } from '@/lib/api';
+import { moneyToNumber } from '@/lib/money';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Scissors } from 'lucide-react';
@@ -31,7 +32,10 @@ export default function ServiceGrid() {
                 return res.json();
             })
             .then((data) => {
-                setServices(data);
+                setServices(data.map((service: Service) => ({
+                    ...service,
+                    price: moneyToNumber(service.price),
+                })));
                 setLoading(false);
             })
             .catch((err) => {

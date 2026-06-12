@@ -11,11 +11,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CheckCircle2, Search, MessageCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { moneyToNumber } from '@/lib/money';
 
 export default function CheckoutModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
     const { token } = useAuth();
     const { cart, selectedBarber, customerName, customerPhone, setCustomerInfo, clearCart, bookingId } = usePosStore();
-    const totalAmount = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const totalAmount = cart.reduce((sum, item) => sum + moneyToNumber(item.price) * item.qty, 0);
 
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris'>('cash');
     const [loading, setLoading] = useState(false);
@@ -134,7 +135,13 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
             }
 
             const data = await res.json();
-            setLastTx(data);
+            setLastTx({
+                ...data,
+                totalAmount: moneyToNumber(data.totalAmount),
+                items: Array.isArray(data.items)
+                    ? data.items.map((item: any) => ({ ...item, price: moneyToNumber(item.price), qty: Number(item.qty || 1) }))
+                    : [],
+            });
             setSuccess(true);
         } catch (error) {
             console.error(error);
@@ -194,7 +201,8 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
 
         // Calculate change display for receipt if cash
         const cashIn = paymentMethod === 'cash' ? Number(cashReceived) : 0;
-        const changeAmount = cashIn > 0 ? cashIn - tx.totalAmount : 0;
+        const txTotal = moneyToNumber(tx.totalAmount);
+        const changeAmount = cashIn > 0 ? cashIn - txTotal : 0;
 
         const printWindow = window.open('', '_blank', 'width=400,height=600');
         if (printWindow) {
@@ -249,7 +257,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
                             ${tx.items.map((item: any) => `
                             <div class="item-row">
                                 <span class="item-name"><span class="item-qty">${item.qty}x</span> ${item.name}</span>
-                                <span class="item-price">${(item.price * item.qty).toLocaleString('id-ID')}</span>
+                                <span class="item-price">${(moneyToNumber(item.price) * item.qty).toLocaleString('id-ID')}</span>
                             </div>
                             `).join('')}
                         </div>
@@ -257,7 +265,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
                         <div class="border-t">
                             <div class="row bold" style="font-size: 14px; margin-top: 5px;">
                                 <span>TOTAL</span>
-                                <span>IDR ${tx.totalAmount.toLocaleString('id-ID')}</span>
+                                <span>IDR ${txTotal.toLocaleString('id-ID')}</span>
                             </div>
                             <div class="row" style="margin-top: 5px; font-size: 11px;">
                                 <span>Payment</span>

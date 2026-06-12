@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import imageCompression from 'browser-image-compression';
 import { cn } from '@/lib/utils';
 import { API_BASE_URL } from '@/lib/api';
+import { moneyToNumber } from '@/lib/money';
 
 // Dummy QRIS - In production, this should be real
 const QRIS_IMAGE = "/qris.jpg";
@@ -95,11 +96,15 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                     return 0;
                 });
 
-                setServices(availableServices);
+                setServices(availableServices.map((service: Service) => ({
+                    ...service,
+                    price: moneyToNumber(service.price),
+                })));
                 // Set default if exists
                 if (availableServices.length > 0) {
-                    setSelectedServiceId(availableServices[0].id.toString());
-                    setSelectedService(availableServices[0]);
+                    const normalizedFirst = { ...availableServices[0], price: moneyToNumber(availableServices[0].price) };
+                    setSelectedServiceId(normalizedFirst.id.toString());
+                    setSelectedService(normalizedFirst);
                 }
             }
         } catch (error) {

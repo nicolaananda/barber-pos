@@ -24,6 +24,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { API_BASE_URL } from '@/lib/api';
+import { moneyToNumber } from '@/lib/money';
 
 interface Service {
     id: number;
@@ -62,7 +63,11 @@ export default function ServicesPage() {
             });
             if (!res.ok) throw new Error('Failed to fetch services');
             const data = await res.json();
-            setServices(data);
+            setServices(data.map((service: Service) => ({
+                ...service,
+                price: moneyToNumber(service.price),
+                commissionValue: moneyToNumber(service.commissionValue),
+            })));
         } catch (error) {
             console.error(error);
         } finally {
