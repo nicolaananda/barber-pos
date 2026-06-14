@@ -318,11 +318,7 @@ export default function StatusPage() {
                     <p className="text-zinc-500 max-w-lg mx-auto text-base leading-relaxed">
                         Pilih barber dan slot waktu yang tersedia di bawah.
                     </p>
-                    {startingPrice !== null && (
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-zinc-200 shadow-sm text-xs text-zinc-700 font-semibold">
-                            Mulai dari <span className="font-black text-zinc-900">IDR {startingPrice.toLocaleString('id-ID')}</span>
-                        </div>
-                    )}
+                    
 
                     {/* Jam Operasional (#4) */}
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-zinc-200 shadow-sm text-xs text-zinc-600 font-medium">
@@ -506,11 +502,7 @@ export default function StatusPage() {
                                                  <p className="text-xs text-zinc-400 font-medium uppercase tracking-widest mt-1">
                                                      {barber.username === 'bagus' ? 'Head Barber' : 'Barber'}
                                                  </p>
-                                                 {getBarberStartingPrice(barber.username) !== null && (
-                                                     <p className="text-xs text-zinc-500 mt-2">
-                                                         Mulai dari <span className="font-bold text-zinc-900">IDR {getBarberStartingPrice(barber.username)?.toLocaleString('id-ID')}</span>
-                                                     </p>
-                                                 )}
+                                                 
                                              </div>
                                         </div>
 
