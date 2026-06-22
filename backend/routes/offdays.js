@@ -43,9 +43,11 @@ router.get('/', publicReadLimiter, optionalAuthenticate, async (req, res) => {
         }
 
         if (startDate && endDate) {
+            const nextEndDate = new Date(endDate);
+            nextEndDate.setDate(nextEndDate.getDate() + 1);
             whereClause.date = {
                 gte: startDate,
-                lte: endDate
+                lt: nextEndDate
             };
         }
 

@@ -252,7 +252,11 @@ export default function StatusPage() {
     };
 
     const isBarberOffday = (barberId: number, date: Date) => {
-        const manualOff = currentOffDays.find((od: any) => od.userId === barberId);
+        const targetDateKey = format(date, 'yyyy-MM-dd');
+        const manualOff = currentOffDays.find((od: any) => {
+            const offDateKey = od?.date ? format(new Date(od.date), 'yyyy-MM-dd') : null;
+            return od.userId === barberId && offDateKey === targetDateKey;
+        });
         if (manualOff) return true;
         const barber = barbers.find(b => b.id === barberId);
         if (barber?.defaultOffDay !== null && barber?.defaultOffDay !== undefined) {

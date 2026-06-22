@@ -11,6 +11,7 @@ import imageCompression from 'browser-image-compression';
 import { cn } from '@/lib/utils';
 import { API_BASE_URL } from '@/lib/api';
 import { moneyToNumber } from '@/lib/money';
+import { format } from 'date-fns';
 
 // Dummy QRIS - In production, this should be real
 const QRIS_IMAGE = "/qris.jpg";
@@ -199,7 +200,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
             formData.append('barberId', barber.id.toString());
             formData.append('customerName', customerName.trim());
             formData.append('customerPhone', customerPhone.trim());
-            formData.append('bookingDate', bookingDate.toISOString());
+            formData.append('bookingDate', format(bookingDate, 'yyyy-MM-dd'));
             formData.append('timeSlot', timeSlot.label);
             formData.append('serviceId', selectedServiceId);
             formData.append('proof', paymentProof);

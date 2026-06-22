@@ -166,6 +166,10 @@ router.post('/', bookingCreateLimiter, upload.single('proof'), validate((req) =>
         req.body = req.body || {};
 
         const { barberId, customerName, customerPhone, bookingDate, timeSlot, serviceId } = req.validated;
+        const bookingDateString = typeof req.body.bookingDate === 'string' ? req.body.bookingDate : '';
+        if (!isIsoDateOnly(bookingDateString)) {
+            return res.status(400).json({ error: 'bookingDate must use YYYY-MM-DD format' });
+        }
 
         // 🚫 Blackout period — configured via env BLACKOUT_START / BLACKOUT_END
         const bookingConfig = await getBookingConfig();
@@ -194,7 +198,7 @@ router.post('/', bookingCreateLimiter, upload.single('proof'), validate((req) =>
             });
         }
 
-        const checkDate = new Date(bookingDate);
+        const checkDate = new Date(`${bookingDateString}T00:00:00`);
         if (Number.isNaN(checkDate.getTime()) || !isWithinBookingWindow(checkDate, bookingConfig.publicSettings.bookingDaysAhead)) {
             return res.status(400).json({ error: 'Tanggal booking di luar jendela booking online' });
         }
@@ -334,13 +338,13 @@ router.post('/', bookingCreateLimiter, upload.single('proof'), validate((req) =>
                     barberId: parsedBarberId,
                     customerName: sanitizedName,
                     customerPhone: sanitizedPhone,
-                    bookingDate: new Date(bookingDate),
+                    bookingDate: checkDate,
                     timeSlot,
                     serviceId: parsedServiceId,
                     serviceName,
                     servicePrice,
                     status: 'pending',
-                    activeSlotKey: buildActiveSlotKey(parsedBarberId, bookingDate, timeSlot, 'pending'),
+                    activeSlotKey: buildActiveSlotKey(parsedBarberId, bookingDateString, timeSlot, 'pending'),
                     paymentProof: paymentProof
                 },
                 include: {
