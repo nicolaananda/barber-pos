@@ -12,6 +12,7 @@ interface Barber {
     id: number;
     name: string;
     username: string; // Added username
+    photoUrl?: string | null;
 }
 
 export default function BarberSelector() {
@@ -31,7 +32,12 @@ export default function BarberSelector() {
                 return res.json();
             })
             .then((data) => {
-                setBarbers(data);
+                const sorted = [...data].sort((a: Barber, b: Barber) => {
+                    if (a.username === 'bagus') return -1;
+                    if (b.username === 'bagus') return 1;
+                    return a.name.localeCompare(b.name);
+                });
+                setBarbers(sorted);
                 setLoading(false);
 
                 // Validation: Check if selectedBarber from store (persisted) is valid
@@ -59,7 +65,9 @@ export default function BarberSelector() {
 
     if (loading) return <div>Loading Barbers...</div>;
 
-    const getBarberImage = (username: string) => {
+    const getBarberImage = (barber: Barber) => {
+        if (barber.photoUrl) return barber.photoUrl;
+        const username = barber.username;
         if (username === 'bagus') return '/bagus.webp';
         if (username === 'diva') return '/profil_diva.webp';
         return null; // Fallback to icon
@@ -73,7 +81,7 @@ export default function BarberSelector() {
             </h2>
             <div className="flex md:grid md:grid-cols-4 gap-3 md:gap-4 overflow-x-auto pb-4 md:pb-0 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
                 {barbers.map((barber) => {
-                    const imageUrl = getBarberImage(barber.username);
+                    const imageUrl = getBarberImage(barber);
                     const isSelected = selectedBarber?.id == (barber.id as unknown as string); // eslint-disable-line eqeqeq
 
                     return (
@@ -108,7 +116,12 @@ export default function BarberSelector() {
                                         )} />
                                     )}
                                 </div>
-                                <span className="font-bold text-center tracking-wide text-sm md:text-base line-clamp-1">{barber.name}</span>
+                                <div className="text-center">
+                                    <span className="block font-bold tracking-wide text-sm md:text-base line-clamp-1">{barber.name}</span>
+                                    {barber.username === 'bagus' && (
+                                        <span className="mt-1 block text-[10px] font-bold uppercase tracking-widest opacity-70">Head Barber</span>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
                     );

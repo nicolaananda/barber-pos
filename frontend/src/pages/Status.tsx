@@ -283,7 +283,9 @@ export default function StatusPage() {
 
     const getBarberStartingPrice = (username: string) => {
         const barber = barbers.find((item) => item.username === username);
-        const isHeadBarber = Boolean(publicSettings.headBarberId && barber?.id === publicSettings.headBarberId);
+        const isHeadBarber = publicSettings.headBarberId
+            ? barber?.id === publicSettings.headBarberId
+            : username === 'bagus';
         const filtered = services.filter((service) => {
             const lower = service.name.toLowerCase();
             const isHeadBarberService = lower.includes('head barber') || lower.includes('by head');
@@ -525,7 +527,7 @@ export default function StatusPage() {
                                              <div className="text-left md:text-center w-full min-w-0 flex-1">
                                                  <h3 className="text-base md:text-2xl font-bold text-zinc-900 tracking-tight leading-tight truncate">{barber.name}</h3>
                                                   <p className="text-xs text-zinc-400 font-medium uppercase tracking-widest mt-1">
-                                                      {publicSettings.headBarberId === barber.id ? 'Head Barber' : 'Barber'}
+                                                      {(publicSettings.headBarberId ? publicSettings.headBarberId === barber.id : barber.username === 'bagus') ? 'Head Barber' : 'Barber'}
                                                   </p>
                                                   <p className="mt-1 text-[11px] font-bold text-zinc-500 md:hidden">
                                                       {isOffday || isBlackout ? 'Tidak tersedia' : `${availableSlotCount} slot tersedia`}

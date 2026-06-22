@@ -53,8 +53,11 @@ router.get('/barbers', async (req, res) => {
     try {
         const users = await prisma.user.findMany({
             where: {
-                role: 'staff',
-                status: 'active'
+                status: 'active',
+                OR: [
+                    { role: 'staff' },
+                    { username: 'bagus' }
+                ]
             },
             select: publicBarberSelect,
             orderBy: { name: 'asc' }

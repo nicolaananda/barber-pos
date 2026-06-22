@@ -75,7 +75,9 @@ export default function SchedulePage() {
 
     const fetchBarbers = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/users/barbers`);
+            const res = await fetch(`${API_BASE_URL}/users`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (res.ok) {
                 const data = await res.json();
                 setBarbers(data);
