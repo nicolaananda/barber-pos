@@ -173,9 +173,10 @@ router.get('/barbers-list', authenticateToken, requireOwner, async (req, res) =>
         // Get all users except owner (barbers are staff members)
         const barbers = await prisma.user.findMany({
             where: {
-                role: {
-                    not: 'owner' // Get all users except owner
-                }
+                OR: [
+                    { role: { not: 'owner' } },
+                    { username: 'bagus' }
+                ]
             },
             select: barberSelect,
             orderBy: { name: 'asc' }
@@ -264,10 +265,24 @@ router.put('/barbers/:id', authenticateToken, requireOwner, upload.single('photo
     try {
         const { targetId, username, password, name, status } = req.validated;
 
+        const targetUser = await prisma.user.findUnique({
+            where: { id: targetId },
+            select: { id: true, username: true, role: true, status: true }
+        });
+
+        if (!targetUser) {
+            return res.status(404).json({ error: 'Barber not found' });
+        }
+
+        const isHeadOwner = targetUser.role === 'owner' && targetUser.username === 'bagus';
+        if (targetUser.role === 'owner' && !isHeadOwner) {
+            return res.status(403).json({ error: 'Owner account cannot be managed from barber settings' });
+        }
+
         const updateData = {};
 
         // Validate and set username
-        if (username) {
+        if (username && !isHeadOwner) {
             updateData.username = username.trim();
         }
 
@@ -279,7 +294,7 @@ router.put('/barbers/:id', authenticateToken, requireOwner, upload.single('photo
 
 
         // Validate and set status
-        if (status) {
+        if (status && !isHeadOwner && status !== targetUser.status) {
             const validStatuses = ['active', 'inactive'];
             if (validStatuses.includes(status)) {
                 updateData.status = status;
@@ -290,7 +305,7 @@ router.put('/barbers/:id', authenticateToken, requireOwner, upload.single('photo
         }
 
         // If password is provided, hash it
-        if (password && password.trim() !== '') {
+        if (password && password.trim() !== '' && !isHeadOwner) {
             const bcrypt = require('bcryptjs');
             updateData.password = await bcrypt.hash(password, 10);
             updateData.tokenVersion = { increment: 1 };
@@ -301,7 +316,7 @@ router.put('/barbers/:id', authenticateToken, requireOwner, upload.single('photo
         }
 
         // Check if username already exists (if changing username)
-        if (username) {
+        if (username && !isHeadOwner) {
             const existingUser = await prisma.user.findUnique({
                 where: { username: username.trim() }
             });
@@ -347,6 +362,15 @@ router.delete('/barbers/:id', authenticateToken, requireOwner, validate((req) =>
 })), async (req, res) => {
     try {
         const { targetId } = req.validated;
+
+        const targetUser = await prisma.user.findUnique({
+            where: { id: targetId },
+            select: { role: true }
+        });
+
+        if (targetUser?.role === 'owner') {
+            return res.status(403).json({ error: 'Owner account cannot be deleted from barber settings' });
+        }
 
         // Check if barber has transactions
         const transactionCount = await prisma.transaction.count({

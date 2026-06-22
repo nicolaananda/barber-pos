@@ -48,6 +48,7 @@ export default function BarbersPage() {
 
     // Form State
     const [currentId, setCurrentId] = useState<number | null>(null);
+    const [currentRole, setCurrentRole] = useState('staff');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
@@ -172,6 +173,7 @@ export default function BarbersPage() {
 
     const handleEdit = (barber: Barber) => {
         setCurrentId(barber.id);
+        setCurrentRole(barber.role);
         setUsername(barber.username);
         setPassword('');
         setName(barber.name);
@@ -183,6 +185,7 @@ export default function BarbersPage() {
 
     const handleAdd = () => {
         setCurrentId(null);
+        setCurrentRole('staff');
         setUsername('');
         setPassword('');
         setName('');
@@ -195,6 +198,7 @@ export default function BarbersPage() {
     const handleClose = () => {
         setIsDialogOpen(false);
         setCurrentId(null);
+        setCurrentRole('staff');
         setUsername('');
         setPassword('');
         setName('');
@@ -298,7 +302,11 @@ export default function BarbersPage() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required={!currentId}
+                                    disabled={currentRole === 'owner'}
                                 />
+                                {currentRole === 'owner' && (
+                                    <p className="text-xs text-zinc-400">Owner password is not changed from barber photo settings.</p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="name">Name *</Label>
@@ -312,7 +320,7 @@ export default function BarbersPage() {
 
                             <div className="space-y-2">
                                 <Label htmlFor="status">Status</Label>
-                                <Select value={status} onValueChange={setStatus}>
+                                <Select value={status} onValueChange={setStatus} disabled={currentRole === 'owner'}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
@@ -408,12 +416,14 @@ export default function BarbersPage() {
                                                 <Badge
                                                     variant="outline"
                                                     className={
-                                                        barber.status === 'active'
+                                                        barber.role === 'owner'
+                                                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                            : barber.status === 'active'
                                                             ? 'bg-zinc-900 text-white border-zinc-900'
                                                             : 'bg-zinc-100 text-zinc-500 border-zinc-200'
                                                     }
                                                 >
-                                                    {barber.status}
+                                                    {barber.role === 'owner' ? 'head barber' : barber.status}
                                                 </Badge>
                                             </td>
                                             <td className="p-4">
@@ -431,6 +441,7 @@ export default function BarbersPage() {
                                                         size="sm"
                                                         variant="outline"
                                                         onClick={() => handleDelete(barber.id)}
+                                                        disabled={barber.role === 'owner'}
                                                         className="h-8 text-zinc-400 hover:text-red-600 hover:bg-red-50 border-zinc-200"
                                                     >
                                                         <Trash2 className="w-3 h-3 mr-1" />
