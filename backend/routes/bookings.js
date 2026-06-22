@@ -38,6 +38,7 @@ router.get('/config', async (req, res) => {
 router.patch('/config', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { enabled, start, end } = req.body.blackout || {};
+        const publicSettings = req.body.publicSettings || {};
 
         if (enabled && (!start || !end)) {
             return res.status(400).json({ error: 'Blackout start and end dates are required' });
@@ -53,7 +54,8 @@ router.patch('/config', authenticateToken, requireOwner, async (req, res) => {
                 start: enabled ? start : null,
                 end: enabled ? end : null,
                 message: req.body.blackout?.message || null,
-            }
+            },
+            publicSettings
         });
 
         res.json(config);
@@ -174,11 +176,12 @@ router.post('/', upload.single('proof'), validate((req) => ({
         if (timeMatch) {
             const startHour = parseInt(timeMatch[1], 10);
             const endHour = parseInt(timeMatch[2], 10);
-            const OPENING_HOUR = 11;
-            const CLOSING_HOUR = 22;
+            const isFriday = new Date(bookingDate).getDay() === 5;
+            const OPENING_HOUR = isFriday ? bookingConfig.publicSettings.fridayOpenHour : bookingConfig.publicSettings.regularOpenHour;
+            const CLOSING_HOUR = bookingConfig.publicSettings.closeHour;
 
             if (startHour < OPENING_HOUR || endHour > CLOSING_HOUR) {
-                return res.status(400).json({ error: 'Booking time must be between 11:00 and 22:00' });
+                return res.status(400).json({ error: `Booking time must be between ${String(OPENING_HOUR).padStart(2, '0')}:00 and ${String(CLOSING_HOUR).padStart(2, '0')}:00` });
             }
         }
 

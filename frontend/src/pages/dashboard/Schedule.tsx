@@ -39,6 +39,15 @@ export default function SchedulePage() {
     const [blackoutEnabled, setBlackoutEnabled] = useState(false);
     const [blackoutStart, setBlackoutStart] = useState('');
     const [blackoutEnd, setBlackoutEnd] = useState('');
+    const [address, setAddress] = useState('');
+    const [whatsappNumber, setWhatsappNumber] = useState('');
+    const [mapsUrl, setMapsUrl] = useState('');
+    const [instagramUrl, setInstagramUrl] = useState('');
+    const [bookingDaysAhead, setBookingDaysAhead] = useState('3');
+    const [regularOpenHour, setRegularOpenHour] = useState('11');
+    const [fridayOpenHour, setFridayOpenHour] = useState('13');
+    const [closeHour, setCloseHour] = useState('22');
+    const [headBarberId, setHeadBarberId] = useState('none');
 
     // Recurring Off-Day State
     const [recurringBarber, setRecurringBarber] = useState<string>('');
@@ -116,6 +125,16 @@ export default function SchedulePage() {
             setBlackoutEnabled(Boolean(data.blackout?.enabled));
             setBlackoutStart(data.blackout?.start || '');
             setBlackoutEnd(data.blackout?.end || '');
+            const settings = data.publicSettings || {};
+            setAddress(settings.address || '');
+            setWhatsappNumber(settings.whatsappNumber || '');
+            setMapsUrl(settings.mapsUrl || '');
+            setInstagramUrl(settings.instagramUrl || '');
+            setBookingDaysAhead(String(settings.bookingDaysAhead || 3));
+            setRegularOpenHour(String(settings.regularOpenHour || 11));
+            setFridayOpenHour(String(settings.fridayOpenHour || 13));
+            setCloseHour(String(settings.closeHour || 22));
+            setHeadBarberId(settings.headBarberId ? String(settings.headBarberId) : 'none');
         } catch (error) {
             console.error('Error fetching booking config:', error);
         }
@@ -139,6 +158,17 @@ export default function SchedulePage() {
                         enabled: blackoutEnabled,
                         start: blackoutStart || null,
                         end: blackoutEnd || null,
+                    },
+                    publicSettings: {
+                        address: address || null,
+                        whatsappNumber: whatsappNumber || null,
+                        mapsUrl: mapsUrl || null,
+                        instagramUrl: instagramUrl || null,
+                        bookingDaysAhead: Number(bookingDaysAhead),
+                        regularOpenHour: Number(regularOpenHour),
+                        fridayOpenHour: Number(fridayOpenHour),
+                        closeHour: Number(closeHour),
+                        headBarberId: headBarberId === 'none' ? null : Number(headBarberId),
                     }
                 })
             });
@@ -152,7 +182,17 @@ export default function SchedulePage() {
             setBlackoutEnabled(Boolean(data.blackout?.enabled));
             setBlackoutStart(data.blackout?.start || '');
             setBlackoutEnd(data.blackout?.end || '');
-            toast.success('Blackout setting updated');
+            const settings = data.publicSettings || {};
+            setAddress(settings.address || '');
+            setWhatsappNumber(settings.whatsappNumber || '');
+            setMapsUrl(settings.mapsUrl || '');
+            setInstagramUrl(settings.instagramUrl || '');
+            setBookingDaysAhead(String(settings.bookingDaysAhead || 3));
+            setRegularOpenHour(String(settings.regularOpenHour || 11));
+            setFridayOpenHour(String(settings.fridayOpenHour || 13));
+            setCloseHour(String(settings.closeHour || 22));
+            setHeadBarberId(settings.headBarberId ? String(settings.headBarberId) : 'none');
+            toast.success('Public booking settings updated');
         } catch (error) {
             console.error('Error saving blackout setting:', error);
         }
@@ -367,7 +407,7 @@ export default function SchedulePage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Online Booking Blackout</CardTitle>
+                    <CardTitle>Public Booking Settings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <label className="flex items-center gap-3 text-sm font-medium">
@@ -388,8 +428,58 @@ export default function SchedulePage() {
                             <Input type="date" value={blackoutEnd} onChange={(e) => setBlackoutEnd(e.target.value)} />
                         </div>
                     </div>
+                    <div className="grid md:grid-cols-2 gap-4 border-t pt-4">
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-medium">Address</label>
+                            <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Jl. Imam Bonjol..." />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">WhatsApp Number</label>
+                            <Input value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} placeholder="6287770995270" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Booking Days Ahead</label>
+                            <Input type="number" min="1" max="14" value={bookingDaysAhead} onChange={(e) => setBookingDaysAhead(e.target.value)} />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-medium">Maps URL</label>
+                            <Input value={mapsUrl} onChange={(e) => setMapsUrl(e.target.value)} placeholder="https://maps.app.goo.gl/..." />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-medium">Instagram URL</label>
+                            <Input value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://www.instagram.com/..." />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Regular Open Hour</label>
+                            <Input type="number" min="0" max="23" value={regularOpenHour} onChange={(e) => setRegularOpenHour(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Friday Open Hour</label>
+                            <Input type="number" min="0" max="23" value={fridayOpenHour} onChange={(e) => setFridayOpenHour(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Close Hour</label>
+                            <Input type="number" min="1" max="24" value={closeHour} onChange={(e) => setCloseHour(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Head Barber</label>
+                            <Select value={headBarberId} onValueChange={setHeadBarberId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select head barber..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    {barbers.map((barber) => (
+                                        <SelectItem key={barber.id} value={barber.id.toString()}>
+                                            {barber.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                     <Button onClick={handleSaveBlackout} className="w-full bg-zinc-900 text-white hover:bg-zinc-800">
-                        Save Blackout Setting
+                        Save Public Booking Settings
                     </Button>
                 </CardContent>
             </Card>

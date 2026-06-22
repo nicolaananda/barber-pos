@@ -13,6 +13,7 @@ model User {
   username        String   @unique
   password        String
   name            String
+  photoUrl        String?
   role            String   @default("staff") // 'owner' | 'staff'
   status          String   @default("active")
   availability    String   @default("available") // 'available' | 'working' | 'offday'
@@ -35,6 +36,15 @@ model BookingConfig {
   blackoutStart    DateTime? @db.Date
   blackoutEnd      DateTime? @db.Date
   blackoutMessage  String?
+  address          String?
+  whatsappNumber   String?
+  mapsUrl          String?
+  instagramUrl     String?
+  bookingDaysAhead Int       @default(3)
+  regularOpenHour  Int       @default(11)
+  fridayOpenHour   Int       @default(13)
+  closeHour        Int       @default(22)
+  headBarberId     Int?
   updatedAt        DateTime  @updatedAt
 }
 

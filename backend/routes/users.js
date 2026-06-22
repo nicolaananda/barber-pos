@@ -4,19 +4,60 @@ const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const { validate, requiredString, optionalString, requiredInt, requiredEnum } = require('../lib/validators');
 const { logAudit } = require('../lib/auditLogger');
+const upload = require('../middleware/upload');
+const { validateImageContent } = require('../middleware/upload');
+const { uploadFile } = require('../lib/r2');
+const path = require('path');
+
+const barberSelect = {
+    id: true,
+    username: true,
+    name: true,
+    role: true,
+    status: true,
+    availability: true,
+    defaultOffDay: true,
+    photoUrl: true,
+    createdAt: true,
+    updatedAt: true,
+};
+
+const publicBarberSelect = {
+    id: true,
+    username: true,
+    name: true,
+    role: true,
+    availability: true,
+    defaultOffDay: true,
+    photoUrl: true,
+};
+
+const getRequestBody = (req) => req.body || {};
+
+const uploadBarberPhoto = async (file, targetId) => {
+    if (!file) return null;
+    if (!validateImageContent(file.buffer)) {
+        const error = new Error('Invalid image file');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const ext = path.extname(file.originalname || '').toLowerCase() || '.webp';
+    const safeExt = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext) ? ext : '.webp';
+    const filename = `barbers/barber-${targetId}-${Date.now()}${safeExt}`;
+    return uploadFile(file.buffer, filename, file.mimetype || 'image/webp');
+};
 
 // GET /api/users/barbers - Get all barbers (PUBLIC - for Status page)
 router.get('/barbers', async (req, res) => {
     try {
         const users = await prisma.user.findMany({
-            select: {
-                id: true,
-                username: true,
-                name: true,
-                role: true,
-                availability: true,
-                defaultOffDay: true
-            }
+            where: {
+                role: 'staff',
+                status: 'active'
+            },
+            select: publicBarberSelect,
+            orderBy: { name: 'asc' }
         });
         res.json(users);
     } catch (error) {
@@ -37,7 +78,8 @@ router.get('/', authenticateToken, async (req, res) => {
                 name: true,
                 role: true,
                 availability: true,
-                defaultOffDay: true
+                defaultOffDay: true,
+                photoUrl: true
             }
         });
         res.json(users);
@@ -99,7 +141,8 @@ router.patch('/:id/default-offday', authenticateToken, validate((req) => ({
                 name: true,
                 role: true,
                 availability: true,
-                defaultOffDay: true
+                defaultOffDay: true,
+                photoUrl: true
             }
         });
 
@@ -131,17 +174,7 @@ router.get('/barbers-list', authenticateToken, requireOwner, async (req, res) =>
                     not: 'owner' // Get all users except owner
                 }
             },
-            select: {
-                id: true,
-                username: true,
-                name: true,
-                role: true,
-                status: true,
-                availability: true,
-                defaultOffDay: true,
-                createdAt: true,
-                updatedAt: true,
-            },
+            select: barberSelect,
             orderBy: { name: 'asc' }
         });
         console.log(`Found ${barbers.length} barbers for owner ${req.user.id}`);
@@ -153,11 +186,11 @@ router.get('/barbers-list', authenticateToken, requireOwner, async (req, res) =>
 });
 
 // POST /api/users/barbers - Create new barber (owner only)
-router.post('/barbers', authenticateToken, requireOwner, validate((req) => ({
-    username: requiredString(req.body.username, 'username', { min: 3, max: 80 }),
-    password: requiredString(req.body.password, 'password', { min: 6, max: 200 }),
-    name: requiredString(req.body.name, 'name', { min: 2, max: 100 }),
-    status: optionalString(req.body.status || 'active', 'status', { max: 20 })
+router.post('/barbers', authenticateToken, requireOwner, upload.single('photo'), validate((req) => ({
+    username: requiredString(getRequestBody(req).username, 'username', { min: 3, max: 80 }),
+    password: requiredString(getRequestBody(req).password, 'password', { min: 6, max: 200 }),
+    name: requiredString(getRequestBody(req).name, 'name', { min: 2, max: 100 }),
+    status: optionalString(getRequestBody(req).status || 'active', 'status', { max: 20 })
 })), async (req, res) => {
     try {
         const { username, password, name, status } = req.validated;
@@ -189,21 +222,22 @@ router.post('/barbers', authenticateToken, requireOwner, validate((req) => ({
                 role: 'staff',
                 status: status || 'active',
             },
-            select: {
-                id: true,
-                username: true,
-                name: true,
-                role: true,
-                status: true,
-                availability: true,
-                createdAt: true,
-                updatedAt: true,
-            }
+            select: barberSelect
         });
 
-        logAudit('user.barber.create', req.user.id, { targetId: barber.id, username: barber.username });
+        let responseBarber = barber;
+        if (req.file) {
+            const photoUrl = await uploadBarberPhoto(req.file, barber.id);
+            responseBarber = await prisma.user.update({
+                where: { id: barber.id },
+                data: { photoUrl },
+                select: barberSelect
+            });
+        }
 
-        res.status(201).json(barber);
+        logAudit('user.barber.create', req.user.id, { targetId: responseBarber.id, username: responseBarber.username, photoChanged: Boolean(req.file) });
+
+        res.status(201).json(responseBarber);
     } catch (error) {
         console.error('Error creating barber:', error);
         // Handle Prisma errors
@@ -217,12 +251,12 @@ router.post('/barbers', authenticateToken, requireOwner, validate((req) => ({
 });
 
 // PUT /api/users/barbers/:id - Update barber (owner only)
-router.put('/barbers/:id', authenticateToken, requireOwner, validate((req) => ({
+router.put('/barbers/:id', authenticateToken, requireOwner, upload.single('photo'), validate((req) => ({
     targetId: requiredInt(req.params.id, 'id', { min: 1 }),
-    username: optionalString(req.body.username, 'username', { min: 3, max: 80 }),
-    password: optionalString(req.body.password, 'password', { min: 6, max: 200 }),
-    name: optionalString(req.body.name, 'name', { min: 2, max: 100 }),
-    status: optionalString(req.body.status, 'status', { max: 20 })
+    username: optionalString(getRequestBody(req).username, 'username', { min: 3, max: 80 }),
+    password: optionalString(getRequestBody(req).password, 'password', { min: 6, max: 200 }),
+    name: optionalString(getRequestBody(req).name, 'name', { min: 2, max: 100 }),
+    status: optionalString(getRequestBody(req).status, 'status', { max: 20 })
 })), async (req, res) => {
     try {
         const { targetId, username, password, name, status } = req.validated;
@@ -259,6 +293,10 @@ router.put('/barbers/:id', authenticateToken, requireOwner, validate((req) => ({
             updateData.tokenVersion = { increment: 1 };
         }
 
+        if (req.file) {
+            updateData.photoUrl = await uploadBarberPhoto(req.file, targetId);
+        }
+
         // Check if username already exists (if changing username)
         if (username) {
             const existingUser = await prisma.user.findUnique({
@@ -273,23 +311,15 @@ router.put('/barbers/:id', authenticateToken, requireOwner, validate((req) => ({
         const barber = await prisma.user.update({
             where: { id: targetId },
             data: updateData,
-            select: {
-                id: true,
-                username: true,
-                name: true,
-                role: true,
-                status: true,
-                availability: true,
-                createdAt: true,
-                updatedAt: true,
-            }
+            select: barberSelect
         });
 
         logAudit('user.barber.update', req.user.id, {
             targetId,
             username: barber.username,
             passwordChanged: Boolean(password),
-            statusChanged: Boolean(status)
+            statusChanged: Boolean(status),
+            photoChanged: Boolean(req.file)
         });
 
         res.json(barber);

@@ -15,6 +15,7 @@ interface Barber {
     username: string;
     availability: string;
     defaultOffDay?: number | null;
+    photoUrl?: string | null;
 }
 
 interface ServiceSummary {
@@ -27,6 +28,30 @@ interface BookingData {
     barber: { id: number; name: string; username: string };
     timeSlot: { start: string; end: string; label: string };
 }
+
+interface PublicSettings {
+    address: string;
+    whatsappNumber: string;
+    mapsUrl: string;
+    instagramUrl: string;
+    bookingDaysAhead: number;
+    regularOpenHour: number;
+    fridayOpenHour: number;
+    closeHour: number;
+    headBarberId: number | null;
+}
+
+const DEFAULT_PUBLIC_SETTINGS: PublicSettings = {
+    address: 'Jl. Imam Bonjol Pertigaan No.370 Kediri',
+    whatsappNumber: '6287770995270',
+    mapsUrl: 'https://maps.app.goo.gl/AitnhHiAY3Ka9fAM9',
+    instagramUrl: 'https://www.instagram.com/staycoolhair_lab/?hl=en',
+    bookingDaysAhead: 3,
+    regularOpenHour: 11,
+    fridayOpenHour: 13,
+    closeHour: 22,
+    headBarberId: null,
+};
 
 interface HistoryItem {
     type: 'booking' | 'transaction';
@@ -64,6 +89,7 @@ export default function StatusPage() {
     const [currentOffDays, setCurrentOffDays] = useState<any[]>([]);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [blackout, setBlackout] = useState<{ enabled: boolean; start: string | null; end: string | null }>({ enabled: false, start: null, end: null });
+    const [publicSettings, setPublicSettings] = useState<PublicSettings>(DEFAULT_PUBLIC_SETTINGS);
 
     // Success feedback state (#8)
     const [lastBookedInfo, setLastBookedInfo] = useState<{ barberName: string; slot: string } | null>(null);
@@ -94,7 +120,10 @@ export default function StatusPage() {
         // Fetch blackout config once on mount
         fetch(`${API_BASE_URL}/bookings/config`)
             .then(r => r.ok ? r.json() : null)
-            .then(data => { if (data?.blackout) setBlackout(data.blackout); })
+            .then(data => {
+                if (data?.blackout) setBlackout(data.blackout);
+                if (data?.publicSettings) setPublicSettings({ ...DEFAULT_PUBLIC_SETTINGS, ...data.publicSettings });
+            })
             .catch(() => {});
     }, []);
 
@@ -207,8 +236,8 @@ export default function StatusPage() {
         const isToday = forDate.toDateString() === now.toDateString();
         const currentHour = now.getHours();
         const isFriday = forDate.getDay() === 5;
-        const OPENING_HOUR = isFriday ? 13 : 11;
-        const CLOSING_HOUR = 22;
+        const OPENING_HOUR = isFriday ? publicSettings.fridayOpenHour : publicSettings.regularOpenHour;
+        const CLOSING_HOUR = publicSettings.closeHour;
 
         for (let startHour = OPENING_HOUR; startHour < CLOSING_HOUR; startHour++) {
             if (isToday && startHour <= currentHour) continue;
@@ -243,7 +272,7 @@ export default function StatusPage() {
     const isBlackout = isBlackoutDate(selectedDate);
     const availableBarberCount = barbers.filter((barber) => !isBarberOffday(barber.username, selectedDate)).length;
 
-    const bookingDaysAhead = parseInt(import.meta.env.VITE_BOOKING_DAYS_AHEAD || '3', 10);
+    const bookingDaysAhead = publicSettings.bookingDaysAhead;
     const dateOptions = Array.from({ length: bookingDaysAhead }, (_, i) => addDays(new Date(), i));
     const prioritizedStatusResults = statusResults
         ? [...statusResults].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -253,7 +282,8 @@ export default function StatusPage() {
         : null;
 
     const getBarberStartingPrice = (username: string) => {
-        const isHeadBarber = username === 'bagus';
+        const barber = barbers.find((item) => item.username === username);
+        const isHeadBarber = Boolean(publicSettings.headBarberId && barber?.id === publicSettings.headBarberId);
         const filtered = services.filter((service) => {
             const lower = service.name.toLowerCase();
             const isHeadBarberService = lower.includes('head barber') || lower.includes('by head');
@@ -323,9 +353,9 @@ export default function StatusPage() {
                     {/* Jam Operasional (#4) */}
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-zinc-200 shadow-sm text-xs text-zinc-600 font-medium">
                         <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                        <span>Sen–Kam & Sab–Min: <strong>11:00–22:00</strong></span>
+                        <span>Sen–Kam & Sab–Min: <strong>{String(publicSettings.regularOpenHour).padStart(2, '0')}:00–{String(publicSettings.closeHour).padStart(2, '0')}:00</strong></span>
                         <span className="text-zinc-300">|</span>
-                        <span>Jumat: <strong>13:00–22:00</strong></span>
+                        <span>Jumat: <strong>{String(publicSettings.fridayOpenHour).padStart(2, '0')}:00–{String(publicSettings.closeHour).padStart(2, '0')}:00</strong></span>
                     </div>
 
                 </div>
@@ -393,7 +423,7 @@ export default function StatusPage() {
                             </p>
                             <p className="text-amber-700 text-sm mt-1 leading-relaxed">
                                 {blackoutMessage || 'Selama periode ini kami hanya melayani walk-in langsung ke barbershop.'}
-                                Silakan datang ke <span className="font-bold">Jl. Imam Bonjol Pertigaan No.370 Kediri</span>.
+                                Silakan datang ke <span className="font-bold">{publicSettings.address}</span>.
                             </p>
                         </div>
                     </div>
@@ -410,8 +440,8 @@ export default function StatusPage() {
                                 : 'Coba pindah ke tanggal lain, atau datang langsung ke tempat untuk cek ketersediaan terbaru.'}
                         </p>
                         <div className="flex flex-wrap gap-3">
-                            <a href="https://wa.me/6287770995270" className="px-4 py-2 rounded-xl bg-zinc-900 text-white text-sm font-bold">WhatsApp Admin</a>
-                            <a href="https://maps.app.goo.gl/AitnhHiAY3Ka9fAM9" target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-xl bg-zinc-100 text-zinc-700 text-sm font-bold">Lihat Lokasi</a>
+                            <a href={`https://wa.me/${publicSettings.whatsappNumber}`} className="px-4 py-2 rounded-xl bg-zinc-900 text-white text-sm font-bold">WhatsApp Admin</a>
+                            <a href={publicSettings.mapsUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-xl bg-zinc-100 text-zinc-700 text-sm font-bold">Lihat Lokasi</a>
                         </div>
                     </div>
                 )}
@@ -426,7 +456,7 @@ export default function StatusPage() {
                 ) : barbers.length === 0 ? (
                     <div className="text-center py-20 text-zinc-400">No barbers available.</div>
                 ) : (
-                    <div className="grid gap-6">
+                    <div className="grid gap-3 md:gap-6">
                         {isAvailabilityLoading && (
                             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500 animate-pulse">
                                 Menyegarkan ketersediaan barber dan slot...
@@ -455,7 +485,7 @@ export default function StatusPage() {
                                 <div
                                     key={barber.id}
                                     className={`
-                                        group relative bg-white rounded-3xl p-6 md:p-8
+                                        group relative bg-white rounded-2xl md:rounded-3xl p-3 md:p-8
                                         transition-all duration-200 ease-out
                                         ${isOffday
                                             ? 'opacity-60 grayscale border border-dashed border-zinc-200'
@@ -463,53 +493,51 @@ export default function StatusPage() {
                                         }
                                     `}
                                 >
-                                    <div className="flex flex-col md:flex-row gap-8">
+                                    <div className="flex flex-col md:flex-row gap-3 md:gap-8">
                                         {/* Barber Profile */}
-                                        <div className="flex md:flex-col items-center gap-5 md:w-48 shrink-0">
+                                        <div className="flex md:flex-col items-center gap-3 md:gap-5 md:w-48 shrink-0">
                                             <div
                                                 className="relative group-hover:scale-105 transition-transform duration-500 cursor-pointer"
                                                 onClick={() => {
-                                                    if (barber.username === 'bagus') {
-                                                        setSelectedImage('/bagus.webp');
-                                                        setImageModalOpen(true);
-                                                    } else if (barber.username === 'diva') {
-                                                        setSelectedImage('/profil_diva.webp');
+                                                    if (barber.photoUrl) {
+                                                        setSelectedImage(barber.photoUrl);
                                                         setImageModalOpen(true);
                                                     }
                                                 }}
                                             >
-                                                <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-lg bg-zinc-100">
-                                                    {barber.username === 'bagus' ? (
-                                                        <img src="/bagus.webp" alt="Owner" className="w-full h-full object-cover" />
-                                                    ) : barber.username === 'diva' ? (
-                                                        <img src="/profil_diva.webp" alt="Diva" className="w-full h-full object-cover" />
+                                                <div className="w-14 h-14 md:w-24 md:h-24 rounded-2xl overflow-hidden shadow-md md:shadow-lg bg-zinc-100">
+                                                    {barber.photoUrl ? (
+                                                        <img src={barber.photoUrl} alt={barber.name} className="w-full h-full object-cover" />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-3xl font-black text-zinc-300">
+                                                        <div className="w-full h-full flex items-center justify-center text-xl md:text-3xl font-black text-zinc-300">
                                                             {barber.name.charAt(0)}
                                                         </div>
                                                     )}
                                                 </div>
                                                 <div className={`
-                                                    absolute -bottom-2 -right-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border border-white
+                                                    absolute -bottom-1.5 -right-1.5 md:-bottom-2 md:-right-2 px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-wider shadow-sm border border-white
                                                     ${isAvailable ? 'bg-zinc-900 text-white' : isOffday ? 'bg-zinc-200 text-zinc-500' : 'bg-zinc-100 text-zinc-900'}
                                                 `}>
                                                     {isAvailable ? 'OPEN' : isOffday ? 'OFF' : 'BUSY'}
                                                 </div>
                                             </div>
 
-                                             <div className="text-left md:text-center w-full">
-                                                 <h3 className="text-2xl font-bold text-zinc-900 tracking-tight">{barber.name}</h3>
-                                                 <p className="text-xs text-zinc-400 font-medium uppercase tracking-widest mt-1">
-                                                     {barber.username === 'bagus' ? 'Head Barber' : 'Barber'}
-                                                 </p>
-                                                 
-                                             </div>
-                                        </div>
+                                             <div className="text-left md:text-center w-full min-w-0 flex-1">
+                                                 <h3 className="text-base md:text-2xl font-bold text-zinc-900 tracking-tight leading-tight truncate">{barber.name}</h3>
+                                                  <p className="text-xs text-zinc-400 font-medium uppercase tracking-widest mt-1">
+                                                      {publicSettings.headBarberId === barber.id ? 'Head Barber' : 'Barber'}
+                                                  </p>
+                                                  <p className="mt-1 text-[11px] font-bold text-zinc-500 md:hidden">
+                                                      {isOffday || isBlackout ? 'Tidak tersedia' : `${availableSlotCount} slot tersedia`}
+                                                  </p>
+                                                  
+                                              </div>
+                                         </div>
 
                                         {/* Slots */}
-                                        <div className="flex-1 border-t md:border-t-0 md:border-l border-zinc-100 pt-6 md:pt-0 md:pl-8">
+                                        <div className="flex-1 border-t md:border-t-0 md:border-l border-zinc-100 pt-3 md:pt-0 md:pl-8">
                                             {/* Slot header with counter (#3) */}
-                                            <div className="flex items-center justify-between mb-6">
+                                            <div className="hidden md:flex items-center justify-between mb-6">
                                                 <div className="flex items-center gap-3">
                                                     <h4 className="text-sm font-semibold text-zinc-900">Available Slots</h4>
                                                     {!isOffday && !isBlackout && (
@@ -536,7 +564,7 @@ export default function StatusPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                                             <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-5 gap-1.5 md:gap-3">
                                                 {timeSlots.map((slot, idx) => {
                                                     const isBooked = existingBookings.some(booking =>
                                                         booking.barberId === barber.id &&
@@ -561,7 +589,7 @@ export default function StatusPage() {
                                                                 }
                                                             }}
                                                             className={`
-                                                                relative py-3 rounded-xl text-xs font-bold transition-all duration-200
+                                                                relative py-2 md:py-3 rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold transition-all duration-200
                                                                 ${isLocked
                                                                     ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed'
                                                                     : 'bg-white border text-zinc-600 hover:bg-zinc-900 hover:text-white hover:shadow-lg hover:-translate-y-0.5 border-zinc-200'
@@ -680,7 +708,7 @@ export default function StatusPage() {
                     </p>
                     <div className="flex justify-center gap-6 mb-6">
                         <a
-                            href="https://maps.app.goo.gl/AitnhHiAY3Ka9fAM9"
+                            href={publicSettings.mapsUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 hover:bg-zinc-900 hover:text-white transition-all hover:scale-110"
@@ -689,7 +717,7 @@ export default function StatusPage() {
                             <MapPin className="w-5 h-5" />
                         </a>
                         <a
-                            href="https://www.instagram.com/staycoolhair_lab/?hl=en"
+                            href={publicSettings.instagramUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 hover:bg-zinc-900 hover:text-white transition-all hover:scale-110"
@@ -698,7 +726,7 @@ export default function StatusPage() {
                             <Instagram className="w-5 h-5" />
                         </a>
                         <a
-                            href="https://wa.me/6287770995270"
+                            href={`https://wa.me/${publicSettings.whatsappNumber}`}
                             className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 hover:bg-zinc-900 hover:text-white transition-all hover:scale-110"
                             aria-label="Support"
                         >

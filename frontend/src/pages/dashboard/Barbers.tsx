@@ -33,6 +33,7 @@ interface Barber {
     role: string;
     status: string;
     availability: string;
+    photoUrl?: string | null;
 
     createdAt: string;
     updatedAt: string;
@@ -50,6 +51,8 @@ export default function BarbersPage() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [photoPreview, setPhotoPreview] = useState('');
 
     const [status, setStatus] = useState('active');
 
@@ -103,11 +106,10 @@ export default function BarbersPage() {
             const method = currentId ? 'PUT' : 'POST';
             const url = currentId ? `${API_BASE_URL}/users/barbers/${currentId}` : `${API_BASE_URL}/users/barbers`;
 
-            const body: any = {
-                username: username.trim(),
-                name: name.trim(),
-                status: status || 'active'
-            };
+            const formData = new FormData();
+            formData.append('username', username.trim());
+            formData.append('name', name.trim());
+            formData.append('status', status || 'active');
 
             // Only include password if it's a new user or if password is provided for update
             if (!currentId) {
@@ -115,18 +117,21 @@ export default function BarbersPage() {
                     toast.error('Password is required');
                     return;
                 }
-                body.password = password;
+                formData.append('password', password);
             } else if (password.trim()) {
-                body.password = password;
+                formData.append('password', password);
+            }
+
+            if (photoFile) {
+                formData.append('photo', photoFile);
             }
 
             const res = await fetch(url, {
                 method,
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(body)
+                body: formData
             });
 
             if (!res.ok) {
@@ -171,6 +176,8 @@ export default function BarbersPage() {
         setPassword('');
         setName(barber.name);
         setStatus(barber.status);
+        setPhotoFile(null);
+        setPhotoPreview(barber.photoUrl || '');
         setIsDialogOpen(true);
     };
 
@@ -180,6 +187,8 @@ export default function BarbersPage() {
         setPassword('');
         setName('');
         setStatus('active');
+        setPhotoFile(null);
+        setPhotoPreview('');
         setIsDialogOpen(true);
     };
 
@@ -190,6 +199,19 @@ export default function BarbersPage() {
         setPassword('');
         setName('');
         setStatus('active');
+        setPhotoFile(null);
+        setPhotoPreview('');
+    };
+
+    const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please select an image file');
+            return;
+        }
+        setPhotoFile(file);
+        setPhotoPreview(URL.createObjectURL(file));
     };
 
     const filteredBarbers = barbers.filter(barber =>
@@ -234,6 +256,28 @@ export default function BarbersPage() {
                             <DialogTitle>{currentId ? 'Edit Barber' : 'Add New Barber'}</DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="photo">Barber Photo</Label>
+                                <div className="flex items-center gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+                                    <div className="h-16 w-16 overflow-hidden rounded-2xl bg-white border border-zinc-200 flex items-center justify-center text-xl font-black text-zinc-300 shrink-0">
+                                        {photoPreview ? (
+                                            <img src={photoPreview} alt="Barber preview" className="h-full w-full object-cover" />
+                                        ) : (
+                                            name.trim().charAt(0) || 'B'
+                                        )}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <Input
+                                            id="photo"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handlePhotoChange}
+                                            className="bg-white"
+                                        />
+                                        <p className="mt-1 text-xs text-zinc-400">JPG, PNG, GIF, or WebP. Max 5MB.</p>
+                                    </div>
+                                </div>
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="username">Username *</Label>
                                 <Input
@@ -338,7 +382,7 @@ export default function BarbersPage() {
                             <table className="w-full text-sm text-left min-w-[800px]">
                                 <thead className="bg-zinc-50 uppercase tracking-wider text-xs font-semibold text-zinc-500 border-b border-zinc-200">
                                     <tr>
-                                        <th className="p-4 pl-6">Name</th>
+                                        <th className="p-4 pl-6">Barber</th>
                                         <th className="p-4">Username</th>
                                         <th className="p-4 text-center">Status</th>
                                         <th className="p-4 text-center">Actions</th>
@@ -347,7 +391,18 @@ export default function BarbersPage() {
                                 <tbody className="divide-y divide-zinc-100 bg-white">
                                     {filteredBarbers.map((barber) => (
                                         <tr key={barber.id} className="hover:bg-zinc-50 transition-colors group">
-                                            <td className="p-4 pl-6 font-bold text-zinc-900">{barber.name}</td>
+                                            <td className="p-4 pl-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 overflow-hidden rounded-xl bg-zinc-100 border border-zinc-200 flex items-center justify-center text-sm font-black text-zinc-300 shrink-0">
+                                                        {barber.photoUrl ? (
+                                                            <img src={barber.photoUrl} alt={barber.name} className="h-full w-full object-cover" />
+                                                        ) : (
+                                                            barber.name.charAt(0)
+                                                        )}
+                                                    </div>
+                                                    <span className="font-bold text-zinc-900">{barber.name}</span>
+                                                </div>
+                                            </td>
                                             <td className="p-4 text-zinc-500">{barber.username}</td>
                                             <td className="p-4 text-center">
                                                 <Badge
@@ -395,4 +450,3 @@ export default function BarbersPage() {
         </div>
     );
 }
-
