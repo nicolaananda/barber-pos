@@ -9,12 +9,13 @@ const whatsappService = require('../lib/whatsapp');
 const { format } = require('date-fns');
 const { id: idLocale } = require('date-fns/locale');
 const path = require('path');
-const { uploadFile } = require('../lib/r2');
+const { uploadFile, deleteFile } = require('../lib/r2');
 const securityLogger = require('../lib/securityLogger');
 const { sanitizeText, sanitizePhone, isValidIndonesianPhone } = require('../lib/sanitizer');
 const requireOwner = require('../middleware/requireOwner');
 const { validate, requiredString, requiredInt, optionalInt, requiredDate } = require('../lib/validators');
 const { getBookingConfig, saveBookingConfig } = require('../lib/bookingConfig');
+const { bookingCreateLimiter, bookingStatusLimiter, publicReadLimiter } = require('../middleware/rateLimiter');
 
 const ACTIVE_BOOKING_STATUSES = new Set(['pending', 'confirmed']);
 
@@ -25,8 +26,45 @@ const buildActiveSlotKey = (barberId, bookingDate, timeSlot, status) => {
     return `${barberId}:${toSlotDate(bookingDate)}:${timeSlot}`;
 };
 
+const isIsoDateOnly = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+const getDayRange = (dateString) => {
+    if (!isIsoDateOnly(dateString)) return null;
+    const targetDate = new Date(`${dateString}T00:00:00`);
+    if (Number.isNaN(targetDate.getTime())) return null;
+    const startOfDay = new Date(targetDate);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    return { targetDate, startOfDay, endOfDay };
+};
+
+const isWithinBookingWindow = (date, bookingDaysAhead) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + Math.max(1, bookingDaysAhead) - 1);
+    maxDate.setHours(23, 59, 59, 999);
+    return date >= today && date <= maxDate;
+};
+
+const getExtFromMagicBytes = (buffer) => {
+    if (buffer[0] === 0xFF && buffer[1] === 0xD8) return '.jpg';
+    if (buffer[0] === 0x89 && buffer[1] === 0x50) return '.png';
+    if (buffer[0] === 0x47 && buffer[1] === 0x49) return '.gif';
+    if (buffer[0] === 0x52 && buffer[1] === 0x49) return '.webp';
+    return '.jpg';
+};
+
+const safePublicBookingSelect = {
+    barberId: true,
+    bookingDate: true,
+    timeSlot: true,
+    status: true,
+    barber: { select: { id: true, name: true } }
+};
+
 // GET /api/bookings/config - Public endpoint for booking configuration (blackout dates, etc.)
-router.get('/config', async (req, res) => {
+router.get('/config', publicReadLimiter, async (req, res) => {
     try {
         res.json(await getBookingConfig());
     } catch (error) {
@@ -39,6 +77,51 @@ router.patch('/config', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { enabled, start, end } = req.body.blackout || {};
         const publicSettings = req.body.publicSettings || {};
+
+        const validateHttpsUrl = (value, allowedHosts, label) => {
+            if (!value) return null;
+            try {
+                const parsed = new URL(value);
+                if (parsed.protocol !== 'https:' || !allowedHosts.some((host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`))) {
+                    throw new Error('invalid host');
+                }
+                return parsed.toString();
+            } catch {
+                const error = new Error(`${label} must be a valid HTTPS URL from an approved domain`);
+                error.statusCode = 400;
+                throw error;
+            }
+        };
+
+        const clampNumber = (value, fallback, min, max, label) => {
+            const number = value === null || value === undefined || value === '' ? fallback : Number(value);
+            if (!Number.isInteger(number) || number < min || number > max) {
+                const error = new Error(`${label} must be between ${min} and ${max}`);
+                error.statusCode = 400;
+                throw error;
+            }
+            return number;
+        };
+
+        const normalizedPublicSettings = {
+            address: typeof publicSettings.address === 'string' ? publicSettings.address.trim().slice(0, 191) : null,
+            whatsappNumber: publicSettings.whatsappNumber ? String(publicSettings.whatsappNumber).replace(/\D/g, '') : null,
+            mapsUrl: validateHttpsUrl(publicSettings.mapsUrl, ['maps.app.goo.gl', 'google.com', 'google.co.id'], 'Maps URL'),
+            instagramUrl: validateHttpsUrl(publicSettings.instagramUrl, ['instagram.com'], 'Instagram URL'),
+            bookingDaysAhead: clampNumber(publicSettings.bookingDaysAhead, 3, 1, 14, 'Booking days ahead'),
+            regularOpenHour: clampNumber(publicSettings.regularOpenHour, 11, 0, 23, 'Regular open hour'),
+            fridayOpenHour: clampNumber(publicSettings.fridayOpenHour, 13, 0, 23, 'Friday open hour'),
+            closeHour: clampNumber(publicSettings.closeHour, 22, 1, 24, 'Close hour'),
+            headBarberId: publicSettings.headBarberId ? clampNumber(publicSettings.headBarberId, null, 1, 999999, 'Head barber') : null,
+        };
+
+        if (normalizedPublicSettings.whatsappNumber && !/^62\d{8,15}$/.test(normalizedPublicSettings.whatsappNumber)) {
+            return res.status(400).json({ error: 'WhatsApp number must use Indonesia format, e.g. 6287770995270' });
+        }
+
+        if (normalizedPublicSettings.fridayOpenHour >= normalizedPublicSettings.closeHour || normalizedPublicSettings.regularOpenHour >= normalizedPublicSettings.closeHour) {
+            return res.status(400).json({ error: 'Open hour must be earlier than close hour' });
+        }
 
         if (enabled && (!start || !end)) {
             return res.status(400).json({ error: 'Blackout start and end dates are required' });
@@ -55,18 +138,21 @@ router.patch('/config', authenticateToken, requireOwner, async (req, res) => {
                 end: enabled ? end : null,
                 message: req.body.blackout?.message || null,
             },
-            publicSettings
+            publicSettings: normalizedPublicSettings
         });
 
         res.json(config);
     } catch (error) {
+        if (error.statusCode === 400) {
+            return res.status(400).json({ error: error.message });
+        }
         console.error('Error updating booking config:', error);
         res.status(500).json({ error: 'Failed to update booking config' });
     }
 });
 
 // POST /api/bookings - Create new booking
-router.post('/', upload.single('proof'), validate((req) => ({
+router.post('/', bookingCreateLimiter, upload.single('proof'), validate((req) => ({
     barberId: requiredInt(req.body.barberId, 'barberId', { min: 1 }),
     customerName: requiredString(req.body.customerName, 'customerName', { min: 2, max: 100 }),
     customerPhone: requiredString(req.body.customerPhone, 'customerPhone', { min: 6, max: 30 }),
@@ -74,6 +160,7 @@ router.post('/', upload.single('proof'), validate((req) => ({
     timeSlot: requiredString(req.body.timeSlot, 'timeSlot', { max: 30 }),
     serviceId: optionalInt(req.body.serviceId, 'serviceId', { min: 1 })
 })), async (req, res) => {
+    let uploadedProofKey = null;
     try {
         // Safety check for req.body
         req.body = req.body || {};
@@ -93,6 +180,25 @@ router.post('/', upload.single('proof'), validate((req) => ({
             }
         }
 
+        // 🔒 SECURITY: Sanitize inputs to prevent XSS
+        const sanitizedName = sanitizeText(customerName);
+        const sanitizedPhone = sanitizePhone(customerPhone);
+
+        if (!sanitizedName || sanitizedName.length < 2) {
+            return res.status(400).json({ error: 'Nama tidak valid (minimal 2 karakter)' });
+        }
+
+        if (!sanitizedPhone || !isValidIndonesianPhone(sanitizedPhone)) {
+            return res.status(400).json({
+                error: 'Nomor WhatsApp tidak valid. Gunakan format Indonesia (08xx) dengan operator valid.'
+            });
+        }
+
+        const checkDate = new Date(bookingDate);
+        if (Number.isNaN(checkDate.getTime()) || !isWithinBookingWindow(checkDate, bookingConfig.publicSettings.bookingDaysAhead)) {
+            return res.status(400).json({ error: 'Tanggal booking di luar jendela booking online' });
+        }
+
         // Fetch Service Details if provided
         let serviceName = 'Potong Rambut'; // Default
         let servicePrice = null;
@@ -107,68 +213,8 @@ router.post('/', upload.single('proof'), validate((req) => ({
             }
         }
 
-        // Handle R2 Upload
-        let paymentProof = null;
-        if (req.file) {
-            // 🔒 SECURITY: Validate file content to prevent malicious uploads
-            if (!validateImageContent(req.file.buffer)) {
-                // Log security event
-                securityLogger.logMaliciousUpload(
-                    req.file.originalname,
-                    req.ip || req.connection.remoteAddress,
-                    req.file.mimetype
-                );
-
-                return res.status(400).json({
-                    error: 'File tidak valid. Hanya gambar asli yang diperbolehkan.'
-                });
-            }
-
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            // Determine extension from magic bytes instead of user input
-            const getExtFromMagicBytes = (buffer) => {
-                if (buffer[0] === 0xFF && buffer[1] === 0xD8) return '.jpg';
-                if (buffer[0] === 0x89 && buffer[1] === 0x50) return '.png';
-                if (buffer[0] === 0x47 && buffer[1] === 0x49) return '.gif';
-                if (buffer[0] === 0x52 && buffer[1] === 0x49) return '.webp';
-                return '.jpg'; // fallback
-            };
-            const ext = getExtFromMagicBytes(req.file.buffer);
-            const filename = 'proofs/proof-' + uniqueSuffix + ext;
-
-            try {
-                paymentProof = await uploadFile(req.file.buffer, filename, req.file.mimetype);
-            } catch (err) {
-                console.error("Upload R2 Failed:", err);
-                return res.status(500).json({ error: 'Gagal upload bukti transfer ke R2' });
-            }
-        } else {
-            // Handle case where file is missing but required, handled by validation below
-            paymentProof = null;
-        }
-
-        // Validation - Payment Proof is MANDATORY
-        if (!paymentProof) {
-            return res.status(400).json({ error: 'Bukti transfer wajib diupload!' });
-        }
-
         if (!barberId || !customerName || !customerPhone || !bookingDate || !timeSlot) {
             return res.status(400).json({ error: 'Missing required fields' });
-        }
-
-        // 🔒 SECURITY: Sanitize inputs to prevent XSS
-        const sanitizedName = sanitizeText(customerName);
-        const sanitizedPhone = sanitizePhone(customerPhone);
-
-        // Validate sanitized inputs
-        if (!sanitizedName || sanitizedName.length < 2) {
-            return res.status(400).json({ error: 'Nama tidak valid (minimal 2 karakter)' });
-        }
-
-        if (!sanitizedPhone || !isValidIndonesianPhone(sanitizedPhone)) {
-            return res.status(400).json({
-                error: 'Nomor WhatsApp tidak valid. Gunakan format Indonesia (08xx) dengan operator valid.'
-            });
         }
 
         // Enforce business hours: 11:00 - 22:00 (last slot 21:00-22:00)
@@ -195,12 +241,46 @@ router.post('/', upload.single('proof'), validate((req) => ({
             return res.status(400).json({ error: 'Invalid service ID' });
         }
 
-        // Check and create in one serializable transaction to reduce double-booking races.
-        const checkDate = new Date(bookingDate);
         const startOfDay = new Date(checkDate);
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(checkDate);
         endOfDay.setHours(23, 59, 59, 999);
+
+        const preflight = await prisma.$transaction(async (tx) => {
+            const barber = await tx.user.findUnique({
+                where: { id: parsedBarberId },
+                select: { id: true, defaultOffDay: true, status: true }
+            });
+            if (!barber || barber.status !== 'active') return { error: 'Barber not found', statusCode: 404 };
+            const manualOffDay = await tx.offDay.findFirst({ where: { userId: parsedBarberId, date: { gte: startOfDay, lte: endOfDay } }, select: { id: true } });
+            if (manualOffDay || barber.defaultOffDay === checkDate.getDay()) return { error: 'Barber is off on this date', statusCode: 409 };
+            const existingBooking = await tx.booking.findFirst({ where: { barberId: parsedBarberId, bookingDate: { gte: startOfDay, lte: endOfDay }, timeSlot, status: { in: ['pending', 'confirmed'] } }, select: { id: true } });
+            if (existingBooking) return { error: 'Time slot already booked', statusCode: 409 };
+            return { ok: true };
+        });
+
+        if (!preflight.ok) {
+            return res.status(preflight.statusCode).json({ error: preflight.error });
+        }
+
+        let paymentProof = null;
+        if (!req.file) {
+            return res.status(400).json({ error: 'Bukti transfer wajib diupload!' });
+        }
+        if (!validateImageContent(req.file.buffer)) {
+            securityLogger.logMaliciousUpload(req.file.originalname, req.ip || req.connection.remoteAddress, req.file.mimetype);
+            return res.status(400).json({ error: 'File tidak valid. Hanya gambar asli yang diperbolehkan.' });
+        }
+
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = getExtFromMagicBytes(req.file.buffer);
+        uploadedProofKey = 'proofs/proof-' + uniqueSuffix + ext;
+        try {
+            paymentProof = await uploadFile(req.file.buffer, uploadedProofKey, req.file.mimetype);
+        } catch (err) {
+            console.error("Upload R2 Failed:", err);
+            return res.status(500).json({ error: 'Gagal upload bukti transfer ke R2' });
+        }
 
         const booking = await prisma.$transaction(async (tx) => {
             const barber = await tx.user.findUnique({
@@ -279,6 +359,9 @@ router.post('/', upload.single('proof'), validate((req) => ({
 
         res.status(201).json(booking);
     } catch (error) {
+        if (uploadedProofKey) {
+            deleteFile(uploadedProofKey).catch((deleteError) => console.error('Failed to cleanup orphan proof:', deleteError));
+        }
         if (error.code === 'P2002') {
             return res.status(409).json({ error: 'Time slot already booked' });
         }
@@ -294,19 +377,17 @@ router.post('/', upload.single('proof'), validate((req) => ({
 });
 
 // GET /api/bookings/status?phone=08xxx - Public endpoint to check booking status by phone
-router.get('/status', async (req, res) => {
+router.get('/status', bookingStatusLimiter, async (req, res) => {
     try {
         const { phone } = req.query;
         if (!phone || phone.trim().length < 6) {
             return res.status(400).json({ error: 'Nomor HP tidak valid' });
         }
 
-        // Normalize phone: strip non-digits, convert +62/62 prefix to 0
-        let normalized = phone.trim().replace(/\D/g, '');
-        if (normalized.startsWith('62')) normalized = '0' + normalized.slice(2);
-        if (normalized.startsWith('+62')) normalized = '0' + normalized.slice(3);
-        // Match by last 10 digits to reduce collision while still handling format variations
-        const suffix = normalized.slice(-10);
+        const normalized = sanitizePhone(phone);
+        if (!isValidIndonesianPhone(normalized)) {
+            return res.status(400).json({ error: 'Nomor HP tidak valid' });
+        }
 
         const since = new Date();
         since.setDate(since.getDate() - 90);
@@ -315,18 +396,16 @@ router.get('/status', async (req, res) => {
         const [bookings, transactions] = await Promise.all([
             prisma.booking.findMany({
                 where: {
-                    customerPhone: { endsWith: suffix },
+                    customerPhone: normalized,
                     bookingDate: { gte: since },
                     status: { not: 'cancelled' },
                 },
                 select: {
                     id: true,
-                    customerName: true,
                     bookingDate: true,
                     barberId: true,
                     timeSlot: true,
                     serviceName: true,
-                    servicePrice: true,
                     status: true,
                     barber: { select: { name: true } },
                 },
@@ -336,12 +415,11 @@ router.get('/status', async (req, res) => {
             // 🔒 SECURITY: Only select fields needed for public display (no financial data)
             prisma.transaction.findMany({
                 where: {
-                    customerPhone: { endsWith: suffix },
+                    customerPhone: normalized,
                     date: { gte: since },
                 },
                 select: {
                     id: true,
-                    customerName: true,
                     date: true,
                     barberId: true,
                     items: true,
@@ -368,9 +446,9 @@ router.get('/status', async (req, res) => {
             type: 'booking',
             date: b.bookingDate,
             barberName: b.barber.name,
-            customerName: b.customerName,
+            customerName: 'Customer',
             service: b.serviceName || null,
-            amount: b.servicePrice || null,
+            amount: null,
             status: b.status,
             timeSlot: b.timeSlot,
             paymentMethod: null,
@@ -384,7 +462,7 @@ router.get('/status', async (req, res) => {
                 type: 'transaction',
                 date: tx.date,
                 barberName: tx.barber.name,
-                customerName: tx.customerName || 'Walk-in',
+                customerName: 'Customer',
                 service: firstItem ? firstItem.name : null,
                 amount: null,
                 status: 'completed',
@@ -407,7 +485,7 @@ router.get('/status', async (req, res) => {
 });
 
 // GET /api/bookings/today - Get today's bookings (PUBLIC - for Status page)
-router.get('/today', async (req, res) => {
+router.get('/today', publicReadLimiter, async (req, res) => {
     try {
         const today = new Date();
         const startOfDay = new Date(today);
@@ -423,22 +501,13 @@ router.get('/today', async (req, res) => {
                 },
                 status: { in: ['pending', 'confirmed'] }
             },
-            include: {
-                barber: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                }
-            },
+            select: safePublicBookingSelect,
             orderBy: [
                 { timeSlot: 'asc' }
             ]
         });
 
-        // Strip sensitive data from public endpoint
-        const safeBookings = bookings.map(({ customerPhone, ...rest }) => rest);
-        res.json(safeBookings);
+        res.json(bookings);
     } catch (error) {
         console.error('Error fetching today bookings:', error);
         res.status(500).json({ error: 'Failed to fetch bookings' });
@@ -446,14 +515,16 @@ router.get('/today', async (req, res) => {
 });
 
 // GET /api/bookings/date/:date - Get bookings for specific date (PUBLIC - for Status page)
-router.get('/date/:date', async (req, res) => {
+router.get('/date/:date', publicReadLimiter, async (req, res) => {
     try {
         const { date } = req.params;
-        const targetDate = new Date(date);
-        const startOfDay = new Date(targetDate);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(targetDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        const range = getDayRange(date);
+        if (!range) return res.status(400).json({ error: 'Invalid date' });
+        const { targetDate, startOfDay, endOfDay } = range;
+        const bookingConfig = await getBookingConfig();
+        if (!isWithinBookingWindow(targetDate, bookingConfig.publicSettings.bookingDaysAhead)) {
+            return res.status(400).json({ error: 'Date outside booking window' });
+        }
 
         const bookings = await prisma.booking.findMany({
             where: {
@@ -463,22 +534,13 @@ router.get('/date/:date', async (req, res) => {
                 },
                 status: { in: ['pending', 'confirmed'] }
             },
-            include: {
-                barber: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                }
-            },
+            select: safePublicBookingSelect,
             orderBy: [
                 { timeSlot: 'asc' }
             ]
         });
 
-        // Strip sensitive data from public endpoint
-        const safeBookings = bookings.map(({ customerPhone, ...rest }) => rest);
-        res.json(safeBookings);
+        res.json(bookings);
     } catch (error) {
         console.error('Error fetching bookings for date:', error);
         res.status(500).json({ error: 'Failed to fetch bookings' });

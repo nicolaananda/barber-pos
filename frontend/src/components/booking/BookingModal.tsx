@@ -18,7 +18,7 @@ const QRIS_IMAGE = "/qris.jpg";
 interface BookingModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    barber: { id: number; name: string; username?: string };
+    barber: { id: number; name: string; username?: string; isHeadBarber?: boolean };
     timeSlot: { start: string; end: string; label: string };
     bookingDate: Date;
     onSuccess?: () => void;
@@ -64,7 +64,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                 // Filter services based on barber type
                 // Services containing "head barber" or "by head" are exclusive to head barber
                 // Uses phrase matching (not just "head") to avoid false positives like "Overhead Trim"
-                const isHeadBarber = barber.username === 'bagus';
+                const isHeadBarber = Boolean(barber.isHeadBarber || barber.username === 'bagus');
                 const isHeadBarberService = (name: string) => {
                     const n = name.toLowerCase();
                     return n.includes('head barber') || n.includes('by head');

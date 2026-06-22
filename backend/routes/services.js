@@ -4,13 +4,26 @@ const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const requireOwner = require('../middleware/requireOwner');
 const { validate, requiredString, requiredMoney, optionalMoney, optionalEnum } = require('../lib/validators');
+const { publicReadLimiter } = require('../middleware/rateLimiter');
+
+const optionalAuthenticate = (req, res, next) => {
+    if (!req.headers.authorization) return next();
+    return authenticateToken(req, res, next);
+};
 
 // GET /api/services
 // GET /api/services - Public
-router.get('/', async (req, res) => {
+router.get('/', publicReadLimiter, optionalAuthenticate, async (req, res) => {
     try {
+        const isOwner = req.user?.role === 'owner';
         const services = await prisma.service.findMany({
             where: { isActive: true },
+            select: isOwner ? undefined : {
+                id: true,
+                name: true,
+                price: true,
+                isActive: true,
+            },
             orderBy: { name: 'asc' },
         });
         res.json(services);

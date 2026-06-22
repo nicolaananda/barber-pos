@@ -8,6 +8,7 @@ const upload = require('../middleware/upload');
 const { validateImageContent } = require('../middleware/upload');
 const { uploadFile } = require('../lib/r2');
 const path = require('path');
+const { publicReadLimiter } = require('../middleware/rateLimiter');
 
 const barberSelect = {
     id: true,
@@ -26,7 +27,6 @@ const publicBarberSelect = {
     id: true,
     username: true,
     name: true,
-    role: true,
     availability: true,
     defaultOffDay: true,
     photoUrl: true,
@@ -49,8 +49,10 @@ const uploadBarberPhoto = async (file, targetId) => {
 };
 
 // GET /api/users/barbers - Get all barbers (PUBLIC - for Status page)
-router.get('/barbers', async (req, res) => {
+router.get('/barbers', publicReadLimiter, async (req, res) => {
     try {
+        const { getBookingConfig } = require('../lib/bookingConfig');
+        const config = await getBookingConfig();
         const users = await prisma.user.findMany({
             where: {
                 status: 'active',
@@ -62,7 +64,14 @@ router.get('/barbers', async (req, res) => {
             select: publicBarberSelect,
             orderBy: { name: 'asc' }
         });
-        res.json(users);
+        res.json(users.map((user) => ({
+            id: user.id,
+            name: user.name,
+            availability: user.availability,
+            defaultOffDay: user.defaultOffDay,
+            photoUrl: user.photoUrl,
+            isHeadBarber: config.publicSettings.headBarberId ? user.id === config.publicSettings.headBarberId : user.username === 'bagus',
+        })));
     } catch (error) {
         console.error('Error fetching barbers:', error);
         res.status(500).json({ error: 'Failed to fetch barbers' });

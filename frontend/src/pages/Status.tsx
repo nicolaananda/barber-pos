@@ -12,10 +12,10 @@ import { VersionFooter } from '@/components/VersionFooter';
 interface Barber {
     id: number;
     name: string;
-    username: string;
     availability: string;
     defaultOffDay?: number | null;
     photoUrl?: string | null;
+    isHeadBarber?: boolean;
 }
 
 interface ServiceSummary {
@@ -25,7 +25,7 @@ interface ServiceSummary {
 }
 
 interface BookingData {
-    barber: { id: number; name: string; username: string };
+    barber: { id: number; name: string; isHeadBarber?: boolean };
     timeSlot: { start: string; end: string; label: string };
 }
 
@@ -161,8 +161,8 @@ export default function StatusPage() {
             if (res.ok) {
                 const data = await res.json();
                 const sorted = data.sort((a: Barber, b: Barber) => {
-                    if (a.username === 'bagus') return -1;
-                    if (b.username === 'bagus') return 1;
+                    if (a.isHeadBarber) return -1;
+                    if (b.isHeadBarber) return 1;
                     return a.name.localeCompare(b.name);
                 });
                 setBarbers(sorted);
@@ -251,10 +251,10 @@ export default function StatusPage() {
         return slots;
     };
 
-    const isBarberOffday = (username: string, date: Date) => {
-        const manualOff = currentOffDays.find((od: any) => od.user.username === username);
+    const isBarberOffday = (barberId: number, date: Date) => {
+        const manualOff = currentOffDays.find((od: any) => od.userId === barberId);
         if (manualOff) return true;
-        const barber = barbers.find(b => b.username === username);
+        const barber = barbers.find(b => b.id === barberId);
         if (barber?.defaultOffDay !== null && barber?.defaultOffDay !== undefined) {
             if (date.getDay() === barber.defaultOffDay) return true;
         }
@@ -270,7 +270,7 @@ export default function StatusPage() {
 
     const timeSlots = generateTimeSlots(selectedDate);
     const isBlackout = isBlackoutDate(selectedDate);
-    const availableBarberCount = barbers.filter((barber) => !isBarberOffday(barber.username, selectedDate)).length;
+    const availableBarberCount = barbers.filter((barber) => !isBarberOffday(barber.id, selectedDate)).length;
 
     const bookingDaysAhead = publicSettings.bookingDaysAhead;
     const dateOptions = Array.from({ length: bookingDaysAhead }, (_, i) => addDays(new Date(), i));
@@ -281,11 +281,8 @@ export default function StatusPage() {
         ? `Periode ${blackout.start} s/d ${blackout.end}: booking online ditutup, hanya walk-in langsung ke tempat.`
         : null;
 
-    const getBarberStartingPrice = (username: string) => {
-        const barber = barbers.find((item) => item.username === username);
-        const isHeadBarber = publicSettings.headBarberId
-            ? barber?.id === publicSettings.headBarberId
-            : username === 'bagus';
+    const getBarberStartingPrice = (barber: Barber) => {
+        const isHeadBarber = barber.isHeadBarber || Boolean(publicSettings.headBarberId && barber.id === publicSettings.headBarberId);
         const filtered = services.filter((service) => {
             const lower = service.name.toLowerCase();
             const isHeadBarberService = lower.includes('head barber') || lower.includes('by head');
@@ -464,8 +461,17 @@ export default function StatusPage() {
                                 Menyegarkan ketersediaan barber dan slot...
                             </div>
                         )}
-                        {barbers.map((barber) => {
-                            const onOffday = isBarberOffday(barber.username, selectedDate);
+                        {[...barbers].sort((a, b) => {
+                            const isTodayForSort = selectedDate.toDateString() === new Date().toDateString();
+                            const aOff = isBarberOffday(a.id, selectedDate);
+                            const bOff = isBarberOffday(b.id, selectedDate);
+                            const aBookable = !aOff && (!isTodayForSort || a.availability === 'available');
+                            const bBookable = !bOff && (!isTodayForSort || b.availability === 'available');
+                            if (aBookable !== bBookable) return aBookable ? -1 : 1;
+                            if (a.isHeadBarber !== b.isHeadBarber) return a.isHeadBarber ? -1 : 1;
+                            return a.name.localeCompare(b.name);
+                        }).map((barber) => {
+                            const onOffday = isBarberOffday(barber.id, selectedDate);
                             const isToday = selectedDate.toDateString() === new Date().toDateString();
                             const actualAvailability = onOffday
                                 ? 'offday'
@@ -527,7 +533,7 @@ export default function StatusPage() {
                                              <div className="text-left md:text-center w-full min-w-0 flex-1">
                                                  <h3 className="text-sm md:text-2xl font-bold text-zinc-900 tracking-tight leading-tight truncate">{barber.name}</h3>
                                                   <p className="text-[10px] md:text-xs text-zinc-400 font-medium uppercase tracking-widest mt-0.5 md:mt-1">
-                                                      {(publicSettings.headBarberId ? publicSettings.headBarberId === barber.id : barber.username === 'bagus') ? 'Head Barber' : 'Barber'}
+                                                      {barber.isHeadBarber || publicSettings.headBarberId === barber.id ? 'Head Barber' : 'Barber'}
                                                   </p>
                                                   <p className="mt-0.5 text-[10px] font-bold text-zinc-500 md:hidden">
                                                       {isOffday || isBlackout ? 'Tidak tersedia' : `${availableSlotCount} slot tersedia`}
@@ -584,7 +590,7 @@ export default function StatusPage() {
                                                             onClick={() => {
                                                                 if (!isLocked) {
                                                                     setSelectedBooking({
-                                                                        barber: { id: barber.id, name: barber.name, username: barber.username },
+                                                                        barber: { id: barber.id, name: barber.name, isHeadBarber: barber.isHeadBarber },
                                                                         timeSlot: slot,
                                                                     });
                                                                     setBookingModalOpen(true);

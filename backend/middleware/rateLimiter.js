@@ -46,9 +46,39 @@ const pinLimiter = rateLimit({
     ...trustProxyConfig,
 });
 
+const bookingCreateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 15,
+    message: 'Too many booking attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    ...trustProxyConfig,
+});
+
+const bookingStatusLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 8,
+    message: 'Too many status checks, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    ...trustProxyConfig,
+});
+
+const publicReadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    message: 'Too many requests, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    ...trustProxyConfig,
+});
+
 module.exports = {
     apiLimiter,
     strictLimiter,
     authLimiter,
-    pinLimiter
+    pinLimiter,
+    bookingCreateLimiter,
+    bookingStatusLimiter,
+    publicReadLimiter
 };

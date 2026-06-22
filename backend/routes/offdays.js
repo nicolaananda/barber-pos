@@ -4,32 +4,70 @@ const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const requireOwner = require('../middleware/requireOwner');
 const { validate, requiredInt, requiredDate, optionalString } = require('../lib/validators');
+const { publicReadLimiter } = require('../middleware/rateLimiter');
+
+const optionalAuthenticate = (req, res, next) => {
+    if (!req.headers.authorization) return next();
+    return authenticateToken(req, res, next);
+};
+
+const parseDateOnly = (value) => {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+};
 
 // GET /api/offdays
 // Query params: start (YYYY-MM-DD), end (YYYY-MM-DD), barberId (optional)
-router.get('/', async (req, res) => {
+router.get('/', publicReadLimiter, optionalAuthenticate, async (req, res) => {
     try {
         const { start, end, barberId } = req.query;
+        const isOwner = req.user?.role === 'owner';
 
         const whereClause = {};
 
-        if (start && end) {
+        if (!start || !end) {
+            return res.status(400).json({ error: 'start and end query parameters are required' });
+        }
+
+        const startDate = parseDateOnly(start);
+        const endDate = parseDateOnly(end);
+        if (!startDate || !endDate || endDate < startDate) {
+            return res.status(400).json({ error: 'Invalid date range' });
+        }
+
+        const maxRange = new Date(startDate);
+        maxRange.setDate(maxRange.getDate() + (isOwner ? 120 : 14));
+        if (endDate > maxRange) {
+            return res.status(400).json({ error: `Date range too large. Maximum ${isOwner ? 120 : 14} days.` });
+        }
+
+        if (startDate && endDate) {
             whereClause.date = {
-                gte: new Date(start),
-                lte: new Date(end)
+                gte: startDate,
+                lte: endDate
             };
         }
 
         if (barberId) {
-            whereClause.userId = parseInt(barberId);
+            const parsedBarberId = parseInt(barberId, 10);
+            if (Number.isNaN(parsedBarberId) || parsedBarberId < 1) {
+                return res.status(400).json({ error: 'Invalid barberId' });
+            }
+            whereClause.userId = parsedBarberId;
         }
 
         const offDays = await prisma.offDay.findMany({
             where: whereClause,
-            include: {
-                user: {
-                    select: { name: true, username: true }
-                }
+            select: isOwner ? {
+                id: true,
+                userId: true,
+                date: true,
+                reason: true,
+                user: { select: { name: true, username: true } }
+            } : {
+                userId: true,
+                date: true,
             },
             orderBy: { date: 'asc' }
         });
