@@ -22,6 +22,23 @@ async function sumTransactionsByDateRange(startDate, endDate) {
     };
 }
 
+async function sumAllTransactions() {
+    const transactions = await prisma.transaction.findMany({
+        select: { totalAmount: true },
+    });
+
+    return transactions.reduce((sum, transaction) => sum + toNumber(transaction.totalAmount), 0);
+}
+
+function groupExpensesByCategory(expenses) {
+    return Object.values(expenses.reduce((acc, expense) => {
+        const category = expense.category || 'Other';
+        if (!acc[category]) acc[category] = { category, amount: 0 };
+        acc[category].amount += toNumber(expense.amount);
+        return acc;
+    }, {}));
+}
+
 // GET /api/dashboard/daily
 router.get('/daily', authenticateToken, async (req, res) => {
     try {
@@ -250,50 +267,51 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
         prevStart.setHours(0, 0, 0, 0);
 
         const [
-            revenueAgg, expensesAgg, capitalAgg,
-            expensesByCategory, revenueByMethod,
-            prevRevenueAgg, prevExpensesAgg,
-            dailyTransactions, dailyExpenses,
+            currentTransactions, currentExpenses, capitalAgg,
+            prevTransactions, prevExpenses,
         ] = await Promise.all([
-            prisma.transaction.aggregate({ _sum: { totalAmount: true }, where: { date: { gte: start, lte: end } } }),
-            prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: start, lte: end } } }),
-            prisma.capital.aggregate({ _sum: { amount: true }, where: { date: { gte: start, lte: end } } }),
-            prisma.expense.groupBy({ by: ['category'], _sum: { amount: true }, where: { date: { gte: start, lte: end } } }),
-            prisma.transaction.groupBy({ by: ['paymentMethod'], _sum: { totalAmount: true }, where: { date: { gte: start, lte: end } } }),
-            prisma.transaction.aggregate({ _sum: { totalAmount: true }, where: { date: { gte: prevStart, lte: prevEnd } } }),
-            prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: prevStart, lte: prevEnd } } }),
-            prisma.transaction.findMany({ where: { date: { gte: start, lte: end } }, select: { date: true, totalAmount: true } }),
+            prisma.transaction.findMany({ where: { date: { gte: start, lte: end } }, select: { date: true, totalAmount: true, paymentMethod: true } }),
             prisma.expense.findMany({ where: { date: { gte: start, lte: end } }, select: { date: true, amount: true, category: true } }),
+            prisma.capital.aggregate({ _sum: { amount: true }, where: { date: { gte: start, lte: end } } }),
+            prisma.transaction.findMany({ where: { date: { gte: prevStart, lte: prevEnd } }, select: { totalAmount: true } }),
+            prisma.expense.findMany({ where: { date: { gte: prevStart, lte: prevEnd } }, select: { amount: true } }),
         ]);
 
-        const totalRevenue = toNumber(revenueAgg._sum.totalAmount);
-        const totalExpenses = toNumber(expensesAgg._sum.amount);
+        const totalRevenue = currentTransactions.reduce((sum, tx) => sum + toNumber(tx.totalAmount), 0);
+        const totalExpenses = currentExpenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);
         const totalCapital = toNumber(capitalAgg._sum.amount);
         const netProfit = totalRevenue - totalExpenses;
         const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
+        const expensesByCategory = groupExpensesByCategory(currentExpenses);
         const salaryCategories = expensesByCategory.filter(e => e.category.toLowerCase() === 'salary');
-        const totalPayroll = salaryCategories.reduce((sum, e) => sum + toNumber(e._sum.amount), 0);
+        const totalPayroll = salaryCategories.reduce((sum, e) => sum + toNumber(e.amount), 0);
         const totalOpex = totalExpenses - totalPayroll;
 
-        const prevRevenue = toNumber(prevRevenueAgg._sum.totalAmount);
-        const prevExpenses = toNumber(prevExpensesAgg._sum.amount);
-        const prevNetProfit = prevRevenue - prevExpenses;
+        const prevRevenue = prevTransactions.reduce((sum, tx) => sum + toNumber(tx.totalAmount), 0);
+        const previousExpenses = prevExpenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);
+        const prevNetProfit = prevRevenue - previousExpenses;
 
         const pctChange = (cur, prev) => prev !== 0 ? ((cur - prev) / Math.abs(prev)) * 100 : null;
 
         const trendMap = {};
-        dailyTransactions.forEach(tx => {
+        currentTransactions.forEach(tx => {
             const day = format(new Date(tx.date), 'yyyy-MM-dd');
             if (!trendMap[day]) trendMap[day] = { date: day, revenue: 0, expenses: 0 };
             trendMap[day].revenue += toNumber(tx.totalAmount);
         });
-        dailyExpenses.forEach(exp => {
+        currentExpenses.forEach(exp => {
             const day = format(new Date(exp.date), 'yyyy-MM-dd');
             if (!trendMap[day]) trendMap[day] = { date: day, revenue: 0, expenses: 0 };
             trendMap[day].expenses += toNumber(exp.amount);
         });
         const dailyTrend = Object.values(trendMap).sort((a, b) => a.date.localeCompare(b.date));
+        const revenueByMethod = Object.values(currentTransactions.reduce((acc, tx) => {
+            const method = tx.paymentMethod || 'unknown';
+            if (!acc[method]) acc[method] = { method, amount: 0 };
+            acc[method].amount += toNumber(tx.totalAmount);
+            return acc;
+        }, {}));
 
         res.json({
             range: { start, end },
@@ -308,15 +326,15 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
             },
             comparison: {
                 prevRevenue,
-                prevExpenses,
+                prevExpenses: previousExpenses,
                 prevNetProfit,
                 revenueChange: pctChange(totalRevenue, prevRevenue),
-                expensesChange: pctChange(totalExpenses, prevExpenses),
+                expensesChange: pctChange(totalExpenses, previousExpenses),
                 netProfitChange: pctChange(netProfit, prevNetProfit),
             },
             breakdown: {
-                expenses: expensesByCategory.map(e => ({ category: e.category, amount: toNumber(e._sum.amount) })),
-                revenue: revenueByMethod.map(r => ({ method: r.paymentMethod, amount: toNumber(r._sum.totalAmount) })),
+                expenses: expensesByCategory,
+                revenue: revenueByMethod,
                 payroll: [],
             },
             dailyTrend,
@@ -331,21 +349,18 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
 // GET /api/dashboard/total-balance-all
 router.get('/total-balance-all', authenticateToken, async (req, res) => {
     try {
-        const [capitalAgg, revenueAgg, expensesByCategory] = await Promise.all([
+        const [capitalAgg, totalRevenue, expenses] = await Promise.all([
             prisma.capital.aggregate({ _sum: { amount: true } }),
-            prisma.transaction.aggregate({ _sum: { totalAmount: true } }),
-            prisma.expense.groupBy({
-                by: ['category'],
-                _sum: { amount: true },
-            }),
+            sumAllTransactions(),
+            prisma.expense.findMany({ select: { amount: true, category: true } }),
         ]);
 
         const totalCapital = toNumber(capitalAgg._sum.amount);
-        const totalRevenue = toNumber(revenueAgg._sum.totalAmount);
 
-        const totalExpenses = expensesByCategory.reduce((sum, e) => sum + toNumber(e._sum.amount), 0);
+        const expensesByCategory = groupExpensesByCategory(expenses);
+        const totalExpenses = expensesByCategory.reduce((sum, e) => sum + toNumber(e.amount), 0);
         const salaryCategories = expensesByCategory.filter(e => e.category.toLowerCase() === 'salary');
-        const totalPayroll = salaryCategories.reduce((sum, e) => sum + toNumber(e._sum.amount), 0);
+        const totalPayroll = salaryCategories.reduce((sum, e) => sum + toNumber(e.amount), 0);
         const totalOpex = totalExpenses - totalPayroll;
 
         const totalBalance = totalCapital + totalRevenue - totalExpenses;
