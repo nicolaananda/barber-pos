@@ -5,6 +5,23 @@ const authenticateToken = require('../middleware/auth');
 const { startOfWeek, endOfWeek, eachDayOfInterval, format, subMonths, startOfMonth, endOfMonth } = require('date-fns');
 const { toNumber } = require('../lib/money');
 
+async function sumTransactionsByDateRange(startDate, endDate) {
+    const transactions = await prisma.transaction.findMany({
+        where: {
+            date: {
+                gte: startDate,
+                lte: endDate,
+            },
+        },
+        select: { totalAmount: true },
+    });
+
+    return {
+        totalRevenue: transactions.reduce((sum, transaction) => sum + toNumber(transaction.totalAmount), 0),
+        transactionCount: transactions.length,
+    };
+}
+
 // GET /api/dashboard/daily
 router.get('/daily', authenticateToken, async (req, res) => {
     try {
@@ -112,16 +129,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
         const startOfCurrentMonth = startOfMonth(now);
         const endOfCurrentMonth = endOfMonth(now);
 
-        const currentMonthRevenueAgg = await prisma.transaction.aggregate({
-            _sum: { totalAmount: true },
-            _count: { id: true },
-            where: {
-                date: {
-                    gte: startOfCurrentMonth,
-                    lte: endOfCurrentMonth,
-                },
-            },
-        });
+        const currentMonthRevenueAgg = await sumTransactionsByDateRange(startOfCurrentMonth, endOfCurrentMonth);
 
         const currentMonthExpensesAgg = await prisma.expense.aggregate({
             _sum: { amount: true },
@@ -133,25 +141,17 @@ router.get('/stats', authenticateToken, async (req, res) => {
             },
         });
 
-        const currentMonthRevenue = toNumber(currentMonthRevenueAgg._sum.totalAmount);
+        const currentMonthRevenue = currentMonthRevenueAgg.totalRevenue;
         const currentMonthExpenses = toNumber(currentMonthExpensesAgg._sum.amount);
-        const currentMonthTxCount = currentMonthRevenueAgg._count.id || 0;
+        const currentMonthTxCount = currentMonthRevenueAgg.transactionCount;
 
         // 2. Last Month Revenue (for comparison)
         const startOfLastMonth = startOfMonth(subMonths(now, 1));
         const endOfLastMonth = endOfMonth(subMonths(now, 1));
 
-        const lastMonthRevenueAgg = await prisma.transaction.aggregate({
-            _sum: { totalAmount: true },
-            where: {
-                date: {
-                    gte: startOfLastMonth,
-                    lte: endOfLastMonth,
-                },
-            },
-        });
+        const lastMonthRevenueAgg = await sumTransactionsByDateRange(startOfLastMonth, endOfLastMonth);
 
-        const lastMonthRevenue = toNumber(lastMonthRevenueAgg._sum.totalAmount);
+        const lastMonthRevenue = lastMonthRevenueAgg.totalRevenue;
         const revenueGrowth =
             lastMonthRevenue === 0
                 ? 100
