@@ -5,19 +5,27 @@ const authenticateToken = require('../middleware/auth');
 const { startOfWeek, endOfWeek, eachDayOfInterval, format, subMonths, startOfMonth, endOfMonth } = require('date-fns');
 const { toNumber } = require('../lib/money');
 
+function sumMoney(rows, field) {
+    return rows.reduce((sum, row) => sum + toNumber(row[field]), 0);
+}
+
+function dateRangeWhere(startDate, endDate) {
+    return {
+        date: {
+            gte: startDate,
+            lte: endDate,
+        },
+    };
+}
+
 async function sumTransactionsByDateRange(startDate, endDate) {
     const transactions = await prisma.transaction.findMany({
-        where: {
-            date: {
-                gte: startDate,
-                lte: endDate,
-            },
-        },
+        where: dateRangeWhere(startDate, endDate),
         select: { totalAmount: true },
     });
 
     return {
-        totalRevenue: transactions.reduce((sum, transaction) => sum + toNumber(transaction.totalAmount), 0),
+        totalRevenue: sumMoney(transactions, 'totalAmount'),
         transactionCount: transactions.length,
     };
 }
@@ -27,7 +35,33 @@ async function sumAllTransactions() {
         select: { totalAmount: true },
     });
 
-    return transactions.reduce((sum, transaction) => sum + toNumber(transaction.totalAmount), 0);
+    return sumMoney(transactions, 'totalAmount');
+}
+
+async function sumExpensesByDateRange(startDate, endDate) {
+    const expenses = await prisma.expense.findMany({
+        where: dateRangeWhere(startDate, endDate),
+        select: { amount: true },
+    });
+
+    return sumMoney(expenses, 'amount');
+}
+
+async function sumCapitalByDateRange(startDate, endDate) {
+    const capitalRows = await prisma.capital.findMany({
+        where: dateRangeWhere(startDate, endDate),
+        select: { amount: true },
+    });
+
+    return sumMoney(capitalRows, 'amount');
+}
+
+async function sumAllCapital() {
+    const capitalRows = await prisma.capital.findMany({
+        select: { amount: true },
+    });
+
+    return sumMoney(capitalRows, 'amount');
 }
 
 function groupExpensesByCategory(expenses) {
@@ -43,10 +77,10 @@ function groupExpensesByCategory(expenses) {
 router.get('/daily', authenticateToken, async (req, res) => {
     try {
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Start of today
+        today.setHours(0, 0, 0, 0);
 
         const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1); // Start of tomorrow
+        tomorrow.setDate(tomorrow.getDate() + 1);
 
         const transactions = await prisma.transaction.findMany({
             where: {
@@ -60,22 +94,14 @@ router.get('/daily', authenticateToken, async (req, res) => {
             },
         });
 
-        // Fetch yesterday's revenue for comparison
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayEnd = new Date(yesterday);
         yesterdayEnd.setHours(23, 59, 59, 999);
 
-        const yesterdayAgg = await prisma.transaction.aggregate({
-            _sum: { totalAmount: true },
-            where: {
-                date: { gte: yesterday, lte: yesterdayEnd },
-            },
-        });
-        const yesterdayRevenue = toNumber(yesterdayAgg._sum.totalAmount);
+        const yesterdayRevenue = (await sumTransactionsByDateRange(yesterday, yesterdayEnd)).totalRevenue;
 
-        // Calculate Totals
-        const totalRevenue = transactions.reduce((sum, t) => sum + toNumber(t.totalAmount), 0);
+        const totalRevenue = sumMoney(transactions, 'totalAmount');
         const transactionCount = transactions.length;
 
         const cashTotal = transactions
@@ -86,7 +112,6 @@ router.get('/daily', authenticateToken, async (req, res) => {
             .filter((t) => t.paymentMethod === 'qris')
             .reduce((sum, t) => sum + toNumber(t.totalAmount), 0);
 
-        // Find Top Barber
         const barberStats = {};
 
         transactions.forEach((t) => {
@@ -108,7 +133,6 @@ router.get('/daily', authenticateToken, async (req, res) => {
             }
         });
 
-        // Calculate growth vs yesterday
         const revenueGrowthVsYesterday = yesterdayRevenue === 0
             ? (totalRevenue > 0 ? 100 : 0)
             : ((totalRevenue - yesterdayRevenue) / yesterdayRevenue) * 100;
@@ -141,28 +165,16 @@ router.get('/daily', authenticateToken, async (req, res) => {
 // GET /api/dashboard/stats
 router.get('/stats', authenticateToken, async (req, res) => {
     try {
-        // 1. Total Revenue (Current Month)
         const now = new Date();
         const startOfCurrentMonth = startOfMonth(now);
         const endOfCurrentMonth = endOfMonth(now);
 
         const currentMonthRevenueAgg = await sumTransactionsByDateRange(startOfCurrentMonth, endOfCurrentMonth);
 
-        const currentMonthExpensesAgg = await prisma.expense.aggregate({
-            _sum: { amount: true },
-            where: {
-                date: {
-                    gte: startOfCurrentMonth,
-                    lte: endOfCurrentMonth,
-                },
-            },
-        });
-
         const currentMonthRevenue = currentMonthRevenueAgg.totalRevenue;
-        const currentMonthExpenses = toNumber(currentMonthExpensesAgg._sum.amount);
+        const currentMonthExpenses = await sumExpensesByDateRange(startOfCurrentMonth, endOfCurrentMonth);
         const currentMonthTxCount = currentMonthRevenueAgg.transactionCount;
 
-        // 2. Last Month Revenue (for comparison)
         const startOfLastMonth = startOfMonth(subMonths(now, 1));
         const endOfLastMonth = endOfMonth(subMonths(now, 1));
 
@@ -174,7 +186,6 @@ router.get('/stats', authenticateToken, async (req, res) => {
                 ? 100
                 : ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
 
-        // 3. Active Barbers & Shift Status
         const openShifts = await prisma.cashShift.findMany({
             where: { status: 'open' },
             include: { openedBy: { select: { id: true } } },
@@ -183,8 +194,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
         const activeBarbersOnShift = openShifts.length;
         const activeShift = activeBarbersOnShift > 0;
 
-        // 4. Weekly Revenue Chart Data
-        const startWeek = startOfWeek(now, { weekStartsOn: 1 }); // Monday start
+        const startWeek = startOfWeek(now, { weekStartsOn: 1 });
         const endWeek = endOfWeek(now, { weekStartsOn: 1 });
 
         const weekTransactions = await prisma.transaction.findMany({
@@ -198,7 +208,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
 
         const days = eachDayOfInterval({ start: startWeek, end: endWeek });
         const chartData = days.map((day) => {
-            const dayStr = format(day, 'EEE'); // Mon, Tue...
+            const dayStr = format(day, 'EEE');
             const dayTotal = weekTransactions
                 .filter(
                     (tx) =>
@@ -208,7 +218,6 @@ router.get('/stats', authenticateToken, async (req, res) => {
             return { name: dayStr, total: dayTotal };
         });
 
-        // 5. Recent Activity (Last 5 transactions)
         const recentTransactions = await prisma.transaction.findMany({
             take: 5,
             orderBy: { date: 'desc' },
@@ -247,7 +256,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
         console.error('Dashboard Stats Error:', error);
         res.status(500).json({ error: 'Failed to fetch dashboard stats' });
     }
-}); // Added missing closing brace and parenthesis
+});
 
 // GET /api/dashboard/profit-loss
 router.get('/profit-loss', authenticateToken, async (req, res) => {
@@ -267,29 +276,28 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
         prevStart.setHours(0, 0, 0, 0);
 
         const [
-            currentTransactions, currentExpenses, capitalAgg,
+            currentTransactions, currentExpenses, totalCapital,
             prevTransactions, prevExpenses,
         ] = await Promise.all([
             prisma.transaction.findMany({ where: { date: { gte: start, lte: end } }, select: { date: true, totalAmount: true, paymentMethod: true } }),
             prisma.expense.findMany({ where: { date: { gte: start, lte: end } }, select: { date: true, amount: true, category: true } }),
-            prisma.capital.aggregate({ _sum: { amount: true }, where: { date: { gte: start, lte: end } } }),
+            sumCapitalByDateRange(start, end),
             prisma.transaction.findMany({ where: { date: { gte: prevStart, lte: prevEnd } }, select: { totalAmount: true } }),
             prisma.expense.findMany({ where: { date: { gte: prevStart, lte: prevEnd } }, select: { amount: true } }),
         ]);
 
-        const totalRevenue = currentTransactions.reduce((sum, tx) => sum + toNumber(tx.totalAmount), 0);
-        const totalExpenses = currentExpenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);
-        const totalCapital = toNumber(capitalAgg._sum.amount);
+        const totalRevenue = sumMoney(currentTransactions, 'totalAmount');
+        const totalExpenses = sumMoney(currentExpenses, 'amount');
         const netProfit = totalRevenue - totalExpenses;
         const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
         const expensesByCategory = groupExpensesByCategory(currentExpenses);
         const salaryCategories = expensesByCategory.filter(e => e.category.toLowerCase() === 'salary');
-        const totalPayroll = salaryCategories.reduce((sum, e) => sum + toNumber(e.amount), 0);
+        const totalPayroll = sumMoney(salaryCategories, 'amount');
         const totalOpex = totalExpenses - totalPayroll;
 
-        const prevRevenue = prevTransactions.reduce((sum, tx) => sum + toNumber(tx.totalAmount), 0);
-        const previousExpenses = prevExpenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);
+        const prevRevenue = sumMoney(prevTransactions, 'totalAmount');
+        const previousExpenses = sumMoney(prevExpenses, 'amount');
         const prevNetProfit = prevRevenue - previousExpenses;
 
         const pctChange = (cur, prev) => prev !== 0 ? ((cur - prev) / Math.abs(prev)) * 100 : null;
@@ -349,18 +357,16 @@ router.get('/profit-loss', authenticateToken, async (req, res) => {
 // GET /api/dashboard/total-balance-all
 router.get('/total-balance-all', authenticateToken, async (req, res) => {
     try {
-        const [capitalAgg, totalRevenue, expenses] = await Promise.all([
-            prisma.capital.aggregate({ _sum: { amount: true } }),
+        const [totalCapital, totalRevenue, expenses] = await Promise.all([
+            sumAllCapital(),
             sumAllTransactions(),
             prisma.expense.findMany({ select: { amount: true, category: true } }),
         ]);
 
-        const totalCapital = toNumber(capitalAgg._sum.amount);
-
         const expensesByCategory = groupExpensesByCategory(expenses);
-        const totalExpenses = expensesByCategory.reduce((sum, e) => sum + toNumber(e.amount), 0);
+        const totalExpenses = sumMoney(expensesByCategory, 'amount');
         const salaryCategories = expensesByCategory.filter(e => e.category.toLowerCase() === 'salary');
-        const totalPayroll = salaryCategories.reduce((sum, e) => sum + toNumber(e.amount), 0);
+        const totalPayroll = sumMoney(salaryCategories, 'amount');
         const totalOpex = totalExpenses - totalPayroll;
 
         const totalBalance = totalCapital + totalRevenue - totalExpenses;
