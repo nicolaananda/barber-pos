@@ -151,7 +151,7 @@ router.get('/daily', authenticateToken, async (req, res) => {
                 time: t.date,
                 customerName: t.customerName || 'Walk-in',
                 barberName: t.barber.name,
-                totalAmount: t.totalAmount,
+                totalAmount: toNumber(t.totalAmount),
                 paymentMethod: t.paymentMethod,
                 items: t.items,
             })),
