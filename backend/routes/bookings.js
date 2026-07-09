@@ -50,8 +50,8 @@ const isWithinBookingWindow = (date, bookingDaysAhead) => {
 const compressProofImage = async (buffer) => {
     return sharp(buffer, { failOn: 'none' })
         .rotate()
-        .resize({ width: 1280, height: 1280, fit: 'inside', withoutEnlargement: true })
-        .webp({ quality: 75, effort: 4 })
+        .resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 82, effort: 4 })
         .toBuffer();
 };
 
