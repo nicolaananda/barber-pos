@@ -905,12 +905,11 @@ router.patch('/:id/reschedule', authenticateToken, requireOwner, async (req, res
         const endOfDay = new Date(checkDate);
         endOfDay.setHours(23, 59, 59, 999);
 
+        const newActiveSlotKey = buildActiveSlotKey(targetBarberId, checkDate, newTimeSlot, booking.status);
+
         const conflicting = await prisma.booking.findFirst({
             where: {
-                barberId: targetBarberId,
-                bookingDate: { gte: startOfDay, lte: endOfDay },
-                timeSlot: newTimeSlot,
-                status: { in: ['pending', 'confirmed'] },
+                activeSlotKey: newActiveSlotKey,
                 NOT: { id: booking.id }
             }
         });
@@ -926,6 +925,7 @@ router.patch('/:id/reschedule', authenticateToken, requireOwner, async (req, res
                 bookingDate: new Date(newBookingDate),
                 timeSlot: newTimeSlot,
                 barberId: targetBarberId,
+                activeSlotKey: newActiveSlotKey,
                 // Reschedule tracking
                 rescheduledFrom: booking.rescheduledFrom || booking.bookingDate,
                 rescheduledFromSlot: booking.rescheduledFromSlot || booking.timeSlot,
@@ -959,6 +959,9 @@ router.patch('/:id/reschedule', authenticateToken, requireOwner, async (req, res
 
         res.json({ success: true, booking: updatedBooking });
     } catch (error) {
+        if (error.code === 'P2002') {
+            return res.status(409).json({ error: 'Slot waktu tersebut sudah terisi. Pilih admin/waktu lain.' });
+        }
         console.error('Error in admin reschedule:', error);
         res.status(500).json({ error: 'Gagal melakukan reschedule booking' });
     }

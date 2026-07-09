@@ -132,8 +132,8 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                 return;
             }
 
-            if (file.size > 5 * 1024 * 1024) {
-                setError("File terlalu besar (Maks 5MB)");
+            if (file.size > 15 * 1024 * 1024) {
+                setError("File terlalu besar (Maks 15MB sebelum kompres)");
                 return;
             }
 
@@ -143,13 +143,18 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
 
                 // ⚡ AUTO-COMPRESS before upload
                 const options = {
-                    maxSizeMB: 0.2,          // Target 200KB
-                    maxWidthOrHeight: 1280,  // Max dimension for proof screenshots
+                    maxSizeMB: 0.5,          // Target 500KB for readable payment screenshots
+                    maxWidthOrHeight: 1920,  // Preserve text clarity on tall phone screenshots
                     useWebWorker: true,
                     fileType: 'image/webp',  // Convert all to WebP
                 };
 
                 const compressedFile = await imageCompression(file, options);
+                if (compressedFile.size > 5 * 1024 * 1024) {
+                    setError('File hasil kompres masih terlalu besar (maks 5MB)');
+                    toast.error('File masih terlalu besar', { id: 'compress' });
+                    return;
+                }
 
                 // Calculate compression ratio
                 const ratio = ((1 - compressedFile.size / file.size) * 100).toFixed(0);
