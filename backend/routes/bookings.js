@@ -2,13 +2,13 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
+const sharp = require('sharp');
 
 const upload = require('../middleware/upload');
 const { validateImageContent } = require('../middleware/upload');
 const whatsappService = require('../lib/whatsapp');
 const { format } = require('date-fns');
 const { id: idLocale } = require('date-fns/locale');
-const path = require('path');
 const { uploadFile, deleteFile } = require('../lib/r2');
 const securityLogger = require('../lib/securityLogger');
 const { sanitizeText, sanitizePhone, isValidIndonesianPhone } = require('../lib/sanitizer');
@@ -47,12 +47,12 @@ const isWithinBookingWindow = (date, bookingDaysAhead) => {
     return date >= today && date <= maxDate;
 };
 
-const getExtFromMagicBytes = (buffer) => {
-    if (buffer[0] === 0xFF && buffer[1] === 0xD8) return '.jpg';
-    if (buffer[0] === 0x89 && buffer[1] === 0x50) return '.png';
-    if (buffer[0] === 0x47 && buffer[1] === 0x49) return '.gif';
-    if (buffer[0] === 0x52 && buffer[1] === 0x49) return '.webp';
-    return '.jpg';
+const compressProofImage = async (buffer) => {
+    return sharp(buffer, { failOn: 'none' })
+        .rotate()
+        .resize({ width: 1280, height: 1280, fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 75, effort: 4 })
+        .toBuffer();
 };
 
 const safePublicBookingSelect = {
@@ -277,10 +277,10 @@ router.post('/', bookingCreateLimiter, upload.single('proof'), validate((req) =>
         }
 
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = getExtFromMagicBytes(req.file.buffer);
-        uploadedProofKey = 'proofs/proof-' + uniqueSuffix + ext;
+        const compressedProof = await compressProofImage(req.file.buffer);
+        uploadedProofKey = 'proofs/proof-' + uniqueSuffix + '.webp';
         try {
-            paymentProof = await uploadFile(req.file.buffer, uploadedProofKey, req.file.mimetype);
+            paymentProof = await uploadFile(compressedProof, uploadedProofKey, 'image/webp');
         } catch (err) {
             console.error("Upload R2 Failed:", err);
             return res.status(500).json({ error: 'Gagal upload bukti transfer ke R2' });
