@@ -211,7 +211,6 @@ export default function RevenueForecast({ periods = 30 }: RevenueForecastProps) 
                             <tr>
                                 <th className="text-left py-3 px-6 text-zinc-600 font-medium">Date</th>
                                 <th className="text-right py-3 px-6 text-zinc-600 font-medium">Predicted Revenue</th>
-                                <th className="text-right py-3 px-6 text-zinc-600 font-medium">Confidence</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-200">
@@ -227,16 +226,6 @@ export default function RevenueForecast({ periods = 30 }: RevenueForecastProps) 
                                     </td>
                                     <td className="py-3 px-6 text-right text-zinc-900 font-semibold">
                                         {formatCurrency(item.predicted)}
-                                    </td>
-                                    <td className="py-3 px-6 text-right">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.confidence >= 80
-                                            ? 'bg-zinc-100 text-zinc-900'
-                                            : item.confidence >= 60
-                                                ? 'bg-zinc-50 text-zinc-600'
-                                                : 'bg-zinc-50 text-zinc-400'
-                                            }`}>
-                                            {item.confidence.toFixed(0)}%
-                                        </span>
                                     </td>
                                 </tr>
                             ))}

@@ -488,7 +488,7 @@ router.get('/barber-comparison', authenticateToken, async (req, res) => {
         const previousRange = { gte: new Date(range.start - duration), lt: range.start };
 
         const [barbers, transactions, previousTransactions, services] = await Promise.all([
-            prisma.user.findMany({ where: { role: { not: 'admin' } }, select: { id: true, name: true, username: true } }),
+            prisma.user.findMany({ where: { role: 'staff' }, select: { id: true, name: true, username: true } }),
             prisma.transaction.findMany({ where: { date: range.where } }),
             prisma.transaction.findMany({ where: { date: previousRange } }),
             prisma.service.findMany({ select: { name: true, commissionType: true, commissionValue: true } })
