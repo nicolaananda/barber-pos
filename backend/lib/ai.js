@@ -4,7 +4,8 @@ const path = require('path');
 
 const CACHE_DIR = path.join(__dirname, '../cache');
 const API_KEY = process.env.AI_API_KEY || '';
-const BASE_URL = 'https://ai.sumopod.com/v1';
+const BASE_URL = process.env.AI_BASE_URL || 'http://localhost:20128/v1';
+const MODEL = process.env.AI_MODEL || 'gpt-4o-mini';
 
 // Ensure cache directory exists
 if (!fs.existsSync(CACHE_DIR)) {
@@ -50,49 +51,41 @@ async function generateAnalyticsInsights(data) {
 
     console.log('Generating new analytics insights via OpenAI...');
 
-    // Prepare prompt
-    const prompt = `
-    Analyze the following barbershop POS data and provide 3-5 key actionable business insights.
-    Focus on profit margins, top performing services/barbers, and customer retention.
-    Keep it concise, professional, and motivating. Use bullet points.
-    
-    Data Summary:
-    - Total Revenue: ${formatCurrency(data.profitMargin.overall.totalRevenue)}
-    - Gross Margin: ${data.profitMargin.overall.grossMargin.toFixed(1)}%
-    - Top Service: ${Object.keys(data.profitMargin.byService)[0] || 'N/A'}
-    - Active Customers: ${data.churnRate.activeCustomers}
-    - Churn Rate: ${data.churnRate.churnRate.toFixed(1)}%
-    - Forecast Trend: ${data.forecast.trend}
-    
-    Format the response as JSON with a "content" field containing the markdown text.
-    `;
-
     try {
         const response = await axios.post(
             `${BASE_URL}/chat/completions`,
             {
-                model: 'gpt-4o-mini', // or appropriate model supported by sumopod
+                model: MODEL,
                 messages: [
-                    { role: 'system', content: 'Anda adalah ahli analis bisnis senior untuk barbershop. Gaya bicara profesional, solutif.' },
+                    {
+                        role: 'system',
+                        content: `Anda adalah analis bisnis senior untuk barbershop Indonesia.
+Berikan analisis ringkas, objektif, dan dapat langsung ditindaklanjuti.
+Gunakan hanya data yang diberikan; jangan mengarang angka, penyebab, atau fakta.
+Prioritaskan dampak terhadap pendapatan, margin laba, retensi pelanggan, dan tren bisnis.`
+                    },
                     {
                         role: 'user', content: `
-    Analisis data performa bisnis barbershop berikut dan berikan "Executive Summary" singkat (3-4 poin utama).
-    
-    Data:
-    - Pendapatan: ${formatCurrency(data.profitMargin.overall.totalRevenue)}
-    - Margin Laba: ${data.profitMargin.overall.grossMargin.toFixed(1)}%
-    - Layanan Top: ${Object.keys(data.profitMargin.byService)[0] || '-'}
-    - Churn Rate: ${data.churnRate.churnRate.toFixed(1)}%
-    - Tren Revenue: ${data.forecast.trend === 'growing' ? 'Naik' : data.forecast.trend === 'declining' ? 'Turun' : 'Stabil'}
-    
-    Instruksi Khusus:
-    1. **JUDUL** setiap poin harus dalam **BAHASA INGGRIS** (contoh: "Maximize Profit Margins").
-    2. **PENJELASAN** setiap poin harus dalam **BAHASA INDONESIA**.
-    3. Jika Churn Rate 0%, jelaskan ini indikator positif (semua pelanggan aktif dalam 90 hari), tapi ingatkan untuk tetap menjaga relasi.
-    4. Jika Tren Revenue "Turun", berikan strategi konkret untuk membalikkan tren (misal: promo bundling layanan top).
-    
-    Output JSON: { "content": "teks markdown di sini" }
-    ` }
+Buat Executive Summary performa bisnis berdasarkan data berikut:
+
+- Pendapatan: ${formatCurrency(data.profitMargin.overall.totalRevenue)}
+- Margin laba kotor: ${data.profitMargin.overall.grossMargin.toFixed(1)}%
+- Layanan teratas: ${Object.keys(data.profitMargin.byService)[0] || 'Tidak tersedia'}
+- Pelanggan aktif: ${data.churnRate.activeCustomers}
+- Churn rate: ${data.churnRate.churnRate.toFixed(1)}%
+- Tren pendapatan: ${data.forecast.trend === 'growing' ? 'Naik' : data.forecast.trend === 'declining' ? 'Turun' : 'Stabil'}
+
+Ketentuan:
+1. Tulis 3-4 poin dalam format markdown bullet.
+2. Awali setiap poin dengan judul singkat berbahasa Inggris dalam huruf tebal.
+3. Tulis penjelasan berbahasa Indonesia, maksimal dua kalimat per poin.
+4. Jelaskan makna data, lalu berikan satu tindakan konkret yang relevan.
+5. Jangan menyebut angka atau kondisi yang tidak tersedia pada data.
+6. Jika churn rate 0%, nyatakan bahwa seluruh pelanggan terhitung aktif dalam 90 hari dan sarankan langkah menjaga relasi.
+7. Jika tren pendapatan turun, sarankan strategi konkret untuk memulihkannya, seperti bundling layanan teratas, tanpa menjanjikan hasil.
+8. Kembalikan JSON valid saja tanpa code fence dengan bentuk: { "content": "teks markdown" }.
+`
+                    }
                 ],
                 temperature: 0.7
             },
