@@ -1,278 +1,32 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { apiFetch } from '../../lib/api';
 
-const COLORS = ['#18181b', '#3f3f46', '#71717a', '#a1a1aa', '#d4d4d8', '#e4e4e7'];
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+type Props = { startDate?: string; endDate?: string };
+type DeltaSet = { revenue?: number; operatingResult?: number; transactionCount?: number; averageTicket?: number };
+type Data = { overall: { totalRevenue: number; totalExpenses: number; grossProfit: number; grossMargin: number; operatingResult?: number; transactionCount?: number; averageTicket?: number; previousPeriodDeltas?: DeltaSet; deltas?: DeltaSet }; byService: Record<string, { revenue: number; profit: number; margin: number }>; byBarber: Record<string, { barberName: string; revenue: number; netRevenue: number; margin: number }> };
+type Response = { data: Data };
+const money = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
 
-interface ProfitMarginData {
-    overall: {
-        totalRevenue: number;
-        totalExpenses: number;
-        grossProfit: number;
-        grossMargin: number;
-    };
-    byService: Record<string, {
-        revenue: number;
-        count: number;
-        commissionCost: number;
-        profit: number;
-        margin: number;
-        avgPrice: number;
-    }>;
-    byBarber: Record<string, {
-        barberName: string;
-        revenue: number;
-        transactionCount: number;
-        totalCommission: number;
-        netRevenue: number;
-        margin: number;
-        transactions: number;
-    }>;
+function Delta({ value }: { value?: number }) {
+    if (value == null) return <span className="text-zinc-400">Perbandingan belum tersedia</span>;
+    const word = value > 0 ? 'Naik' : value < 0 ? 'Turun' : 'Tetap';
+    return <span className={value >= 0 ? 'text-emerald-700' : 'text-red-700'}>{word} {value > 0 ? '+' : ''}{value.toFixed(1)}% vs periode sebelumnya</span>;
 }
 
-interface ProfitMarginChartProps {
-    startDate?: string;
-    endDate?: string;
-}
-
-export default function ProfitMarginChart({ startDate, endDate }: ProfitMarginChartProps) {
-    const [data, setData] = useState<ProfitMarginData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [view, setView] = useState<'service' | 'barber'>('service');
-
-    useEffect(() => {
-        fetchData();
-    }, [startDate, endDate]);
-
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const params = new URLSearchParams();
-            if (startDate) params.append('startDate', startDate);
-            if (endDate) params.append('endDate', endDate);
-
-            const response = await axios.get(`${API_BASE_URL}/analytics/profit-margin?${params}`);
-            setData(response.data.data);
-        } catch (error) {
-            console.error('Failed to fetch profit margin data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-900"></div>
-            </div>
-        );
-    }
-
-    if (!data) {
-        return <div className="text-center text-zinc-400 py-8">No data available</div>;
-    }
-
-    // Prepare service chart data
-    const serviceChartData = Object.entries(data.byService)
-        .map(([name, stats]) => ({
-            name: name.length > 15 ? name.substring(0, 12) + '...' : name,
-            revenue: stats.revenue,
-            profit: stats.profit,
-            margin: stats.margin
-        }))
-        .sort((a, b) => b.revenue - a.revenue);
-
-    // Prepare barber chart data
-    const barberChartData = Object.entries(data.byBarber)
-        .map(([_, stats]) => ({
-            name: stats.barberName,
-            revenue: stats.revenue,
-            profit: stats.netRevenue,
-            margin: stats.margin
-        }))
-        .sort((a, b) => b.revenue - a.revenue);
-
-    const activeChartData = view === 'service' ? serviceChartData : barberChartData;
-
-    // Pie chart data (Revenue Source)
-    const pieData = serviceChartData.slice(0, 5).map((item, index) => ({
-        name: item.name,
-        value: item.revenue
-    }));
-
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(value);
-    };
-
-    return (
-        <div className="space-y-6">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="group bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-zinc-500 mb-1">Total Revenue</p>
-                            <p className="text-2xl font-bold text-zinc-900 tracking-tight break-words">
-                                {formatCurrency(data.overall.totalRevenue)}
-                            </p>
-                        </div>
-                        <div className="h-12 w-12 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center shrink-0 group-hover:bg-zinc-100 transition-colors">
-                            <DollarSign className="w-6 h-6 text-zinc-400 group-hover:text-zinc-600" />
-                        </div>
-                    </div>
-                </div>
-                <div className="group bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-zinc-500 mb-1">Gross Profit</p>
-                            <p className="text-2xl font-bold text-zinc-900 tracking-tight break-words">
-                                {formatCurrency(data.overall.grossProfit)}
-                            </p>
-                        </div>
-                        <div className="h-12 w-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
-                            <TrendingUp className="w-6 h-6 text-emerald-600" />
-                        </div>
-                    </div>
-                </div>
-                <div className="group bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-zinc-500 mb-1">Margin</p>
-                            <p className="text-2xl font-bold text-zinc-900 tracking-tight break-words">
-                                {data.overall.grossMargin.toFixed(1)}%
-                            </p>
-                        </div>
-                        <div className="h-12 w-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
-                            <span className="text-sm font-bold text-blue-600">%</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="group bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-zinc-500 mb-1">Total Expenses</p>
-                            <p className="text-2xl font-bold text-zinc-900 tracking-tight break-words">
-                                {formatCurrency(data.overall.totalExpenses)}
-                            </p>
-                        </div>
-                        <div className="h-12 w-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0 group-hover:bg-red-100 transition-colors">
-                            <TrendingDown className="w-6 h-6 text-red-600" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Bar Chart */}
-                <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-lg p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-semibold text-zinc-900">Profit Analysis</h3>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setView('service')}
-                                className={`px-3 py-1.5 text-sm rounded-md transition-all ${view === 'service'
-                                    ? 'bg-zinc-900 text-white'
-                                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                                    }`}
-                            >
-                                By Service
-                            </button>
-                            <button
-                                onClick={() => setView('barber')}
-                                className={`px-3 py-1.5 text-sm rounded-md transition-all ${view === 'barber'
-                                    ? 'bg-zinc-900 text-white'
-                                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                                    }`}
-                            >
-                                By Barber
-                            </button>
-                        </div>
-                    </div>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={activeChartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
-                            <XAxis dataKey="name" stroke="#71717a" tick={{ fontSize: 12 }} />
-                            <YAxis stroke="#71717a" tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`} />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: '#ffffff',
-                                    border: '1px solid #e4e4e7',
-                                    borderRadius: '8px',
-                                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                                }}
-                                formatter={(value: number) => formatCurrency(value)}
-                            />
-                            <Legend />
-                            <Bar dataKey="revenue" fill="#18181b" name="Revenue" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="profit" fill="#a1a1aa" name="Profit" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Pie Chart */}
-                <div className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold text-zinc-900 mb-6">Revenue Distribution</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                            <Pie
-                                data={pieData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                            >
-                                {pieData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                            <Legend />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            {/* Detailed Table */}
-            <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-zinc-200">
-                    <h3 className="text-lg font-semibold text-zinc-900">Detailed Breakdown</h3>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead className="bg-zinc-50">
-                            <tr>
-                                <th className="text-left py-3 px-6 text-zinc-600 font-medium">Name</th>
-                                <th className="text-right py-3 px-6 text-zinc-600 font-medium">Revenue</th>
-                                <th className="text-right py-3 px-6 text-zinc-600 font-medium">Profit</th>
-                                <th className="text-right py-3 px-6 text-zinc-600 font-medium">Margin</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-200">
-                            {activeChartData.filter(item => item.revenue > 0).map((item, index) => (
-                                <tr key={index} className="hover:bg-zinc-50 transition-colors">
-                                    <td className="py-3 px-6 text-zinc-900 font-medium">{item.name}</td>
-                                    <td className="py-3 px-6 text-right text-zinc-900">{formatCurrency(item.revenue)}</td>
-                                    <td className="py-3 px-6 text-right text-zinc-900">{formatCurrency(item.profit)}</td>
-                                    <td className="py-3 px-6 text-right">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${item.margin >= 50 ? 'bg-zinc-100 text-zinc-900' : 'bg-red-100 text-red-700'
-                                            }`}>
-                                            {item.margin.toFixed(1)}%
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    );
+export default function ProfitMarginChart({ startDate, endDate }: Props) {
+    const [data, setData] = useState<Data | null>(null); const [error, setError] = useState(''); const [view, setView] = useState<'service' | 'barber'>('service');
+    useEffect(() => { const params = new URLSearchParams(); if (startDate) params.set('startDate', startDate); if (endDate) params.set('endDate', endDate); setData(null); setError(''); apiFetch<Response>(`/analytics/profit-margin?${params}`).then(r => setData(r.data)).catch(() => setError('Profitabilitas gagal dimuat.')); }, [startDate, endDate]);
+    if (error) return <div role="alert" className="p-6 bg-white border border-red-200 rounded-xl text-red-700">{error}</div>;
+    if (!data) return <div className="p-10 bg-white border border-zinc-200 rounded-xl text-center text-zinc-500">Memuat profitabilitas…</div>;
+    const deltas = data.overall.previousPeriodDeltas ?? data.overall.deltas ?? {};
+    const transactionCount = data.overall.transactionCount ?? Object.values(data.byBarber).reduce((sum, row) => sum + Number((row as { transactionCount?: number }).transactionCount ?? 0), 0);
+    const averageTicket = data.overall.averageTicket ?? (transactionCount ? data.overall.totalRevenue / transactionCount : 0);
+    const cards = [['Pendapatan', money(data.overall.totalRevenue), deltas.revenue], ['Hasil operasional', money(data.overall.operatingResult ?? data.overall.grossProfit), deltas.operatingResult], ['Jumlah transaksi', transactionCount.toLocaleString('id-ID'), deltas.transactionCount], ['Tiket rata-rata', money(averageTicket), deltas.averageTicket]] as const;
+    const chartData = view === 'service' ? Object.entries(data.byService).map(([name, x]) => ({ name, revenue: x.revenue, result: x.profit, margin: x.margin })).sort((a, b) => b.revenue - a.revenue) : Object.values(data.byBarber).map(x => ({ name: x.barberName, revenue: x.revenue, result: x.netRevenue, margin: x.margin })).sort((a, b) => b.revenue - a.revenue);
+    return <section className="space-y-5" aria-labelledby="profit-title"><div><h2 id="profit-title" className="text-xl font-bold text-zinc-900">Kinerja Operasional</h2><p className="text-sm text-zinc-500">Headline periode terpilih dan perubahan terhadap periode sebelumnya.</p></div>
+        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">{cards.map(([label, value, delta]) => <article key={label} className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm"><p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p><p className="text-xl font-black text-zinc-900 mt-1">{value}</p><p className="text-xs mt-2"><Delta value={delta} /></p></article>)}</div>
+        <div className="bg-white border border-zinc-200 rounded-xl p-4 md:p-6 shadow-sm"><div className="flex flex-wrap justify-between gap-3 mb-5"><div><h3 className="font-bold">Drill-down pendapatan</h3><p className="text-xs text-zinc-500">Pendapatan dibanding kontribusi setelah biaya terkait.</p></div><div className="flex gap-1" aria-label="Dimensi grafik">{(['service', 'barber'] as const).map(x => <button key={x} aria-pressed={view === x} onClick={() => setView(x)} className={`px-3 py-2 rounded-lg text-sm ${view === x ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-700'}`}>{x === 'service' ? 'Per layanan' : 'Per barber'}</button>)}</div></div>
+            {chartData.length ? <><ResponsiveContainer width="100%" height={300}><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis tickFormatter={n => `${n / 1000}rb`} /><Tooltip formatter={v => money(Number(v))} /><Legend /><Bar dataKey="revenue" name="Pendapatan" fill="#18181b" /><Bar dataKey="result" name="Kontribusi" fill="#a1a1aa" /></BarChart></ResponsiveContainer><div className="overflow-x-auto mt-4"><table className="w-full text-sm"><thead><tr className="border-b"><th scope="col" className="p-2 text-left">Nama</th><th scope="col" className="p-2 text-right">Pendapatan</th><th scope="col" className="p-2 text-right">Kontribusi</th><th scope="col" className="p-2 text-right">Margin</th></tr></thead><tbody>{chartData.map(row => <tr key={row.name} className="border-b border-zinc-100"><td className="p-2">{row.name}</td><td className="p-2 text-right">{money(row.revenue)}</td><td className="p-2 text-right">{money(row.result)}</td><td className="p-2 text-right">{row.margin.toFixed(1)}%</td></tr>)}</tbody></table></div></> : <p className="py-12 text-center text-zinc-500">Belum ada transaksi pada periode ini.</p>}
+        </div></section>;
 }

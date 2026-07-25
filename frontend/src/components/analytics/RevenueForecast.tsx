@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiFetch } from '../../lib/api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 interface ForecastData {
     historical: Array<{ date: string; revenue: number }>;
-    predictions: Array<{ date: string; predicted: number; confidence: number }>;
+    predictions: Array<{ date: string; predicted: number }>;
     trend: 'growing' | 'declining' | 'stable' | 'insufficient_data';
     growthRate: number;
 }
@@ -28,10 +27,10 @@ export default function RevenueForecast({ periods = 30 }: RevenueForecastProps) 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(
-                `${API_BASE_URL}/analytics/revenue-forecast?periods=${selectedPeriods}`
+            const response = await apiFetch<{ data: ForecastData }>(
+                `/analytics/revenue-forecast?periods=${selectedPeriods}`
             );
-            setData(response.data.data);
+            setData(response.data);
         } catch (error) {
             console.error('Failed to fetch revenue forecast:', error);
         } finally {
@@ -48,7 +47,7 @@ export default function RevenueForecast({ periods = 30 }: RevenueForecastProps) 
     }
 
     if (!data || data.trend === 'insufficient_data') {
-        return <div className="text-center text-zinc-400 py-8">Insufficient data for forecasting</div>;
+        return <div className="text-center text-zinc-400 py-8">Data belum cukup untuk membuat proyeksi regresi sederhana</div>;
     }
 
     // Combine historical and predicted data for chart
@@ -145,7 +144,7 @@ export default function RevenueForecast({ periods = 30 }: RevenueForecastProps) 
 
             {/* Forecast Chart */}
             <div className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-zinc-900 mb-4">Revenue Forecast</h3>
+                <h3 className="text-lg font-semibold text-zinc-900 mb-4">Proyeksi Pendapatan (regresi linear sederhana)</h3>
                 <ResponsiveContainer width="100%" height={400}>
                     <AreaChart data={chartData}>
                         <defs>

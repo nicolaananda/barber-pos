@@ -19,9 +19,9 @@ function calculateProfitMargin(transactions, expenses, services) {
     // Calculate total expenses
     const totalExpenses = expenses.reduce((sum, e) => sum + toNumber(e.amount), 0);
 
-    // Calculate gross profit
-    const grossProfit = totalRevenue - totalExpenses;
-    const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+    // Recorded expenses define the operating result. Commissions remain contribution metrics below.
+    const operatingResult = totalRevenue - totalExpenses;
+    const operatingMargin = totalRevenue > 0 ? (operatingResult / totalRevenue) * 100 : 0;
 
     // Per-service analysis
     const serviceAnalysis = {};
@@ -50,15 +50,18 @@ function calculateProfitMargin(transactions, expenses, services) {
                 : toNumber(service.commissionValue)
         );
 
-        const serviceProfit = serviceRevenue - commissionCost;
-        const serviceMargin = serviceRevenue > 0 ? (serviceProfit / serviceRevenue) * 100 : 0;
+        const serviceContribution = serviceRevenue - commissionCost;
+        const contributionMargin = serviceRevenue > 0 ? (serviceContribution / serviceRevenue) * 100 : 0;
 
         serviceAnalysis[service.name] = {
             revenue: serviceRevenue,
             count: serviceCount,
             commissionCost,
-            profit: serviceProfit,
-            margin: serviceMargin,
+            contribution: serviceContribution,
+            contributionMargin,
+            // Backward-compatible aliases; these are contribution, not operating profit.
+            profit: serviceContribution,
+            margin: contributionMargin,
             avgPrice: toNumber(service.price)
         };
     });
@@ -95,16 +98,24 @@ function calculateProfitMargin(transactions, expenses, services) {
     // Calculate net revenue (revenue - commission) for each barber
     Object.keys(barberAnalysis).forEach(barberId => {
         const barber = barberAnalysis[barberId];
-        barber.netRevenue = barber.revenue - barber.totalCommission;
-        barber.margin = barber.revenue > 0 ? (barber.netRevenue / barber.revenue) * 100 : 0;
+        barber.contribution = barber.revenue - barber.totalCommission;
+        barber.contributionMargin = barber.revenue > 0 ? (barber.contribution / barber.revenue) * 100 : 0;
+        // Backward-compatible aliases; these are contribution, not operating profit.
+        barber.netRevenue = barber.contribution;
+        barber.margin = barber.contributionMargin;
     });
 
     return {
         overall: {
             totalRevenue,
             totalExpenses,
-            grossProfit,
-            grossMargin
+            operatingResult,
+            operatingMargin,
+            // Backward-compatible aliases for the existing frontend.
+            grossProfit: operatingResult,
+            grossMargin: operatingMargin,
+            transactionCount: transactions.length,
+            averageTicket: transactions.length > 0 ? totalRevenue / transactions.length : 0
         },
         byService: serviceAnalysis,
         byBarber: barberAnalysis
@@ -167,8 +178,7 @@ function forecastRevenue(historicalData, periods = 30) {
 
         predictions.push({
             date: forecastDate.toISOString().split('T')[0],
-            predicted: Math.max(0, predictedValue),
-            confidence: Math.max(0, 100 - (i * 2)) // Confidence decreases over time
+            predicted: Math.max(0, predictedValue)
         });
     }
 
@@ -195,70 +205,75 @@ function forecastRevenue(historicalData, periods = 30) {
  * @param {Array} transactions - All transactions
  * @returns {Object} Customer segmentation
  */
-function segmentCustomers(customers, transactions) {
-    const now = new Date();
-    const customerSegments = [];
-    const processedPhones = new Set();
+function scoreQuintiles(values, higherIsBetter = true) {
+    const sorted = [...values].sort((a, b) => a - b);
+    return values.map(value => {
+        const firstIndex = sorted.indexOf(value);
+        const percentile = sorted.length <= 1 ? 1 : firstIndex / (sorted.length - 1);
+        const score = Math.min(5, Math.floor(percentile * 5) + 1);
+        return higherIsBetter ? score : 6 - score;
+    });
+}
 
-    customers.forEach(customer => {
-        // Skip if we already processed this phone number (merge duplicate customers)
-        if (processedPhones.has(customer.phone)) return;
-        processedPhones.add(customer.phone);
+function recommendedAction(segment) {
+    if (segment === 'VIP') return 'Offer priority booking or loyalty reward';
+    if (segment === 'Regular') return 'Encourage the next visit with a relevant offer';
+    if (segment === 'At-Risk') return 'Send a personalized reactivation message';
+    if (segment === 'Lost') return 'Run a win-back campaign';
+    return 'Promote a repeat visit';
+}
 
-        // Get customer transactions
+function segmentCustomers(customers, transactions, asOf = new Date()) {
+    const uniqueCustomers = customers.filter((customer, index) =>
+        customers.findIndex(item => item.phone === customer.phone) === index
+    );
+    const metrics = uniqueCustomers.map(customer => {
         const customerTxns = transactions.filter(t => t.customerPhone === customer.phone);
+        const periodLastVisit = customerTxns.length
+            ? new Date(Math.max(...customerTxns.map(t => new Date(t.date).getTime())))
+            : null;
+        const lastVisit = periodLastVisit || new Date(customer.lastVisit);
+        return {
+            customer,
+            lastVisit,
+            recencyDays: Math.max(0, Math.floor((asOf - lastVisit) / 86400000)),
+            frequency: customerTxns.length,
+            monetary: customerTxns.reduce((sum, t) => sum + toNumber(t.totalAmount), 0)
+        };
+    }).filter(metric => !Number.isNaN(metric.lastVisit.getTime()) && metric.lastVisit <= asOf);
 
-        if (customerTxns.length === 0) {
-            return;
-        }
-
-        // Recency: Days since last purchase
-        const lastVisit = new Date(customer.lastVisit);
-        const recencyDays = Math.floor((now - lastVisit) / (1000 * 60 * 60 * 24));
-
-        // Frequency: Number of transactions
-        const frequency = customerTxns.length;
-
-        // Monetary: Total amount spent
-        const monetary = customerTxns.reduce((sum, t) => sum + toNumber(t.totalAmount), 0);
-
-        // RFM Scoring (1-5 scale)
-        const recencyScore = recencyDays <= 30 ? 5 : recencyDays <= 60 ? 4 : recencyDays <= 90 ? 3 : recencyDays <= 180 ? 2 : 1;
-        const frequencyScore = frequency >= 10 ? 5 : frequency >= 7 ? 4 : frequency >= 5 ? 3 : frequency >= 3 ? 2 : 1;
-        const monetaryScore = monetary >= 1000000 ? 5 : monetary >= 500000 ? 4 : monetary >= 250000 ? 3 : monetary >= 100000 ? 2 : 1;
-
+    const recencyScores = scoreQuintiles(metrics.map(item => item.recencyDays), false);
+    const frequencyScores = scoreQuintiles(metrics.map(item => item.frequency));
+    const monetaryScores = scoreQuintiles(metrics.map(item => item.monetary));
+    const customerSegments = metrics.map((metric, index) => {
+        const recencyScore = recencyScores[index];
+        const frequencyScore = frequencyScores[index];
+        const monetaryScore = monetaryScores[index];
         const rfmScore = recencyScore + frequencyScore + monetaryScore;
+        let segment = 'Occasional';
+        if (metric.frequency === 0 && recencyScore === 1) segment = 'Lost';
+        else if (recencyScore <= 2 && (frequencyScore >= 3 || metric.frequency === 0)) segment = 'At-Risk';
+        else if (rfmScore >= 13) segment = 'VIP';
+        else if (rfmScore >= 10) segment = 'Regular';
 
-        // Segment classification
-        let segment;
-        if (rfmScore >= 13) {
-            segment = 'VIP';
-        } else if (rfmScore >= 10) {
-            segment = 'Regular';
-        } else if (recencyScore <= 2 && frequencyScore >= 3) {
-            segment = 'At-Risk';
-        } else if (recencyScore <= 1) {
-            segment = 'Lost';
-        } else {
-            segment = 'Occasional';
-        }
-
-        customerSegments.push({
-            customerId: customer.id,
-            name: customer.name,
-            phone: customer.phone,
-            recency: recencyDays,
-            frequency,
-            monetary,
+        return {
+            customerId: metric.customer.id,
+            name: metric.customer.name,
+            phone: metric.customer.phone,
+            recency: metric.recencyDays,
+            recencyDays: metric.recencyDays,
+            frequency: metric.frequency,
+            monetary: metric.monetary,
+            lastVisit: metric.lastVisit.toISOString(),
             recencyScore,
             frequencyScore,
             monetaryScore,
             rfmScore,
-            segment
-        });
+            segment,
+            recommendedAction: recommendedAction(segment)
+        };
     });
 
-    // Group by segment
     const segments = {
         VIP: customerSegments.filter(c => c.segment === 'VIP'),
         Regular: customerSegments.filter(c => c.segment === 'Regular'),
@@ -268,6 +283,7 @@ function segmentCustomers(customers, transactions) {
     };
 
     return {
+        customers: customerSegments,
         segments,
         summary: {
             VIP: segments.VIP.length,
@@ -320,8 +336,10 @@ function analyzePeakHours(transactions) {
     // Find peak hours
     const hourlyArray = Object.entries(hourlyData).map(([hour, data]) => ({
         hour: parseInt(hour),
-        ...data
-    })).sort((a, b) => b.count - a.count);
+        count: data.count,
+        transactionCount: data.count,
+        revenue: data.revenue
+    })).sort((a, b) => b.transactionCount - a.transactionCount);
 
     const peakHours = hourlyArray.slice(0, 3);
     const offPeakHours = hourlyArray.slice(-3);
@@ -335,9 +353,11 @@ function analyzePeakHours(transactions) {
         for (let hour = 0; hour < 24; hour++) {
             heatmapData.push({
                 day: dayNames[day],
+                weekday: dayNames[day],
                 dayIndex: day,
                 hour,
                 count: dailyData[day][hour].count,
+                transactionCount: dailyData[day][hour].count,
                 revenue: dailyData[day][hour].revenue
             });
         }
@@ -441,18 +461,12 @@ function calculateCLV(customers, transactions) {
         // Average order value
         const avgOrderValue = totalRevenue / customerTxns.length;
 
-        // Purchase frequency (transactions per month)
         const firstVisit = new Date(Math.min(...customerTxns.map(t => new Date(t.date))));
-        const lastVisit = new Date(customer.lastVisit);
+        const lastVisit = new Date(Math.max(...customerTxns.map(t => new Date(t.date))));
         const customerLifespanMonths = Math.max(1, (lastVisit - firstVisit) / (1000 * 60 * 60 * 24 * 30));
+        const activeMonths = new Set(customerTxns.map(t => new Date(t.date).toISOString().slice(0, 7))).size;
         const purchaseFrequency = customerTxns.length / customerLifespanMonths;
-
-        // Estimated customer lifespan (in months)
-        // Assume active customers will continue for average lifespan
-        const avgLifespanMonths = 12; // Assume 1 year average
-
-        // CLV = Average Order Value × Purchase Frequency × Customer Lifespan
-        const clv = avgOrderValue * purchaseFrequency * avgLifespanMonths;
+        const projected12MonthValue = avgOrderValue * purchaseFrequency * 12;
 
         customerCLV.push({
             customerId: customer.id,
@@ -460,10 +474,14 @@ function calculateCLV(customers, transactions) {
             phone: customer.phone,
             totalRevenue,
             avgOrderValue,
+            averageTicket: avgOrderValue,
             purchaseFrequency,
             transactionCount: customerTxns.length,
+            activeMonths,
             customerLifespanMonths,
-            clv
+            tenureMonths: customerLifespanMonths,
+            projected12MonthValue,
+            clv: projected12MonthValue
         });
     });
 
@@ -485,11 +503,53 @@ function calculateCLV(customers, transactions) {
     };
 }
 
+function calculateMonthlyCohortRetention(transactions) {
+    const visitsByCustomer = new Map();
+    transactions.filter(t => t.customerPhone).forEach(t => {
+        const month = new Date(t.date).toISOString().slice(0, 7);
+        if (!visitsByCustomer.has(t.customerPhone)) visitsByCustomer.set(t.customerPhone, new Set());
+        visitsByCustomer.get(t.customerPhone).add(month);
+    });
+    const cohorts = new Map();
+    visitsByCustomer.forEach(months => {
+        const ordered = [...months].sort();
+        const cohortMonth = ordered[0];
+        if (!cohorts.has(cohortMonth)) cohorts.set(cohortMonth, []);
+        cohorts.get(cohortMonth).push(ordered);
+    });
+    return [...cohorts.entries()].sort().map(([cohortMonth, customers]) => {
+        const start = new Date(`${cohortMonth}-01T00:00:00.000Z`);
+        return {
+            cohortMonth,
+            cohortSize: customers.length,
+            retentionByMonth: Array.from({ length: 12 }, (_, monthOffset) => {
+                const month = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + monthOffset, 1)).toISOString().slice(0, 7);
+                const retainedCustomers = customers.filter(months => months.includes(month)).length;
+                return { monthOffset, month, retainedCustomers, retentionRate: customers.length ? retainedCustomers / customers.length * 100 : 0 };
+            })
+        };
+    });
+}
+
 module.exports = {
     calculateProfitMargin,
     forecastRevenue,
     segmentCustomers,
     analyzePeakHours,
     calculateChurnRate,
-    calculateCLV
+    calculateCLV,
+    calculateMonthlyCohortRetention,
+    scoreQuintiles
 };
+
+if (require.main === module) {
+    const assert = require('assert');
+    const forecast = forecastRevenue([
+        { date: '2026-01-01', revenue: 0 },
+        { date: '2026-01-02', revenue: 10 },
+        { date: '2026-01-03', revenue: 20 }
+    ], 2);
+    assert.deepStrictEqual(forecast.predictions.map(item => item.predicted), [30, 40]);
+    assert.ok(forecast.predictions.every(item => !Object.hasOwn(item, 'confidence')));
+    console.log('analytics calculation self-check passed');
+}

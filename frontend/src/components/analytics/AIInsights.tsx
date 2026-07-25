@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiFetch } from '../../lib/api';
 import { Sparkles, Brain, Lightbulb, TrendingUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 export default function AIInsights() {
     const [insights, setInsights] = useState<string>('');
@@ -16,11 +15,8 @@ export default function AIInsights() {
     const fetchInsights = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`${API_BASE_URL}/analytics/insights`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            setInsights(response.data.data.insights);
+            const response = await apiFetch<{ data: { insights: string } }>('/analytics/insights');
+            setInsights(response.data.insights);
         } catch (error) {
             console.error('Failed to fetch AI insights:', error);
             setInsights('Unable to load insights at this time.');

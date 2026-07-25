@@ -1,137 +1,22 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { Users, Star, AlertTriangle, XCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { apiFetch } from '../../lib/api';
 
-const COLORS = ['#18181b', '#52525b', '#a1a1aa', '#d4d4d8', '#f4f4f5']; // Monochrome Zinc
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+type Customer = { customerId: number; name: string; recency: number; frequency: number; monetary: number; segment: string; recommendedAction?: string };
+type Data = { segments: Record<string, Customer[]>; summary: Record<string, number> };
+type Props = { startDate?: string; endDate?: string; compact?: boolean };
+const colors = ['#18181b', '#52525b', '#a1a1aa', '#d4d4d8', '#e4e4e7'];
+const money = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
+const action = (customer: Customer) => customer.recommendedAction ?? (customer.segment === 'VIP' ? 'Pertahankan dengan benefit loyalitas.' : customer.segment === 'At-Risk' ? 'Tawarkan alasan relevan untuk kembali.' : customer.segment === 'Lost' ? 'Evaluasi nilai reaktivasi sebelum promosi.' : 'Dorong kunjungan berikutnya secara terukur.');
 
-interface Customer {
-    customerId: number;
-    name: string;
-    phone: string;
-    recency: number;
-    frequency: number;
-    monetary: number;
-    rfmScore: number;
-    segment: string;
-}
-
-interface SegmentationData {
-    segments: Record<string, Customer[]>;
-    summary: Record<string, number>;
-}
-
-export default function CustomerSegmentation() {
-    const [data, setData] = useState<{ segments: { name: string; value: number }[], total: number } | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const res = await axios.get(`${API_BASE_URL}/analytics/customer-segmentation`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (res.data.success) {
-                    const segments = [
-                        { name: 'VIP', value: res.data.data.summary.VIP },
-                        { name: 'Regular', value: res.data.data.summary.Regular },
-                        { name: 'Occasional', value: res.data.data.summary.Occasional },
-                        { name: 'At-Risk', value: res.data.data.summary['At-Risk'] },
-                        { name: 'Lost', value: res.data.data.summary.Lost }
-                    ].filter(item => item.value > 0);
-
-                    setData({
-                        segments,
-                        total: res.data.data.summary.total
-                    });
-                }
-            } catch (error) {
-                console.error('Failed to fetch individual segmentation data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, []);
-
-    if (loading) {
-        return (
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-zinc-200 h-[400px] flex items-center justify-center">
-                <div className="text-zinc-500">Loading segmentation data...</div>
-            </div>
-        );
-    }
-
-    if (!data) {
-        return (
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-zinc-200 h-[400px] flex items-center justify-center">
-                <div className="text-zinc-400">No segmentation data available</div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-zinc-200">
-            <h2 className="text-xl font-bold mb-2 text-zinc-900">Customer Segments</h2>
-            <p className="text-zinc-500 text-sm mb-6">Distribution based on RFM analysis</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Pie Chart */}
-                <div className="h-[300px] flex items-center justify-center">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={data.segments}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                            >
-                                {data.segments.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#fff', borderColor: '#e4e4e7', color: '#18181b' }}
-                                itemStyle={{ color: '#18181b' }}
-                            />
-                            <Legend />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Legend/Details */}
-                <div className="flex flex-col justify-center space-y-4">
-                    {data.segments.map((segment, index) => (
-                        <div key={segment.name} className="flex items-center justify-between p-3 rounded-lg bg-zinc-50 border border-zinc-100">
-                            <div className="flex items-center gap-3">
-                                <div
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                                />
-                                <span className="font-medium text-zinc-700">{segment.name}</span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <span className="text-zinc-900 font-bold">{segment.value}</span>
-                                <span className="text-xs text-zinc-500 w-12 text-right">
-                                    {((segment.value / data.total) * 100).toFixed(1)}%
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-
-                    <div className="mt-4 pt-4 border-t border-zinc-100 flex justify-between items-center">
-                        <span className="text-zinc-500 font-medium">Total Customers</span>
-                        <span className="text-2xl font-bold text-zinc-900">{data.total}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+export default function CustomerSegmentation({ startDate, endDate, compact = false }: Props) {
+    const [data, setData] = useState<Data | null>(null); const [error, setError] = useState(''); const [segment, setSegment] = useState('VIP');
+    useEffect(() => { const p = new URLSearchParams(); if (startDate) p.set('startDate', startDate); if (endDate) p.set('endDate', endDate); setData(null); setError(''); apiFetch<{ data: Data }>(`/analytics/customer-segmentation?${p}`).then(r => setData(r.data)).catch(() => setError('Segmentasi pelanggan gagal dimuat.')); }, [startDate, endDate]);
+    const chart = useMemo(() => data ? ['VIP', 'Regular', 'Occasional', 'At-Risk', 'Lost'].map(name => ({ name, value: data.summary[name] || 0 })).filter(x => x.value) : [], [data]);
+    if (error) return <div role="alert" className="p-6 bg-white border border-red-200 rounded-xl text-red-700">{error}</div>;
+    if (!data) return <div className="p-10 bg-white border border-zinc-200 rounded-xl text-center text-zinc-500">Memuat segmentasi…</div>;
+    const priority = data.segments[segment] ?? [];
+    return <section className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden" aria-labelledby="segment-title"><div className="p-5 border-b border-zinc-200"><h2 id="segment-title" className="font-bold text-zinc-900">Segmentasi Pelanggan</h2><p className="text-sm text-zinc-500">Prioritas tindakan berbasis recency, frequency, dan monetary.</p></div>
+        <div className={`grid ${compact ? '' : 'lg:grid-cols-[300px_1fr]'} gap-4 p-5`}><div><ResponsiveContainer width="100%" height={220}><PieChart><Pie data={chart} dataKey="value" nameKey="name" innerRadius={48} outerRadius={82}>{chart.map((_, i) => <Cell key={i} fill={colors[i]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer><div className="grid grid-cols-2 gap-2">{chart.map((item, i) => <button key={item.name} aria-pressed={segment === item.name} onClick={() => setSegment(item.name)} className={`text-left rounded-lg border p-2 text-sm ${segment === item.name ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200'}`}><span className="inline-block w-2 h-2 rounded-full mr-2" style={{ background: colors[i] }} />{item.name}: <strong>{item.value}</strong></button>)}</div></div>
+        {!compact && <div className="overflow-x-auto"><h3 className="font-bold mb-3">Daftar tindakan: {segment}</h3>{priority.length ? <table className="w-full text-sm"><thead className="bg-zinc-50"><tr><th scope="col" className="p-3 text-left">Pelanggan</th><th scope="col" className="p-3 text-right">Terakhir datang</th><th scope="col" className="p-3 text-right">Frekuensi</th><th scope="col" className="p-3 text-right">Nilai historis</th><th scope="col" className="p-3 text-left">Rekomendasi</th></tr></thead><tbody className="divide-y divide-zinc-100">{priority.map(c => <tr key={c.customerId}><td className="p-3 font-medium">{c.name}</td><td className="p-3 text-right">{c.recency} hari</td><td className="p-3 text-right">{c.frequency} transaksi</td><td className="p-3 text-right">{money(c.monetary)}</td><td className="p-3 max-w-xs">{action(c)}</td></tr>)}</tbody></table> : <p className="py-10 text-center text-zinc-500">Tidak ada pelanggan dalam segmen ini.</p>}</div>}</div></section>;
 }

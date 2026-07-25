@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiFetch } from '../../lib/api';
 import { Search, Download, Calendar, User, Phone } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 interface Booking {
     id: number;
@@ -32,7 +31,12 @@ interface BookingHistoryData {
     };
 }
 
-export default function BookingHistoryTable() {
+interface BookingHistoryProps {
+    startDate?: string;
+    endDate?: string;
+}
+
+export default function BookingHistoryTable({ startDate, endDate }: BookingHistoryProps) {
     const [data, setData] = useState<BookingHistoryData | null>(null);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -46,6 +50,10 @@ export default function BookingHistoryTable() {
     });
 
     useEffect(() => {
+        setFilters(prev => ({ ...prev, startDate: startDate ?? '', endDate: endDate ?? '', offset: 0 }));
+    }, [startDate, endDate]);
+
+    useEffect(() => {
         fetchData();
     }, [filters]);
 
@@ -57,11 +65,8 @@ export default function BookingHistoryTable() {
                 if (value) params.append(key, value.toString());
             });
 
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`${API_BASE_URL}/analytics/booking-history?${params}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            setData(response.data.data);
+            const response = await apiFetch<{ data: BookingHistoryData }>(`/analytics/booking-history?${params}`);
+            setData(response.data);
         } catch (error) {
             console.error('Failed to fetch booking history:', error);
         } finally {

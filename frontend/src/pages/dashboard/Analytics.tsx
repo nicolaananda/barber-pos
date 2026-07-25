@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Users, Clock, UserX, Crown, Calendar, Sparkles, TrendingDown, Wallet, Receipt } from 'lucide-react';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { useEffect, useState } from 'react';
+import { BarChart3, Calendar, Clock, Crown, Scissors, Sparkles, TrendingUp, UserX, Users } from 'lucide-react';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
 import ProfitMarginChart from '../../components/analytics/ProfitMarginChart';
 import RevenueForecast from '../../components/analytics/RevenueForecast';
 import CustomerSegmentation from '../../components/analytics/CustomerSegmentation';
@@ -8,222 +8,58 @@ import PeakHoursHeatmap from '../../components/analytics/PeakHoursHeatmap';
 import ChurnRateDisplay from '../../components/analytics/ChurnRateDisplay';
 import CLVRankings from '../../components/analytics/CLVRankings';
 import BookingHistoryTable from '../../components/analytics/BookingHistoryTable';
-import AIInsights from '../../components/analytics/AIInsights';
-import { API_BASE_URL } from '../../lib/api';
-import { useAuth } from '../../context/AuthContext';
+import { apiFetch } from '../../lib/api';
 
-type AnalyticsTab =
-    | 'overview'
-    | 'profit-margin'
-    | 'revenue-forecast'
-    | 'customer-segmentation'
-    | 'peak-hours'
-    | 'churn-rate'
-    | 'clv'
-    | 'booking-history';
+type AnalyticsTab = 'overview' | 'profit-margin' | 'barber-performance' | 'revenue-forecast' | 'customer-segmentation' | 'peak-hours' | 'churn-rate' | 'clv' | 'booking-history';
+type DateRange = { startDate: string; endDate: string };
+type Barber = { barberId: number; barberName: string; totalRevenue: number; contributionAfterCommission?: number; netRevenue?: number; totalTransactions: number; avgTicket: number; revenueDelta?: number; transactionDelta?: number; avgTicketDelta?: number };
+type ApiResponse<T> = { success: boolean; data: T };
 
-interface DashboardStats {
-    totalRevenue: number;
-    totalExpenses: number;
-    netProfit: number;
-    revenueGrowth: string;
-    transactionCount: number;
+const money = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value || 0);
+const query = ({ startDate, endDate }: DateRange) => new URLSearchParams({ startDate, endDate }).toString();
+
+function Delta({ value }: { value?: number }) {
+    if (value == null) return <span className="text-zinc-400">—</span>;
+    const direction = value > 0 ? 'Naik' : value < 0 ? 'Turun' : 'Tetap';
+    return <span className={value >= 0 ? 'text-emerald-700' : 'text-red-700'}>{direction} {value > 0 ? '+' : ''}{value.toFixed(1)}%</span>;
 }
 
-function formatIDR(n: number) {
-    if (n >= 1_000_000) return `IDR ${(n / 1_000_000).toFixed(1)}jt`;
-    if (n >= 1_000) return `IDR ${(n / 1_000).toFixed(0)}rb`;
-    return `IDR ${n.toLocaleString('id-ID')}`;
-}
-
-function KPICard({ label, value, sub, icon: Icon, color }: {
-    label: string;
-    value: string;
-    sub?: string;
-    icon: React.ElementType;
-    color: string;
-}) {
-    return (
-        <div className={`bg-white border border-zinc-200 rounded-xl p-4 shadow-sm flex items-start gap-3`}>
-            <div className={`p-2 rounded-lg ${color}`}>
-                <Icon className="w-4 h-4 text-white" />
-            </div>
-            <div className="min-w-0">
-                <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide truncate">{label}</p>
-                <p className="text-xl font-black text-zinc-900 leading-tight">{value}</p>
-                {sub && <p className="text-xs text-zinc-500 mt-0.5">{sub}</p>}
-            </div>
-        </div>
-    );
+function BarberPerformance({ range, compact = false }: { range: DateRange; compact?: boolean }) {
+    const [data, setData] = useState<Barber[] | null>(null);
+    const [error, setError] = useState('');
+    useEffect(() => {
+        setData(null); setError('');
+        apiFetch<ApiResponse<Barber[]>>(`/analytics/barber-comparison?${query(range)}`)
+            .then(result => setData(result.data))
+            .catch(() => setError('Performa barber gagal dimuat.'));
+    }, [range.startDate, range.endDate]);
+    return <section className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden" aria-labelledby="barber-performance-title">
+        <div className="p-5 border-b border-zinc-200"><h2 id="barber-performance-title" className="font-bold text-zinc-900">Performa Barber</h2><p className="text-sm text-zinc-500">Kontribusi pendapatan pada periode terpilih.</p></div>
+        {error ? <p role="alert" className="p-6 text-red-700">{error}</p> : data === null ? <p className="p-6 text-zinc-500">Memuat performa barber…</p> : data.length === 0 ? <p className="p-6 text-zinc-500">Belum ada transaksi barber pada periode ini.</p> :
+        <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-zinc-50 text-zinc-600"><tr><th scope="col" className="p-3 text-left">Peringkat</th><th scope="col" className="p-3 text-left">Barber</th><th scope="col" className="p-3 text-right">Pendapatan</th><th scope="col" className="p-3 text-right">Kontribusi setelah komisi</th>{!compact && <><th scope="col" className="p-3 text-right">Transaksi</th><th scope="col" className="p-3 text-right">Tiket rata-rata</th><th scope="col" className="p-3 text-right">Delta pendapatan</th></>}</tr></thead><tbody className="divide-y divide-zinc-100">{data.map((barber, index) => <tr key={barber.barberId} className="hover:bg-zinc-50"><td className="p-3 font-bold">#{index + 1}</td><td className="p-3 font-medium">{barber.barberName}</td><td className="p-3 text-right">{money(barber.totalRevenue)}</td><td className="p-3 text-right">{barber.contributionAfterCommission != null || barber.netRevenue != null ? money(barber.contributionAfterCommission ?? barber.netRevenue ?? 0) : 'Belum tersedia'}</td>{!compact && <><td className="p-3 text-right">{barber.totalTransactions.toLocaleString('id-ID')}<div className="text-xs"><Delta value={barber.transactionDelta} /></div></td><td className="p-3 text-right">{money(barber.avgTicket)}<div className="text-xs"><Delta value={barber.avgTicketDelta} /></div></td><td className="p-3 text-right"><Delta value={barber.revenueDelta} /></td></>}</tr>)}</tbody></table></div>}
+    </section>;
 }
 
 export default function Analytics() {
-    const { token } = useAuth();
     const [activeTab, setActiveTab] = useState<AnalyticsTab>('overview');
-    const [dateRange, setDateRange] = useState({
-        startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-        endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
-    });
-    const [stats, setStats] = useState<DashboardStats | null>(null);
-
-    useEffect(() => {
-        fetch(`${API_BASE_URL}/dashboard/stats`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
-            .then(r => r.json())
-            .then(d => setStats(d.stats))
-            .catch(() => {});
-    }, [token]);
-
+    const [dateRange, setDateRange] = useState<DateRange>({ startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'), endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd') });
     const tabs = [
-        { id: 'overview', label: 'AI Review', icon: Sparkles },
-        { id: 'profit-margin', label: 'Profit Margin', icon: BarChart3 },
-        { id: 'revenue-forecast', label: 'Forecast', icon: TrendingUp },
-        { id: 'customer-segmentation', label: 'Segments', icon: Users },
-        { id: 'peak-hours', label: 'Peak Hours', icon: Clock },
-        { id: 'churn-rate', label: 'Churn', icon: UserX },
-        { id: 'clv', label: 'CLV', icon: Crown },
-        { id: 'booking-history', label: 'Bookings', icon: Calendar },
-    ];
-
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'overview':
-                return (
-                    <div className="space-y-6">
-                        <AIInsights />
-                        <div className="flex flex-col gap-6">
-                            <ProfitMarginChart startDate={dateRange.startDate} endDate={dateRange.endDate} />
-                            <PeakHoursHeatmap startDate={dateRange.startDate} endDate={dateRange.endDate} />
-                        </div>
-                    </div>
-                );
-            case 'profit-margin':
-                return <ProfitMarginChart startDate={dateRange.startDate} endDate={dateRange.endDate} />;
-            case 'revenue-forecast':
-                return <RevenueForecast />;
-            case 'customer-segmentation':
-                return <CustomerSegmentation />;
-            case 'peak-hours':
-                return <PeakHoursHeatmap startDate={dateRange.startDate} endDate={dateRange.endDate} />;
-            case 'churn-rate':
-                return <ChurnRateDisplay />;
-            case 'clv':
-                return <CLVRankings />;
-            case 'booking-history':
-                return <BookingHistoryTable />;
-            default:
-                return null;
-        }
-    };
-
-    const showDateRange = ['overview', 'profit-margin', 'peak-hours'].includes(activeTab);
-    const growth = stats ? parseFloat(stats.revenueGrowth) : null;
-
-    return (
-        <div className="min-h-screen bg-zinc-50 p-6">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="mb-6">
-                    <h1 className="text-4xl font-bold text-zinc-900 mb-1 flex items-center gap-3">
-                        <BarChart3 className="w-10 h-10 text-zinc-900" />
-                        Analytics Dashboard
-                    </h1>
-                    <p className="text-zinc-500 text-sm">Comprehensive business intelligence and AI-powered insights</p>
-                </div>
-
-                {/* KPI Summary Cards */}
-                {stats && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                        <KPICard
-                            label="Revenue Bulan Ini"
-                            value={formatIDR(stats.totalRevenue)}
-                            sub={growth !== null
-                                ? `${growth >= 0 ? '+' : ''}${growth}% vs bulan lalu`
-                                : undefined}
-                            icon={TrendingUp}
-                            color="bg-emerald-500"
-                        />
-                        <KPICard
-                            label="Net Profit"
-                            value={formatIDR(stats.netProfit)}
-                            sub={`Expenses: ${formatIDR(stats.totalExpenses)}`}
-                            icon={Wallet}
-                            color={stats.netProfit >= 0 ? 'bg-zinc-800' : 'bg-red-500'}
-                        />
-                        <KPICard
-                            label="Total Transaksi"
-                            value={stats.transactionCount.toLocaleString('id-ID')}
-                            sub="Bulan ini"
-                            icon={Receipt}
-                            color="bg-blue-500"
-                        />
-                        <KPICard
-                            label="Revenue Growth"
-                            value={growth !== null ? `${growth >= 0 ? '+' : ''}${growth}%` : '—'}
-                            sub="vs bulan lalu"
-                            icon={growth !== null && growth >= 0 ? TrendingUp : TrendingDown}
-                            color={growth !== null && growth >= 0 ? 'bg-emerald-500' : 'bg-red-500'}
-                        />
-                    </div>
-                )}
-
-                {/* Date Range Filter */}
-                {showDateRange && (
-                    <div className="bg-white border border-zinc-200 rounded-lg p-4 mb-6 shadow-sm">
-                        <div className="flex items-center gap-4">
-                            <label className="text-sm text-zinc-600 font-medium">Date Range:</label>
-                            <input
-                                type="date"
-                                value={dateRange.startDate}
-                                onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                                className="bg-white border border-zinc-300 rounded-md px-3 py-2 text-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                            />
-                            <span className="text-zinc-400">to</span>
-                            <input
-                                type="date"
-                                value={dateRange.endDate}
-                                onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                                className="bg-white border border-zinc-300 rounded-md px-3 py-2 text-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* Tabs */}
-                <div className="bg-white border border-zinc-200 rounded-lg p-2 mb-6 overflow-x-auto shadow-sm">
-                    <div className="flex gap-1 min-w-max" role="tablist">
-                        {tabs.map(tab => {
-                            const Icon = tab.icon;
-                            const isActive = activeTab === tab.id;
-                            const isAI = tab.id === 'overview';
-                            return (
-                                <button
-                                    key={tab.id}
-                                    role="tab"
-                                    aria-selected={isActive}
-                                    onClick={() => setActiveTab(tab.id as AnalyticsTab)}
-                                    className={`flex items-center gap-2 px-3 py-2.5 rounded-md transition-all whitespace-nowrap font-medium text-sm ${
-                                        isActive
-                                            ? 'bg-zinc-900 text-white shadow-md'
-                                            : isAI
-                                            ? 'text-purple-600 bg-purple-50 hover:bg-purple-100'
-                                            : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900'
-                                    }`}
-                                >
-                                    <Icon className={`w-4 h-4 ${isActive ? 'text-zinc-300' : isAI ? 'text-purple-500' : 'text-zinc-500'}`} />
-                                    {tab.label}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Content */}
-                <div className="animate-fadeIn">
-                    {renderContent()}
-                </div>
-            </div>
-        </div>
-    );
+        ['overview', 'Ringkasan', Sparkles], ['profit-margin', 'Profitabilitas', BarChart3], ['barber-performance', 'Performa Barber', Scissors], ['revenue-forecast', 'Proyeksi', TrendingUp], ['customer-segmentation', 'Segmen', Users], ['peak-hours', 'Jam Ramai', Clock], ['churn-rate', 'Retensi', UserX], ['clv', 'Nilai Pelanggan', Crown], ['booking-history', 'Booking', Calendar]
+    ] as const;
+    const props = { startDate: dateRange.startDate, endDate: dateRange.endDate };
+    const content = activeTab === 'overview' ? <div className="space-y-6"><ProfitMarginChart {...props} /><div className="grid gap-6 xl:grid-cols-2"><CustomerSegmentation {...props} compact /><BarberPerformance range={dateRange} compact /></div><PeakHoursHeatmap {...props} /></div>
+        : activeTab === 'profit-margin' ? <ProfitMarginChart {...props} />
+        : activeTab === 'barber-performance' ? <BarberPerformance range={dateRange} />
+        : activeTab === 'revenue-forecast' ? <RevenueForecast />
+        : activeTab === 'customer-segmentation' ? <CustomerSegmentation {...props} />
+        : activeTab === 'peak-hours' ? <PeakHoursHeatmap {...props} />
+        : activeTab === 'churn-rate' ? <ChurnRateDisplay {...props} />
+        : activeTab === 'clv' ? <CLVRankings {...props} />
+        : <BookingHistoryTable startDate={dateRange.startDate} endDate={dateRange.endDate} />;
+    return <main className="min-h-screen bg-zinc-50 p-4 md:p-6"><div className="max-w-7xl mx-auto space-y-5">
+        <header><h1 className="text-3xl md:text-4xl font-black text-zinc-900">Analitik Bisnis</h1><p className="text-zinc-500">Ringkasan keputusan, pelanggan, kapasitas, dan profitabilitas.</p></header>
+        <section className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm" aria-label="Rentang tanggal global"><div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end"><label className="text-sm font-medium text-zinc-700">Tanggal mulai<input aria-label="Tanggal mulai" type="date" value={dateRange.startDate} max={dateRange.endDate} onChange={e => setDateRange(v => ({ ...v, startDate: e.target.value }))} className="mt-1 block w-full border border-zinc-300 rounded-lg px-3 py-2" /></label><label className="text-sm font-medium text-zinc-700">Tanggal akhir<input aria-label="Tanggal akhir" type="date" value={dateRange.endDate} min={dateRange.startDate} onChange={e => setDateRange(v => ({ ...v, endDate: e.target.value }))} className="mt-1 block w-full border border-zinc-300 rounded-lg px-3 py-2" /></label><p className="text-xs text-zinc-500 pb-2">Berlaku untuk analitik yang mendukung periode.</p></div></section>
+        <nav className="bg-white border border-zinc-200 rounded-xl p-2 overflow-x-auto shadow-sm" aria-label="Analitik terperinci"><div className="flex min-w-max gap-1" role="tablist">{tabs.map(([id, label, Icon]) => <button key={id} role="tab" aria-selected={activeTab === id} onClick={() => setActiveTab(id)} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ${activeTab === id ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100'}`}><Icon className="w-4 h-4" />{label}</button>)}</div></nav>
+        <div role="tabpanel">{content}</div>
+    </div></main>;
 }
