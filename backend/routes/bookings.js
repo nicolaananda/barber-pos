@@ -16,6 +16,7 @@ const requireOwner = require('../middleware/requireOwner');
 const { validate, requiredString, requiredInt, optionalInt, requiredDate } = require('../lib/validators');
 const { getBookingConfig, saveBookingConfig } = require('../lib/bookingConfig');
 const { bookingCreateLimiter, bookingStatusLimiter, publicReadLimiter } = require('../middleware/rateLimiter');
+const { normalizeIndonesianPhone, formatBookingCode, parseBookingCode } = require('../lib/publicBookingLookup');
 
 const ACTIVE_BOOKING_STATUSES = new Set(['pending', 'confirmed']);
 
@@ -361,7 +362,12 @@ router.post('/', bookingCreateLimiter, upload.single('proof'), validate((req) =>
         // NOTE: No WA sent on booking creation per client request.
         // WA is only sent when admin confirms the booking (status -> confirmed).
 
-        res.status(201).json(booking);
+        res.status(201).json({
+            id: booking.id, bookingCode: formatBookingCode(booking.id), bookingDate: booking.bookingDate,
+            timeSlot: booking.timeSlot, serviceName: booking.serviceName, servicePrice: booking.servicePrice,
+            status: booking.status, barber: booking.barber,
+            location: { address: bookingConfig.publicSettings.address, mapsUrl: bookingConfig.publicSettings.mapsUrl, whatsappNumber: bookingConfig.publicSettings.whatsappNumber },
+        });
     } catch (error) {
         if (uploadedProofKey) {
             deleteFile(uploadedProofKey).catch((deleteError) => console.error('Failed to cleanup orphan proof:', deleteError));
@@ -380,108 +386,34 @@ router.post('/', bookingCreateLimiter, upload.single('proof'), validate((req) =>
     }
 });
 
-// GET /api/bookings/status?phone=08xxx - Public endpoint to check booking status by phone
+// Public lookup requires both phone and booking code.
 router.get('/status', bookingStatusLimiter, async (req, res) => {
     try {
-        const { phone } = req.query;
-        if (!phone || phone.trim().length < 6) {
-            return res.status(400).json({ error: 'Nomor HP tidak valid' });
-        }
-
-        const normalized = sanitizePhone(phone);
-        if (!isValidIndonesianPhone(normalized)) {
-            return res.status(400).json({ error: 'Nomor HP tidak valid' });
-        }
-
-        const since = new Date();
-        since.setDate(since.getDate() - 90);
-
-        // Fetch bookings and transactions in parallel
-        const [bookings, transactions] = await Promise.all([
-            prisma.booking.findMany({
-                where: {
-                    customerPhone: normalized,
-                    bookingDate: { gte: since },
-                    status: { not: 'cancelled' },
-                },
-                select: {
-                    id: true,
-                    bookingDate: true,
-                    barberId: true,
-                    timeSlot: true,
-                    serviceName: true,
-                    status: true,
-                    barber: { select: { name: true } },
-                },
-                orderBy: { bookingDate: 'desc' },
-                take: 10,
-            }),
-            // 🔒 SECURITY: Only select fields needed for public display (no financial data)
-            prisma.transaction.findMany({
-                where: {
-                    customerPhone: normalized,
-                    date: { gte: since },
-                },
-                select: {
-                    id: true,
-                    date: true,
-                    barberId: true,
-                    items: true,
-                    barber: { select: { name: true } },
-                },
-                orderBy: { date: 'desc' },
-                take: 10,
-            }),
-        ]);
-
-        // Build set of booking keys (barberId_YYYY-MM-DD) to detect duplicates
-        const bookingKeys = new Set(
-            bookings.map(b => `${b.barberId}_${format(new Date(b.bookingDate), 'yyyy-MM-dd')}`)
-        );
-
-        // Only include transactions that don't match an existing booking on the same day+barber
-        const unmatchedTransactions = transactions.filter(tx => {
-            const key = `${tx.barberId}_${format(new Date(tx.date), 'yyyy-MM-dd')}`;
-            return !bookingKeys.has(key);
+        const normalized = normalizeIndonesianPhone(req.query.phone);
+        const bookingId = parseBookingCode(req.query.code);
+        if (!normalized || !isValidIndonesianPhone(normalized) || !bookingId) return res.status(400).json({ error: 'Nomor HP atau kode booking tidak valid' });
+        const booking = await prisma.booking.findFirst({
+            where: { id: bookingId, customerPhone: normalized },
+            select: {
+                id: true, bookingDate: true, timeSlot: true, serviceName: true,
+                servicePrice: true, status: true, barber: { select: { name: true } },
+            },
         });
+        if (!booking) return res.status(404).json({ error: 'Booking tidak ditemukan' });
 
-        // Normalize to unified shape
-        const bookingItems = bookings.map(b => ({
+        res.json([{
             type: 'booking',
-            date: b.bookingDate,
-            barberName: b.barber.name,
-            customerName: 'Customer',
-            service: b.serviceName || null,
-            amount: null,
-            status: b.status,
-            timeSlot: b.timeSlot,
+            date: booking.bookingDate,
+            barberName: booking.barber.name,
+            customerName: 'Pelanggan',
+            bookingCode: formatBookingCode(booking.id),
+            service: booking.serviceName || null,
+            amount: booking.servicePrice === null ? null : Number(booking.servicePrice),
+            status: booking.status,
+            timeSlot: booking.timeSlot,
             paymentMethod: null,
             invoiceCode: null,
-        }));
-
-        // 🔒 SECURITY: Don't expose financial details (totalAmount, paymentMethod, invoiceCode) to public
-        const txItems = unmatchedTransactions.map(tx => {
-            const firstItem = Array.isArray(tx.items) && tx.items.length > 0 ? tx.items[0] : null;
-            return {
-                type: 'transaction',
-                date: tx.date,
-                barberName: tx.barber.name,
-                customerName: 'Customer',
-                service: firstItem ? firstItem.name : null,
-                amount: null,
-                status: 'completed',
-                timeSlot: null,
-                paymentMethod: null,
-                invoiceCode: null,
-            };
-        });
-
-        // Merge and sort by date desc
-        const result = [...bookingItems, ...txItems]
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-            .slice(0, 10);
-
-        res.json(result);
+        }]);
     } catch (error) {
         console.error('Booking status check error:', error);
         res.status(500).json({ error: 'Gagal mengecek status booking' });

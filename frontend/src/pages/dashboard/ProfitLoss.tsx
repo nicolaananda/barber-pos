@@ -35,13 +35,15 @@ import {
     Users,
     ArrowUpRight,
     ArrowDownRight,
-    Minus,
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, subDays } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { API_BASE_URL } from '@/lib/api';
 import { moneyToNumber } from '@/lib/money';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { toast } from 'sonner';
+
+interface CapitalEntry { id: number; amount: number; description: string; date: string; }
+interface TotalBalance { totalBalance: number; totalRevenue?: number; totalExpenses?: number; }
 
 interface ProfitLossData {
     range: { start: string; end: string };
@@ -158,14 +160,14 @@ export default function ProfitLossPage() {
 
     const [isCapitalDialogOpen, setIsCapitalDialogOpen] = useState(false);
     const [capitalLoading, setCapitalLoading] = useState(false);
-    const [capitalHistory, setCapitalHistory] = useState<any[]>([]);
+    const [capitalHistory, setCapitalHistory] = useState<CapitalEntry[]>([]);
     const [editingCapitalId, setEditingCapitalId] = useState<number | null>(null);
     const [capitalForm, setCapitalForm] = useState({
         amount: '',
         description: '',
         date: format(new Date(), 'yyyy-MM-dd'),
     });
-    const [totalBalanceAll, setTotalBalanceAll] = useState<any>(null);
+    const [totalBalanceAll, setTotalBalanceAll] = useState<TotalBalance | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -205,13 +207,13 @@ export default function ProfitLossPage() {
                     prevNetProfit: moneyToNumber(plData.comparison.prevNetProfit),
                 },
                 breakdown: {
-                    expenses: plData.breakdown.expenses.map((item: any) => ({ ...item, amount: moneyToNumber(item.amount) })),
-                    revenue: plData.breakdown.revenue.map((item: any) => ({ ...item, amount: moneyToNumber(item.amount) })),
-                    payroll: plData.breakdown.payroll.map((item: any) => ({ ...item, amount: moneyToNumber(item.amount) })),
+                    expenses: plData.breakdown.expenses.map((item: { amount: number | string; [key: string]: unknown }) => ({ ...item, amount: moneyToNumber(item.amount) })),
+                    revenue: plData.breakdown.revenue.map((item: { amount: number | string; [key: string]: unknown }) => ({ ...item, amount: moneyToNumber(item.amount) })),
+                    payroll: plData.breakdown.payroll.map((item: { amount: number | string; [key: string]: unknown }) => ({ ...item, amount: moneyToNumber(item.amount) })),
                 },
-                dailyTrend: plData.dailyTrend.map((item: any) => ({ ...item, revenue: moneyToNumber(item.revenue), expenses: moneyToNumber(item.expenses) })),
+                dailyTrend: plData.dailyTrend.map((item: { amount: number | string; [key: string]: unknown }) => ({ ...item, revenue: moneyToNumber(item.revenue), expenses: moneyToNumber(item.expenses) })),
             });
-            setCapitalHistory(capitalData.map((item: any) => ({ ...item, amount: moneyToNumber(item.amount) })));
+            setCapitalHistory(capitalData.map((item: { amount: number | string; [key: string]: unknown }) => ({ ...item, amount: moneyToNumber(item.amount) })));
         } catch (error) {
             console.error(error);
         } finally {
@@ -269,7 +271,7 @@ export default function ProfitLossPage() {
         }
     };
 
-    const handleEditCapital = (item: any) => {
+    const handleEditCapital = (item: CapitalEntry) => {
         setCapitalForm({
             amount: moneyToNumber(item.amount).toString(),
             description: item.description,

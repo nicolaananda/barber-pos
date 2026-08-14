@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, DollarSign, TrendingUp, Users, Calculator, Printer, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, DollarSign, TrendingUp, Users, Calculator, Printer, CheckCircle2, XCircle } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -12,7 +12,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { API_BASE_URL } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { toast } from 'sonner';
 
 interface PayrollData {
@@ -27,7 +27,7 @@ interface PayrollData {
 export default function PayrollPage() {
     const { token } = useAuth();
     const [payrollData, setPayrollData] = useState<PayrollData[]>([]);
-    const [paidStatus, setPaidStatus] = useState<Record<number, any>>({});
+    const [paidStatus, setPaidStatus] = useState<Record<number, { paidAt?: string; totalCommission?: number }>>({});
     const [loading, setLoading] = useState(true);
     const [markingPaid, setMarkingPaid] = useState<number | null>(null);
     const [unmarkingPaid, setUnmarkingPaid] = useState<number | null>(null);
@@ -113,8 +113,8 @@ export default function PayrollPage() {
 
             toast.success(`${barber.barberName}'s payroll marked as paid`);
             fetchPaidStatus();
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to mark as paid');
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : 'Failed to mark as paid');
         } finally {
             setMarkingPaid(null);
         }
@@ -145,8 +145,8 @@ export default function PayrollPage() {
 
             toast.success(`Pembayaran ${barber.barberName} berhasil dibatalkan`);
             fetchPaidStatus();
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to cancel payment');
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : 'Failed to cancel payment');
         } finally {
             setUnmarkingPaid(null);
         }

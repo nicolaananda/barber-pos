@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { usePosStore } from '@/lib/store';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { API_BASE_URL } from '@/lib/api';
 import { moneyToNumber } from '@/lib/money';
 import { Button } from '@/components/ui/button';
@@ -18,10 +18,9 @@ export default function ServiceGrid() {
     const { addToCart, selectedBarber } = usePosStore();
     const { token } = useAuth();
     const [services, setServices] = useState<Service[]>([]);
-    const [loading, setLoading] = useState(false); // Default false to avoid flash if fast? No, let's keep logic
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setLoading(true);
         fetch(`${API_BASE_URL}/services`, {
             headers: {
                 'Authorization': `Bearer ${token}`

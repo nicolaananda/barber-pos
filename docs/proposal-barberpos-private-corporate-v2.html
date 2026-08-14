@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Proposal BarberPOS - Private</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #222; line-height: 1.58; font-size: 11.2px; }
+    h1,h2,h3,h4,p { margin: 0; }
+    h1 { font-size: 30px; line-height: 1.18; }
+    h2 { font-size: 18px; margin: 24px 0 10px; padding-bottom: 7px; border-bottom: 1.5px solid #d7dbe0; color: #111; }
+    h3 { font-size: 13.5px; margin: 14px 0 8px; color: #111; }
+    p { margin-bottom: 10px; text-align: justify; }
+    ul, ol { margin: 8px 0 12px 20px; padding: 0; }
+    li { margin: 4px 0; }
+    .cover { min-height: 255mm; display: flex; flex-direction: column; justify-content: center; }
+    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.8px; color: #6b7280; margin-bottom: 12px; }
+    .sub { font-size: 16px; color: #4b5563; font-weight: 400; margin-top: 8px; }
+    .line { width: 90px; height: 3px; background: #1f2937; margin: 18px 0 24px; }
+    .muted { color: #6b7280; }
+    .small { font-size: 10px; }
+    .page-break { page-break-before: always; }
+    .box { border: 1px solid #d9dee5; background: #fafbfc; padding: 14px; border-radius: 6px; }
+    .summary-grid { width: 100%; border-collapse: separate; border-spacing: 12px 0; margin-top: 26px; }
+    .summary-grid td { vertical-align: top; width: 50%; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; }
+    th, td { border: 1px solid #d6dbe1; padding: 8px 10px; vertical-align: top; }
+    th { background: #f3f5f7; text-align: left; font-weight: 700; }
+    .kpi { width: 100%; border-collapse: separate; border-spacing: 10px; margin: 10px 0 6px; }
+    .kpi td { border: 1px solid #d9dee5; background: #fbfcfd; padding: 12px; border-radius: 6px; }
+    .kpi strong { display: block; font-size: 13px; margin-bottom: 4px; }
+    .section { page-break-inside: avoid; }
+    .footer-note { margin-top: 18px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div class="label">Proposal Pengembangan Sistem Informasi</div>
+    <h1>Proposal Pembuatan Sistem POS Barbershop</h1>
+    <div class="sub">BarberPOS — Solusi Kasir, Booking, dan Kontrol Operasional untuk Private</div>
+    <div class="line"></div>
+    <p>Proposal ini disusun sebagai penawaran pembuatan sistem Point of Sale dan manajemen operasional barbershop yang dirancang untuk membantu Private mengelola transaksi, layanan, jadwal barber, booking pelanggan, komisi, dan laporan bisnis dalam satu platform digital yang terintegrasi.</p>
+
+    <table class="summary-grid" style="border:none;">
+      <tr>
+        <td>
+          <div class="box">
+            <p><strong>Disusun untuk</strong><br>Private</p>
+            <p><strong>Jenis proyek</strong><br>Pembuatan sistem POS barbershop berbasis web</p>
+          </div>
+        </td>
+        <td>
+          <div class="box">
+            <p><strong>Disusun oleh</strong><br>Nicola.id</p>
+            <p><strong>Durasi pengerjaan</strong><br>2 minggu</p>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="page-break section">
+    <h2>1. Ringkasan Eksekutif</h2>
+    <p>BarberPOS merupakan sistem digital yang dirancang khusus untuk mendukung operasional barbershop secara menyeluruh. Sistem ini tidak hanya berfungsi sebagai aplikasi kasir, tetapi juga sebagai alat pengelolaan bisnis yang mencakup booking pelanggan, pengaturan barber, manajemen layanan, penghitungan komisi, pencatatan biaya, dan pelaporan usaha.</p>
+    <p>Dengan implementasi sistem ini, Private dapat menjalankan operasional harian secara lebih cepat, lebih rapi, dan lebih terukur. Owner memperoleh visibilitas yang lebih baik terhadap kondisi usaha, sedangkan staff dapat bekerja dengan alur yang lebih sederhana dan konsisten.</p>
+
+    <table class="kpi">
+      <tr>
+        <td><strong>Fokus Utama</strong>Digitalisasi operasional barbershop dari transaksi sampai laporan.</td>
+        <td><strong>Model Sistem</strong>Web-based system yang dapat digunakan untuk owner dan staff.</td>
+        <td><strong>Nilai Tambah</strong>Kasir, booking, barber, payroll, dan dashboard dalam satu platform.</td>
+      </tr>
+    </table>
+
+    <h2>2. Latar Belakang</h2>
+    <p>Dalam operasional barbershop, tantangan yang sering muncul bukan hanya pada proses transaksi, tetapi juga pada pengaturan jadwal, pencatatan layanan, penghitungan komisi, serta kontrol data bisnis. Ketika proses tersebut masih berjalan secara manual, risiko kesalahan akan semakin besar seiring meningkatnya jumlah pelanggan dan transaksi.</p>
+    <p>Beberapa kondisi umum yang sering ditemui pada usaha sejenis antara lain:</p>
+    <ul>
+      <li>Transaksi dicatat manual atau tersebar di beberapa media.</li>
+      <li>Booking pelanggan masih dilakukan melalui chat tanpa sistem slot yang tertata.</li>
+      <li>Komisi barber dihitung manual dan rawan salah hitung.</li>
+      <li>Owner kesulitan melihat omzet, pengeluaran, dan profit secara cepat.</li>
+      <li>Data pelanggan tidak tersimpan sebagai dasar pengembangan usaha.</li>
+    </ul>
+    <p>Atas dasar kebutuhan tersebut, BarberPOS ditawarkan sebagai solusi untuk menyatukan alur kerja operasional dan pelaporan bisnis ke dalam satu sistem yang lebih profesional.</p>
+  </section>
+
+  <section class="page-break section">
+    <h2>3. Tujuan Pengembangan</h2>
+    <ol>
+      <li>Menyediakan sistem kasir yang cepat dan mudah digunakan dalam operasional harian.</li>
+      <li>Menyediakan modul booking pelanggan yang lebih rapi dan terjadwal.</li>
+      <li>Menyatukan data barber, layanan, pelanggan, dan transaksi dalam satu sistem.</li>
+      <li>Mengotomatisasi penghitungan komisi barber dan rekap payroll dasar.</li>
+      <li>Menyediakan dashboard owner untuk pemantauan operasional dan performa usaha.</li>
+      <li>Menyediakan laporan keuangan dasar agar keputusan bisnis dapat diambil lebih cepat.</li>
+    </ol>
+
+    <h2>4. Gambaran Solusi</h2>
+    <p>BarberPOS adalah sistem operasional end-to-end untuk barbershop. Solusi ini dibangun dengan pendekatan praktis: fokus pada proses inti yang paling sering dipakai setiap hari, namun tetap menyediakan data yang dibutuhkan owner untuk melihat perkembangan usaha.</p>
+    <p>Secara umum, sistem akan menangani tiga area utama:</p>
+    <ul>
+      <li><strong>Operasional front desk</strong> — transaksi, booking, dan layanan pelanggan.</li>
+      <li><strong>Operasional internal</strong> — pengelolaan barber, jadwal, komisi, dan data layanan.</li>
+      <li><strong>Kontrol owner</strong> — dashboard, laporan, pengeluaran, dan laba rugi.</li>
+    </ul>
+
+    <h2>5. Ruang Lingkup Fitur</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Modul</th>
+          <th>Cakupan Fungsi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Login & Hak Akses</td>
+          <td>Role owner/admin dan staff/barber, pembatasan menu sesuai akses.</td>
+        </tr>
+        <tr>
+          <td>POS / Kasir</td>
+          <td>Pilih barber, pilih layanan, hitung total otomatis, metode cash dan QRIS, simpan histori transaksi.</td>
+        </tr>
+        <tr>
+          <td>Service Management</td>
+          <td>Tambah/edit layanan, harga, status aktif, dan skema komisi.</td>
+        </tr>
+        <tr>
+          <td>Customer Data</td>
+          <td>Nama, nomor telepon, histori kunjungan, dan data repeat customer.</td>
+        </tr>
+        <tr>
+          <td>Booking</td>
+          <td>Pilih barber, tanggal, time slot, status booking, dan halaman cek status pelanggan.</td>
+        </tr>
+        <tr>
+          <td>Barber & Schedule</td>
+          <td>Availability, off day, reschedule, dan pencegahan bentrok jadwal.</td>
+        </tr>
+        <tr>
+          <td>Payroll</td>
+          <td>Hitung komisi otomatis, rekap service, status draft/paid.</td>
+        </tr>
+        <tr>
+          <td>Finance & Reports</td>
+          <td>Pengeluaran, modal, omzet, cash vs QRIS, dan laba rugi.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="page-break section">
+    <h2>6. Detail Alur Operasional</h2>
+    <h3>6.1. Pengaturan Data Master</h3>
+    <p>Pada tahap awal, owner atau admin mengatur data layanan, barber, harga, serta skema komisi. Data ini akan menjadi dasar dari seluruh proses transaksi dan pelaporan.</p>
+
+    <h3>6.2. Booking dan Kedatangan Pelanggan</h3>
+    <p>Pelanggan dapat melakukan booking berdasarkan barber, tanggal, dan slot jam yang tersedia. Untuk pelanggan walk-in, staff tetap dapat langsung memproses transaksi melalui modul POS tanpa harus membuat alur yang rumit.</p>
+
+    <h3>6.3. Transaksi di POS</h3>
+    <p>Pada saat pelayanan berlangsung, staff memilih barber yang bertugas, layanan yang diambil, lalu menyelesaikan checkout. Sistem akan mencatat metode pembayaran, total transaksi, dan histori penjualan secara otomatis.</p>
+
+    <h3>6.4. Rekap Barber dan Customer</h3>
+    <p>Setiap transaksi akan ikut membentuk data performa barber dan data kunjungan customer. Dengan demikian, sistem tidak hanya berfungsi untuk mencatat penjualan, tetapi juga membangun data bisnis yang dapat dipakai dalam jangka panjang.</p>
+
+    <h3>6.5. Monitoring oleh Owner</h3>
+    <p>Owner dapat memantau omzet, jumlah transaksi, cash vs QRIS, booking, biaya, dan perhitungan profit melalui dashboard dan laporan yang tersaji secara lebih rapi.</p>
+
+    <h2>7. Manfaat Bagi Private</h2>
+    <ul>
+      <li>Proses pelayanan dan transaksi menjadi lebih cepat.</li>
+      <li>Booking pelanggan menjadi lebih tertata dan profesional.</li>
+      <li>Perhitungan komisi barber menjadi lebih efisien.</li>
+      <li>Owner mendapatkan kontrol data usaha yang lebih kuat.</li>
+      <li>Riwayat pelanggan dapat dipakai sebagai dasar promosi dan retensi.</li>
+      <li>Laporan keuangan dasar tersedia lebih cepat untuk evaluasi usaha.</li>
+    </ul>
+  </section>
+
+  <section class="page-break section">
+    <h2>8. Teknologi yang Digunakan</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Lapisan Sistem</th>
+          <th>Teknologi</th>
+          <th>Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Frontend</td>
+          <td>React, TypeScript, Vite</td>
+          <td>Memberikan antarmuka yang cepat, ringan, dan modern.</td>
+        </tr>
+        <tr>
+          <td>Backend</td>
+          <td>Node.js, Express</td>
+          <td>Mengelola logika bisnis, API, dan proses data utama.</td>
+        </tr>
+        <tr>
+          <td>Database</td>
+          <td>MySQL</td>
+          <td>Menyimpan data transaksi, barber, booking, dan laporan.</td>
+        </tr>
+        <tr>
+          <td>ORM</td>
+          <td>Prisma</td>
+          <td>Mempermudah pengelolaan database secara aman dan terstruktur.</td>
+        </tr>
+        <tr>
+          <td>Authentication</td>
+          <td>JWT-based auth</td>
+          <td>Mengatur login dan akses pengguna berdasarkan role.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>9. Keamanan dan Keandalan</h2>
+    <ul>
+      <li>Validasi input pada proses penting.</li>
+      <li>Pembatasan akses berdasarkan role pengguna.</li>
+      <li>Rate limiting pada endpoint sensitif.</li>
+      <li>Struktur siap untuk maintenance rutin dan backup data.</li>
+      <li>Arsitektur cukup fleksibel untuk penambahan fitur berikutnya.</li>
+    </ul>
+
+    <h2>10. Timeline Pengerjaan</h2>
+    <p>Estimasi pengerjaan proyek adalah <strong>2 minggu</strong> sejak kebutuhan final disepakati. Pembagian tahapan kerja dirancang agar proses implementasi tetap terstruktur dan mudah dipantau.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Minggu</th>
+          <th>Fokus Pekerjaan</th>
+          <th>Output</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Minggu 1</td>
+          <td>Analisis kebutuhan, setup proyek, pembuatan struktur sistem, modul login, data master, layanan, barber, dan POS utama.</td>
+          <td>Fondasi sistem dan alur transaksi inti selesai.</td>
+        </tr>
+        <tr>
+          <td>Minggu 2</td>
+          <td>Pengerjaan booking, laporan, payroll dasar, perapihan UI, testing, revisi minor, dan deployment awal.</td>
+          <td>Sistem siap digunakan untuk operasional awal.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="small muted">Timeline dapat menyesuaikan apabila terdapat tambahan scope di luar ruang lingkup inti proposal.</p>
+  </section>
+
+  <section class="page-break section">
+    <h2>11. Deliverables</h2>
+    <ul>
+      <li>Aplikasi POS barbershop berbasis web.</li>
+      <li>Dashboard owner dan modul operasional inti.</li>
+      <li>Modul booking, layanan, customer, barber, dan payroll dasar.</li>
+      <li>Laporan transaksi, pengeluaran, dan laba rugi dasar.</li>
+      <li>Dokumentasi penggunaan singkat.</li>
+      <li>Dukungan implementasi awal setelah go-live.</li>
+    </ul>
+
+    <h2>12. Penawaran Biaya</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Komponen</th>
+          <th>Biaya</th>
+          <th>Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Pembuatan sistem BarberPOS</td>
+          <td>Rp1.000.000</td>
+          <td>Pembayaran satu kali untuk pengembangan sistem sesuai ruang lingkup proposal.</td>
+        </tr>
+        <tr>
+          <td>Server / hosting</td>
+          <td>Rp50.000 / bulan</td>
+          <td>Biaya operasional sistem agar dapat diakses online.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>13. Catatan Ruang Lingkup</h2>
+    <p>Proposal ini disusun berdasarkan ruang lingkup inti yang paling relevan untuk operasional barbershop. Jika terdapat tambahan kebutuhan seperti integrasi pembayaran lebih lanjut, notifikasi khusus, multi-cabang, loyalty program, atau branding lanjutan, maka pengembangan tambahan dapat dibahas pada tahap berikutnya.</p>
+
+    <h2>14. Penutup</h2>
+    <p>Melalui proposal ini, Nicola.id menawarkan solusi yang dirancang untuk membantu Private menjalankan operasional barbershop dengan sistem yang lebih rapi, profesional, dan terukur. BarberPOS diharapkan dapat menjadi fondasi digital yang mendukung efisiensi kerja harian sekaligus membantu owner membaca performa usaha dengan lebih jelas.</p>
+    <p>Kami siap menyesuaikan rincian implementasi apabila terdapat kebutuhan operasional khusus yang ingin diprioritaskan dalam tahap pengerjaan.</p>
+
+    <div class="footer-note">
+      <p><strong>Hormat kami,</strong></p>
+      <p><strong>Nicola.id</strong></p>
+      <p class="muted small">Digital product development for practical business systems.</p>
+    </div>
+  </section>
+</body>
+</html>

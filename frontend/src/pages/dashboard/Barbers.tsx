@@ -17,12 +17,11 @@ import {
     Trash2,
     Users,
     Loader2,
-    Search,
-    UserPlus
+    Search
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { API_BASE_URL } from '@/lib/api';
 import { toast } from 'sonner';
 

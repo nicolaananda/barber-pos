@@ -28,11 +28,10 @@ function BarberPerformance({ range, compact = false }: { range: DateRange; compa
     const [data, setData] = useState<Barber[] | null>(null);
     const [error, setError] = useState('');
     useEffect(() => {
-        setData(null); setError('');
-        apiFetch<ApiResponse<Barber[]>>(`/analytics/barber-comparison?${query(range)}`)
+        Promise.resolve().then(() => { setData(null); setError(''); return apiFetch<ApiResponse<Barber[]>>(`/analytics/barber-comparison?${query(range)}`); })
             .then(result => setData(result.data))
             .catch(() => setError('Performa barber gagal dimuat.'));
-    }, [range.startDate, range.endDate]);
+    }, [range]);
     return <section className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden" aria-labelledby="barber-performance-title">
         <div className="p-5 border-b border-zinc-200"><h2 id="barber-performance-title" className="font-bold text-zinc-900">Performa Barber</h2><p className="text-sm text-zinc-500">Kontribusi pendapatan pada periode terpilih.</p></div>
         {error ? <p role="alert" className="p-6 text-red-700">{error}</p> : data === null ? <p className="p-6 text-zinc-500">Memuat performa barber…</p> : data.length === 0 ? <p className="p-6 text-zinc-500">Belum ada transaksi barber pada periode ini.</p> :

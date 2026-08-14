@@ -16,7 +16,7 @@ function Delta({ value }: { value?: number }) {
 
 export default function ProfitMarginChart({ startDate, endDate }: Props) {
     const [data, setData] = useState<Data | null>(null); const [error, setError] = useState(''); const [view, setView] = useState<'service' | 'barber'>('service');
-    useEffect(() => { const params = new URLSearchParams(); if (startDate) params.set('startDate', startDate); if (endDate) params.set('endDate', endDate); setData(null); setError(''); apiFetch<Response>(`/analytics/profit-margin?${params}`).then(r => setData(r.data)).catch(() => setError('Profitabilitas gagal dimuat.')); }, [startDate, endDate]);
+    useEffect(() => { const params = new URLSearchParams(); if (startDate) params.set('startDate', startDate); if (endDate) params.set('endDate', endDate); Promise.resolve().then(() => { setData(null); setError(''); return apiFetch<Response>(`/analytics/profit-margin?${params}`); }).then(r => setData(r.data)).catch(() => setError('Profitabilitas gagal dimuat.')); }, [startDate, endDate]);
     if (error) return <div role="alert" className="p-6 bg-white border border-red-200 rounded-xl text-red-700">{error}</div>;
     if (!data) return <div className="p-10 bg-white border border-zinc-200 rounded-xl text-center text-zinc-500">Memuat profitabilitas…</div>;
     const deltas = data.overall.previousPeriodDeltas ?? data.overall.deltas ?? {};

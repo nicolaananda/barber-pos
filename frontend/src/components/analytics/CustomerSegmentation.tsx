@@ -11,7 +11,7 @@ const action = (customer: Customer) => customer.recommendedAction ?? (customer.s
 
 export default function CustomerSegmentation({ startDate, endDate, compact = false }: Props) {
     const [data, setData] = useState<Data | null>(null); const [error, setError] = useState(''); const [segment, setSegment] = useState('VIP');
-    useEffect(() => { const p = new URLSearchParams(); if (startDate) p.set('startDate', startDate); if (endDate) p.set('endDate', endDate); setData(null); setError(''); apiFetch<{ data: Data }>(`/analytics/customer-segmentation?${p}`).then(r => setData(r.data)).catch(() => setError('Segmentasi pelanggan gagal dimuat.')); }, [startDate, endDate]);
+    useEffect(() => { const p = new URLSearchParams(); if (startDate) p.set('startDate', startDate); if (endDate) p.set('endDate', endDate); Promise.resolve().then(() => { setData(null); setError(''); return apiFetch<{ data: Data }>(`/analytics/customer-segmentation?${p}`); }).then(r => setData(r.data)).catch(() => setError('Segmentasi pelanggan gagal dimuat.')); }, [startDate, endDate]);
     const chart = useMemo(() => data ? ['VIP', 'Regular', 'Occasional', 'At-Risk', 'Lost'].map(name => ({ name, value: data.summary[name] || 0 })).filter(x => x.value) : [], [data]);
     if (error) return <div role="alert" className="p-6 bg-white border border-red-200 rounded-xl text-red-700">{error}</div>;
     if (!data) return <div className="p-10 bg-white border border-zinc-200 rounded-xl text-center text-zinc-500">Memuat segmentasi…</div>;

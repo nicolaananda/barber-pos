@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Scissors, Sparkles, Zap } from 'lucide-react';
+import { Scissors, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -55,17 +55,17 @@ export default function ServicesModal({ open, onOpenChange }: ServicesModalProps
                             <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
                                 <Scissors className="w-6 h-6 text-white" />
                             </div>
-                            Service Menu
+                            Daftar Layanan
                         </DialogTitle>
                         <DialogDescription className="text-zinc-400">
-                            Professional cuts & treatments
+                            Potong rambut dan perawatan profesional
                         </DialogDescription>
                     </DialogHeader>
                 </div>
 
                 <div className="h-[60vh] md:h-auto md:max-h-[60vh] p-6 bg-white overflow-y-auto">
                     {isLoading ? (
-                        <div className="text-center text-zinc-500 py-10">Loading services...</div>
+                        <div className="text-center text-zinc-500 py-10">Memuat layanan...</div>
                     ) : (
                         <div className="space-y-4">
                             {services.map((service, idx) => (
@@ -86,15 +86,12 @@ export default function ServicesModal({ open, onOpenChange }: ServicesModalProps
                             ))}
 
                             {services.length === 0 && (
-                                <div className="text-center text-zinc-400 py-10">No services available</div>
+                                <div className="text-center text-zinc-400 py-10">Belum ada layanan tersedia</div>
                             )}
                         </div>
                     )}
 
-                    <div className="mt-8 p-4 bg-zinc-50 rounded-xl border border-zinc-100 text-center">
-                        <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Staycool Member?</p>
-                        <p className="text-sm font-semibold text-zinc-900">Get 10% OFF on your 5th visit!</p>
-                    </div>
+
                 </div>
 
                 <div className="p-4 bg-zinc-50 border-t border-zinc-100 text-center">
@@ -102,7 +99,7 @@ export default function ServicesModal({ open, onOpenChange }: ServicesModalProps
                         onClick={() => onOpenChange(false)}
                         className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors"
                     >
-                        Close Menu
+                        Tutup
                     </button>
                 </div>
             </DialogContent>

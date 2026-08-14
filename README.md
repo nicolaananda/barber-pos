@@ -1,109 +1,98 @@
-# Staycool POS ✂️
+# StayCool POS
 
-**Staycool POS** is a premium, high-performance Point of Sale and management ecosystem customized for **Staycool Hairlab**. Built with the latest web technologies, it merges a "Dark Luxury" aesthetic with lightning-fast performance to streamline barbershop operations—from the barber's chair to the owner's financial reports.
+Point-of-sale and barbershop management application for Staycool Hairlab. The repository contains a Vite/React single-page frontend and an Express API backed by MySQL through Prisma.
 
-![Staycool POS](app/icon.jpg)
+## Current stack
 
-## 🚀 Key Features
+- Frontend: React 19, TypeScript, Vite 7, React Router, Tailwind CSS 4, Zustand, SWR, and Vite PWA.
+- Backend: Node.js, Express 5, CommonJS, Prisma 5, and MySQL.
+- Authentication: username/password login, bcrypt password hashes, and bearer JWTs. The frontend stores the token in `localStorage`; protected API requests send `Authorization: Bearer <token>`. The backend validates `JWT_SECRET`, token revocation/version, and the current database user role.
 
-### 1. ⚡ High-Performance POS Station
--   **Instant Navigation**: Powered by Next.js App Router and intelligent prefetching, switching between screens is instantaneous.
--   **Dark Luxury UI**: A visually stunning interface designed for modern tablets and low-light environments.
--   **Quick Checkout**: Seamless items selection, cart management, and rapid receipt generation.
--   **Dual Payment Support**: Integrated workflows for both **Cash** and **QRIS** payments.
+The application includes POS checkout, bookings, customers, barber scheduling, services, transaction history, expenses, payroll, dashboards, and analytics.
 
-### 2. 📊 Live Dashboard & Analytics
--   **Real-Time Data**: Revenue, transaction counts, and customer footfall are updated live.
--   **Smart Caching**: All reports use Client-Side Caching (SWR) for instant access to previous data without loading screens.
--   **Daily Reconciliation**: Specialized "Daily Report" for end-of-day closing, featuring top barber stats and cuts history.
+## Requirements
 
-### 3. 💰 Comprehensive Financial Suite
--   **Expenses Bookkeeping**: Record and categorize operational costs (Supplies, Salary, electricity, etc.).
--   **Net Profit Calculation**: Automatic calculation of straightforward Gross Revenue vs. Expenses.
--   **Automated Payroll**: One-click salary slip generation with automatic commission calculations (Percentage or Flat Rate) based on barber performance.
--   **Transaction History**: Searchable, filterable archive of all past sales with **CSV Export** capability.
+- Node.js 20 or newer.
+- npm.
+- MySQL reachable through `DATABASE_URL`.
 
-### 4. 🔒 Role-Based Security
--   **Staff Mode**: Restricted access focused solely on taking orders and checking shifts.
--   **Admin Mode**: Full access to financial data, payroll, and business settings.
--   **Secure Authentication**: Robust session management via **NextAuth.js**.
+## Setup
 
----
+1. Install all dependencies:
 
-## 🛠 Tech Stack
+   ```bash
+   npm install
+   npm run install:all
+   ```
 
-Built on the bleeding edge of the React ecosystem:
+2. Create the backend environment file:
 
--   **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
--   **Language**: [TypeScript](https://www.typescriptlang.org/)
--   **UI Library**: [React 19](https://react.dev/)
--   **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/)
--   **Data Caching**: [SWR](https://swr.vercel.app/)
--   **Database**: [PostgreSQL](https://www.postgresql.org/) (via Neon/Supabase)
--   **ORM**: [Prisma](https://www.prisma.io/)
--   **Deployment**: Docker Containerized
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
 
----
+   At minimum, set:
 
-## 🏁 Getting Started
+   ```env
+   DATABASE_URL="mysql://USER:PASSWORD@localhost:3306/barber_pos"
+   JWT_SECRET="replace-with-a-long-random-secret"
+   PORT=3001
+   ```
 
-### Prerequisites
--   Node.js 20+
--   PostgreSQL Database
+   `backend/.env.example` documents optional WhatsApp, backup, R2 storage, AI analytics, edit PIN, and booking-blackout settings.
 
-### Local Development
+3. Generate the Prisma client and apply the schema using the migration workflow appropriate for the target database:
 
-1.  **Clone the repository**
-    ```bash
-    git clone git@github.com:nicolaananda/barber-pos.git
-    cd barber-pos
-    ```
+   ```bash
+   cd backend
+   npx prisma generate
+   npx prisma migrate deploy
+   cd ..
+   ```
 
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
+   The old HTTP seed route is intentionally not mounted. Do not use it for setup.
 
-3.  **Setup Environment**
-    Create a `.env` file in the root directory:
-    ```env
-    DATABASE_URL="postgresql://user:password@localhost:5432/staycool?schema=public"
-    NEXTAUTH_SECRET="your-super-secret-key"
-    NEXTAUTH_URL="http://localhost:3000"
-    ```
+4. Start both development servers:
 
-4.  **Initialize Database**
-    ```bash
-    npx prisma generate
-    npx prisma db push
-    npm run seed  # Seeds initial admin/staff users
-    ```
+   ```bash
+   npm start
+   ```
 
-5.  **Run Development Server**
-    ```bash
-    npm run dev
-    ```
-    Open [http://localhost:3000](http://localhost:3000) with your browser.
+   - Frontend: http://localhost:7781
+   - Backend API: http://localhost:3001/api
 
----
+   Vite proxies `/api` to `http://localhost:3001`, so the default frontend development setup needs no separate API URL.
 
-## 🐳 Docker Deployment
+## Scripts
 
-The application is fully containerized for production stability.
+### Root
 
-1.  **Build & Run**
-    ```bash
-    docker-compose up -d --build
-    ```
-    
-2.  **Verify Status**
-    ```bash
-    docker ps
-    ```
+```bash
+npm start             # backend server and Vite dev server concurrently
+npm run install:all   # install frontend and backend dependencies
+npm run build         # build frontend, install backend lockfile dependencies, generate Prisma client
+npm run deploy:vps    # run deploy-vps.sh
+```
 
----
+### Frontend
 
-## 📜 License
+```bash
+npm run dev --prefix frontend      # Vite on port 7781
+npm run lint --prefix frontend     # ESLint
+npm run build --prefix frontend    # TypeScript project build and Vite production build
+npm run preview --prefix frontend  # preview production output (Vite default port 4173)
+```
+
+### Backend
+
+```bash
+npm run server --prefix backend    # Express on PORT, default 3001
+```
+
+## Production
+
+The frontend build is written to `frontend/dist`. The Express process reads `backend/.env`; deploy it behind a reverse proxy and serve the built frontend according to the target environment. `deploy-vps.sh` contains the repository's VPS deployment workflow.
+
+## License
 
 Private software developed for Staycool Hairlab.
-© 2024 Nicola Ananda. All rights reserved.

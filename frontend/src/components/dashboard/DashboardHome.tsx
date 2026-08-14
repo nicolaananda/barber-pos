@@ -25,12 +25,20 @@ interface DashboardData {
     }[];
 }
 
+interface BookingSummaryItem {
+    id: number;
+    customerName: string;
+    serviceName: string;
+    timeSlot: string;
+    barberName: string;
+}
+
 import { API_BASE_URL } from '@/lib/api';
 
 export function DashboardHome() {
     const navigate = useNavigate();
     const [data, setData] = useState<DashboardData | null>(null);
-    const [bookingSummary, setBookingSummary] = useState<{ pending: any[]; upcoming: any[] } | null>(null);
+    const [bookingSummary, setBookingSummary] = useState<{ pending: BookingSummaryItem[]; upcoming: BookingSummaryItem[] } | null>(null);
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
@@ -49,8 +57,8 @@ export function DashboardHome() {
                         ...json.stats,
                         totalRevenue: moneyToNumber(json.stats.totalRevenue),
                     },
-                    chartData: json.chartData.map((item: any) => ({ ...item, total: moneyToNumber(item.total) })),
-                    recentActivity: json.recentActivity.map((item: any) => ({ ...item, amount: moneyToNumber(item.amount) })),
+                    chartData: json.chartData.map((item: { name: string; total: number | string }) => ({ ...item, total: moneyToNumber(item.total) })),
+                    recentActivity: json.recentActivity.map((item: Omit<DashboardData['recentActivity'][number], 'amount'> & { amount: number | string }) => ({ ...item, amount: moneyToNumber(item.amount) })),
                 });
             }
             if (bookingsRes.ok) {
@@ -133,7 +141,7 @@ export function DashboardHome() {
                                 {bookingSummary.pending.length === 0 ? (
                                     <p className="text-sm text-amber-700/60 italic">No pending bookings.</p>
                                 ) : (
-                                    bookingSummary.pending.map((booking: any) => (
+                                    bookingSummary.pending.map((booking) => (
                                         <div key={booking.id} className="bg-white p-3 rounded-md border border-amber-100 shadow-sm flex justify-between items-center group hover:border-amber-300 transition-all cursor-pointer" onClick={() => navigate('/dashboard/bookings')}>
                                             <div>
                                                 <p className="font-semibold text-zinc-900 text-sm">{booking.customerName}</p>
@@ -168,7 +176,7 @@ export function DashboardHome() {
                                 {bookingSummary.upcoming.length === 0 ? (
                                     <p className="text-sm text-emerald-700/60 italic">No appointments for today.</p>
                                 ) : (
-                                    bookingSummary.upcoming.map((booking: any) => (
+                                    bookingSummary.upcoming.map((booking) => (
                                         <div
                                             key={booking.id}
                                             className="bg-white p-3 rounded-md border border-emerald-100 shadow-sm flex justify-between items-center group hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer"

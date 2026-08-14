@@ -18,8 +18,7 @@ import {
     Scissors,
     Loader2,
     Search,
-    SortAsc,
-    Tag
+    SortAsc
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

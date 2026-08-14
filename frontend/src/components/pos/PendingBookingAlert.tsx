@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { Bell, Check, X, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { API_BASE_URL } from '@/lib/api';
@@ -37,7 +37,7 @@ export default function PendingBookingAlert({ className }: PendingBookingAlertPr
     // Sound effect (Synthesized for reliability)
     const playSound = () => {
         try {
-            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            const AudioContext = window.AudioContext || (window as Window & typeof globalThis & { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;
             if (!AudioContext) return;
 
             const ctx = new AudioContext();
@@ -61,7 +61,7 @@ export default function PendingBookingAlert({ className }: PendingBookingAlertPr
         }
     };
 
-    const fetchPendingBookings = async () => {
+    const fetchPendingBookings = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/bookings?status=pending`, {
@@ -81,10 +81,10 @@ export default function PendingBookingAlert({ className }: PendingBookingAlertPr
         } catch (error) {
             console.error("Failed to fetch pending bookings", error);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        fetchPendingBookings();
+        const initial = setTimeout(fetchPendingBookings, 0);
 
         // Fast polling (5s) for "real-time" feel
         const interval = setInterval(fetchPendingBookings, 15000);
@@ -94,10 +94,11 @@ export default function PendingBookingAlert({ className }: PendingBookingAlertPr
         window.addEventListener('focus', onFocus);
 
         return () => {
+            clearTimeout(initial);
             clearInterval(interval);
             window.removeEventListener('focus', onFocus);
         };
-    }, []);
+    }, [fetchPendingBookings]);
 
     const handleAction = async (bookingId: number, status: 'confirmed' | 'cancelled') => {
         try {

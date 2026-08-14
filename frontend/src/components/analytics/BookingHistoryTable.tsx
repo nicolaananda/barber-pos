@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../../lib/api';
-import { Search, Download, Calendar, User, Phone } from 'lucide-react';
+import { Download, Calendar, User, Phone } from 'lucide-react';
 
 
 interface Booking {
@@ -54,25 +54,23 @@ export default function BookingHistoryTable({ startDate, endDate }: BookingHisto
     }, [startDate, endDate]);
 
     useEffect(() => {
-        fetchData();
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const params = new URLSearchParams();
+                Object.entries(filters).forEach(([key, value]) => {
+                    if (value) params.append(key, value.toString());
+                });
+                const response = await apiFetch<{ data: BookingHistoryData }>(`/analytics/booking-history?${params}`);
+                setData(response.data);
+            } catch (error) {
+                console.error('Failed to fetch booking history:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        void fetchData();
     }, [filters]);
-
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const params = new URLSearchParams();
-            Object.entries(filters).forEach(([key, value]) => {
-                if (value) params.append(key, value.toString());
-            });
-
-            const response = await apiFetch<{ data: BookingHistoryData }>(`/analytics/booking-history?${params}`);
-            setData(response.data);
-        } catch (error) {
-            console.error('Failed to fetch booking history:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleFilterChange = (key: string, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value, offset: 0 }));

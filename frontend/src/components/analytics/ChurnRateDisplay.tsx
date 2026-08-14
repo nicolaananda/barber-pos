@@ -7,7 +7,7 @@ type Props = { startDate?: string; endDate?: string };
 
 export default function ChurnRateDisplay({ startDate, endDate }: Props) {
     const [data, setData] = useState<Data | null>(null); const [error, setError] = useState(''); const [periodDays, setPeriodDays] = useState(90);
-    useEffect(() => { const p = new URLSearchParams({ periodDays: String(periodDays) }); if (startDate) p.set('startDate', startDate); if (endDate) p.set('endDate', endDate); setData(null); setError(''); apiFetch<{ data: Data }>(`/analytics/churn-rate?${p}`).then(r => setData(r.data)).catch(() => setError('Retensi pelanggan gagal dimuat.')); }, [periodDays, startDate, endDate]);
+    useEffect(() => { const p = new URLSearchParams({ periodDays: String(periodDays) }); if (startDate) p.set('startDate', startDate); if (endDate) p.set('endDate', endDate); Promise.resolve().then(() => { setData(null); setError(''); return apiFetch<{ data: Data }>(`/analytics/churn-rate?${p}`); }).then(r => setData(r.data)).catch(() => setError('Retensi pelanggan gagal dimuat.')); }, [periodDays, startDate, endDate]);
     if (error) return <div role="alert" className="p-6 bg-white border border-red-200 rounded-xl text-red-700">{error}</div>;
     if (!data) return <div className="p-10 bg-white border border-zinc-200 rounded-xl text-center text-zinc-500">Memuat retensi…</div>;
     const cohorts = data.monthlyCohorts ?? data.cohortRetention ?? [];

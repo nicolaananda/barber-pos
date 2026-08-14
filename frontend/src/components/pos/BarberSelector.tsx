@@ -44,7 +44,7 @@ export default function BarberSelector() {
                 const currentFromStore = usePosStore.getState().selectedBarber;
                 if (currentFromStore) {
                     // Check if ID exists in new data
-                    // eslint-disable-next-line eqeqeq
+
                     const isValid = data.find((b: Barber) => b.id == (currentFromStore.id as unknown as number));
 
                     if (!isValid) {
@@ -82,7 +82,7 @@ export default function BarberSelector() {
             <div className="flex md:grid md:grid-cols-4 gap-3 md:gap-4 overflow-x-auto pb-4 md:pb-0 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
                 {barbers.map((barber) => {
                     const imageUrl = getBarberImage(barber);
-                    const isSelected = selectedBarber?.id == (barber.id as unknown as string); // eslint-disable-line eqeqeq
+                    const isSelected = selectedBarber?.id == (barber.id as unknown as string);
 
                     return (
                         <Card

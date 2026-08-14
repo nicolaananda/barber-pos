@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../../lib/api';
-import { Sparkles, Brain, Lightbulb, TrendingUp } from 'lucide-react';
+import { Sparkles, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 
@@ -70,19 +70,17 @@ export default function AIInsights() {
                 <ReactMarkdown
                     components={{
                         // Remove H1/H2/H3 as they act as card titles now
-                        h1: ({ node, ...props }) => <h4 className="sr-only" {...props} />,
-                        h2: ({ node, ...props }) => <h4 className="sr-only" {...props} />,
-                        h3: ({ node, ...props }) => <h4 className="sr-only" {...props} />,
+                        h1: ({ node, ...props }) => { void node; return <h4 className="sr-only" {...props} />; },
+                        h2: ({ node, ...props }) => { void node; return <h4 className="sr-only" {...props} />; },
+                        h3: ({ node, ...props }) => { void node; return <h4 className="sr-only" {...props} />; },
 
-                        ul: ({ node, ...props }) => (
-                            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 list-none p-0 m-0" {...props} />
-                        ),
+                        ul: ({ node, ...props }) => { void node; return <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 list-none p-0 m-0" {...props} />; },
 
                         // Each list item becomes a card
                         li: ({ node, ...props }) => {
+                            void node;
                             // Extract title and content from children
                             // Assumption: The text follows "**Title**: Content" pattern from the prompt
-                            const childrenArray = Array.isArray(props.children) ? props.children : [props.children];
 
                             return (
                                 <div className="group relative flex flex-col rounded-xl border border-zinc-100 bg-zinc-50/50 p-5 transition-all hover:bg-white hover:border-purple-100 hover:shadow-md">
@@ -98,13 +96,13 @@ export default function AIInsights() {
 
                         // Style the strong tag as the card title
                         strong: ({ node, ...props }) => (
-                            <div className="mb-2 block font-bold text-zinc-900 group-hover:text-purple-700 transition-colors">
+                            <div ref={() => void node} className="mb-2 block font-bold text-zinc-900 group-hover:text-purple-700 transition-colors">
                                 {props.children}
                             </div>
                         ),
 
                         // Style regular text
-                        p: ({ node, ...props }) => <span {...props} />
+                        p: ({ node, ...props }) => { void node; return <span {...props} />; }
                     }}
                 >
                     {insights}

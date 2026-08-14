@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { API_BASE_URL } from '@/lib/api';
 import { toast } from 'sonner';
 import { usePosStore } from '@/lib/store';
@@ -13,6 +13,7 @@ import Cart from '@/components/pos/Cart';
 import CheckoutModal from '@/components/pos/CheckoutModal';
 import PendingBookingAlert from '@/components/pos/PendingBookingAlert';
 import { moneyToNumber } from '@/lib/money';
+import type { CartItem } from '@/lib/store';
 import {
     Sheet,
     SheetContent,
@@ -26,15 +27,15 @@ export default function PosPage() {
     const { user, token, logout, refreshUser } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const { activeShift, setActiveShift, selectedBarber, setCustomerInfo, setBarber, addToCart, setBookingId, clearCart } = usePosStore();
+    const { setActiveShift, selectedBarber, setCustomerInfo, setBarber, addToCart, setBookingId, clearCart } = usePosStore();
     const [loading, setLoading] = useState(true);
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
-    const cart = usePosStore((state: any) => state.cart);
-    const cartTotal = cart.reduce((sum: number, item: any) => sum + moneyToNumber(item.price) * item.qty, 0);
-    const cartCount = cart.reduce((sum: number, item: any) => sum + item.qty, 0);
+    const cart = usePosStore((state) => state.cart);
+    const cartTotal = cart.reduce((sum: number, item: CartItem) => sum + moneyToNumber(item.price) * item.qty, 0);
+    const cartCount = cart.reduce((sum: number, item: CartItem) => sum + item.qty, 0);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -52,7 +53,7 @@ export default function PosPage() {
     }, [cart.length]);
 
     useEffect(() => {
-        const state = location.state as any;
+        const state = location.state as { booking?: { id: number; customerName: string; customerPhone?: string; barberId?: string | number; barberName: string; barberUsername?: string; serviceId?: string | number; serviceName?: string; servicePrice: number } } | null;
         if (state?.booking) {
             const b = state.booking;
             clearCart();
@@ -66,7 +67,7 @@ export default function PosPage() {
             }
             navigate(location.pathname, { replace: true, state: {} });
         }
-    }, [location.state, clearCart, setCustomerInfo, setBookingId, setBarber, addToCart, navigate]);
+    }, [location.state, location.pathname, clearCart, setCustomerInfo, setBookingId, setBarber, addToCart, navigate]);
 
     useEffect(() => {
         const checkShift = async () => {
@@ -90,7 +91,7 @@ export default function PosPage() {
             }
         };
         checkShift();
-    }, [setActiveShift]);
+    }, [setActiveShift, token]);
 
     useEffect(() => {
         if (user?.role === 'staff' && !selectedBarber) {

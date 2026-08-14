@@ -11,12 +11,11 @@ import {
     RefreshCcw,
     TrendingUp,
     Calendar,
-    Users,
     Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { API_BASE_URL } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import {
     BarChart,
     Bar,
@@ -44,7 +43,7 @@ interface Transaction {
     barberName: string;
     totalAmount: number;
     paymentMethod: string;
-    items: any[];
+    items: { name: string; qty: number; price: number }[];
 }
 
 interface DailyData {
@@ -66,7 +65,7 @@ export default function DailyPage() {
     const { token } = useAuth();
     const [data, setData] = useState<DailyData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [chartData, setChartData] = useState<any[]>([]);
+    const [chartData, setChartData] = useState<{ hour: string; revenue: number; count: number }[]>([]);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
     useEffect(() => {
@@ -351,7 +350,7 @@ export default function DailyPage() {
                                             </td>
                                             <td className="p-4 hidden md:table-cell">
                                                 <div className="text-xs text-zinc-500 truncate max-w-[200px]">
-                                                    {tx.items.map((i: any) => `${i.name}${i.qty > 1 ? ` (x${i.qty})` : ''}`).join(', ')}
+                                                    {tx.items.map((i) => `${i.name}${i.qty > 1 ? ` (x${i.qty})` : ''}`).join(', ')}
                                                 </div>
                                             </td>
                                             <td className="p-4 text-right font-bold font-mono text-zinc-900">
@@ -415,7 +414,7 @@ export default function DailyPage() {
                         <div className="border-t border-zinc-200 pt-4">
                             <h4 className="font-semibold mb-2 text-sm text-zinc-900">Items</h4>
                             <div className="space-y-2">
-                                {selectedTransaction?.items.map((item: any, i: number) => (
+                                {selectedTransaction?.items.map((item, i) => (
                                     <div key={i} className="flex justify-between text-sm py-1 border-b border-zinc-100 last:border-0">
                                         <div className="flex flex-col">
                                             <span className="font-medium text-zinc-800">{item.name}</span>

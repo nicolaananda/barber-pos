@@ -45,4 +45,6 @@ next-env.d.ts
 /lib/generated/prisma
 node_modules/
 backend/cache/
+backend/logs/
+*.sql
 .git.zip

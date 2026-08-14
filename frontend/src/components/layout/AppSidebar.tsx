@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { cn } from '@/lib/utils';
 import {
     LayoutDashboard,

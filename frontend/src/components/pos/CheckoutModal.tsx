@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { usePosStore } from '@/lib/store';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { API_BASE_URL } from '@/lib/api';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -13,6 +13,30 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { moneyToNumber } from '@/lib/money';
 
+interface TransactionItem {
+    name: string;
+    price: number;
+    qty: number;
+}
+
+interface Transaction {
+    id: number;
+    invoiceCode: string;
+    totalAmount: number;
+    items: TransactionItem[];
+    date?: string;
+    customerName?: string;
+    customerPhone?: string;
+    paymentMethod: string;
+}
+
+interface Customer {
+    id: number;
+    name: string;
+    phone: string;
+    totalVisits: number;
+}
+
 export default function CheckoutModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
     const { token } = useAuth();
     const { cart, selectedBarber, customerName, customerPhone, setCustomerInfo, clearCart, bookingId } = usePosStore();
@@ -21,8 +45,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris'>('cash');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [lastTx, setLastTx] = useState<any>(null);
+    const [lastTx, setLastTx] = useState<Transaction | null>(null);
 
     // WhatsApp sending state
     const [whatsappLoading, setWhatsappLoading] = useState(false);
@@ -30,8 +53,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
     const [whatsappError, setWhatsappError] = useState('');
 
     // Customer Autocomplete State
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searchResults, setSearchResults] = useState<Customer[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -75,8 +97,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
         setSearchQuery(query);
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleSelectCustomer = (customer: any) => {
+    const handleSelectCustomer = (customer: Customer) => {
         setCustomerInfo(customer.name, customer.phone);
         setSearchQuery(''); // Clear search after selection
         setShowSuggestions(false);
@@ -139,14 +160,13 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
                 ...data,
                 totalAmount: moneyToNumber(data.totalAmount),
                 items: Array.isArray(data.items)
-                    ? data.items.map((item: any) => ({ ...item, price: moneyToNumber(item.price), qty: Number(item.qty || 1) }))
+                    ? data.items.map((item: TransactionItem) => ({ ...item, price: moneyToNumber(item.price), qty: Number(item.qty || 1) }))
                     : [],
             });
             setSuccess(true);
         } catch (error) {
             console.error(error);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            toast.error(`Checkout Failed: ${(error as any).message}`);
+            toast.error(`Checkout Failed: ${error instanceof Error ? error.message : 'Transaction failed'}`);
         } finally {
             setLoading(false);
         }
@@ -188,8 +208,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
             setWhatsappSent(true);
         } catch (error) {
             console.error('WhatsApp Send Error:', error);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            setWhatsappError((error as any).message || 'Failed to send WhatsApp');
+            setWhatsappError(error instanceof Error ? error.message : 'Failed to send WhatsApp');
         } finally {
             setWhatsappLoading(false);
         }
@@ -254,7 +273,7 @@ export default function CheckoutModal({ open, onOpenChange }: { open: boolean; o
                         <div class="border-b"></div>
 
                         <div class="mb-2">
-                            ${tx.items.map((item: any) => `
+                            ${tx.items.map((item) => `
                             <div class="item-row">
                                 <span class="item-name"><span class="item-qty">${item.qty}x</span> ${item.name}</span>
                                 <span class="item-price">${(moneyToNumber(item.price) * item.qty).toLocaleString('id-ID')}</span>

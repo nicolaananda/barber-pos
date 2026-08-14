@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 
 export function BookingNotifier() {
     const { token, user } = useAuth();
@@ -9,7 +9,7 @@ export function BookingNotifier() {
 
     const playNotificationSound = () => {
         try {
-            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            const AudioContext = window.AudioContext || (window as Window & typeof globalThis & { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;
             if (!AudioContext) return;
 
             const ctx = new AudioContext();

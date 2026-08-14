@@ -23,8 +23,7 @@ interface DailyStats {
         barberName: string;
         totalAmount: number;
         paymentMethod: string;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        items: any[];
+        items: { name: string }[];
     }[];
 }
 
@@ -119,7 +118,7 @@ export default function DailyRecap() {
                                             <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{tx.invoiceCode}</td>
                                             <td className="px-4 py-3 font-medium">{tx.barberName}</td>
                                             <td className="px-4 py-3 text-muted-foreground truncate max-w-[200px]">
-                                                {tx.items.map((i: any) => i.name).join(', ')}
+                                                {tx.items.map((i) => i.name).join(', ')}
                                             </td>
                                             <td className="px-4 py-3 font-bold text-foreground">IDR {tx.totalAmount.toLocaleString('id-ID')}</td>
                                             <td className="px-4 py-3 text-right">

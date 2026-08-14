@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { Loader2, Calendar, FileText, Download, Filter, Eye, DollarSign, Banknote, CreditCard, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Loader2, Calendar, FileText, Filter, Eye, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { API_BASE_URL } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { toast } from 'sonner';
 import { moneyToNumber } from '@/lib/money';
 import {
@@ -25,7 +25,7 @@ interface Transaction {
     paymentMethod: string;
     date: string;
     customerName?: string;
-    items: any[];
+    items: { name: string; price: number; qty: number }[];
     barberId: { name: string };
 }
 
@@ -130,7 +130,7 @@ export default function TransactionsPage() {
 
 
 
-    const handleItemChange = (index: number, field: string, value: any) => {
+    const handleItemChange = (index: number, field: string, value: string | number) => {
         if (!editForm) return;
         const newItems = [...editForm.items];
         newItems[index] = { ...newItems[index], [field]: value };
@@ -241,9 +241,9 @@ export default function TransactionsPage() {
             setSelectedTransaction(null);
             setIsEditing(false);
             fetchTransactions();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            toast.error(error.message || 'Failed to delete transaction');
+            toast.error(error instanceof Error ? error.message : 'Failed to delete transaction');
         } finally {
             setDeleteLoading(false);
         }
@@ -517,7 +517,7 @@ export default function TransactionsPage() {
                             <div className="border-t border-zinc-200 pt-4">
                                 <h4 className="font-semibold mb-2 text-sm text-zinc-900">Items</h4>
                                 <div className="space-y-2">
-                                    {selectedTransaction?.items.map((item: any, i: number) => (
+                                    {selectedTransaction?.items.map((item, i) => (
                                         <div key={i} className="flex justify-between text-sm py-1 border-b border-zinc-100 last:border-0">
                                             <div className="flex flex-col">
                                                 <span className="font-medium text-zinc-800">{item.name}</span>
@@ -570,7 +570,7 @@ export default function TransactionsPage() {
                                     <div className="border-t border-zinc-200 pt-4">
                                         <h4 className="font-semibold mb-2 text-sm text-zinc-900">Edit Items</h4>
                                         <div className="space-y-3 max-h-[30vh] overflow-y-auto pr-2">
-                                            {editForm.items.map((item: any, i: number) => (
+                                            {editForm.items.map((item, i) => (
                                                 <div key={i} className="bg-zinc-50 p-2 rounded-lg border border-zinc-100 space-y-2">
                                                     <Input
                                                         value={item.name}

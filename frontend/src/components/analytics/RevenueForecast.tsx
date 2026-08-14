@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../../lib/api';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
 
 
@@ -21,22 +21,21 @@ export default function RevenueForecast({ periods = 30 }: RevenueForecastProps) 
     const [selectedPeriods, setSelectedPeriods] = useState(periods);
 
     useEffect(() => {
-        fetchData();
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const response = await apiFetch<{ data: ForecastData }>(
+                    `/analytics/revenue-forecast?periods=${selectedPeriods}`
+                );
+                setData(response.data);
+            } catch (error) {
+                console.error('Failed to fetch revenue forecast:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        void fetchData();
     }, [selectedPeriods]);
-
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const response = await apiFetch<{ data: ForecastData }>(
-                `/analytics/revenue-forecast?periods=${selectedPeriods}`
-            );
-            setData(response.data);
-        } catch (error) {
-            console.error('Failed to fetch revenue forecast:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     if (loading) {
         return (

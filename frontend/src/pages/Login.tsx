@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { ApiClientError, apiFetch } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -60,7 +60,7 @@ export default function LoginPage() {
                                 id="username"
                                 type="text"
                                 value={username}
-                                onChange={(e: any) => setUsername(e.target.value)}
+                                onChange={(e) => setUsername(e.target.value)}
                                 placeholder="Enter your username"
                                 className="bg-zinc-50 border-zinc-200 focus:ring-zinc-900 focus:border-zinc-900"
                                 required
@@ -72,7 +72,7 @@ export default function LoginPage() {
                                 id="password"
                                 type="password"
                                 value={password}
-                                onChange={(e: any) => setPassword(e.target.value)}
+                                onChange={(e) => setPassword(e.target.value)}
                                 placeholder="Enter your password"
                                 className="bg-zinc-50 border-zinc-200 focus:ring-zinc-900 focus:border-zinc-900"
                                 required

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useEffect, useState, type ComponentType } from 'react';
+import { useAuth } from '@/context/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,7 +97,7 @@ export default function BarberDashboard() {
     };
 
     const getStatusBadge = (status: string) => {
-        const variants: Record<string, { variant: any; icon: any; label: string }> = {
+        const variants: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive'; icon: ComponentType<{ className?: string }>; label: string }> = {
             confirmed: { variant: 'default', icon: CheckCircle, label: 'Confirmed' },
             pending: { variant: 'secondary', icon: AlertCircle, label: 'Pending' },
             completed: { variant: 'outline', icon: CheckCircle, label: 'Completed' },

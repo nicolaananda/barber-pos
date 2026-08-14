@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ArrowRight, ArrowLeft, UploadCloud, Scissors, Check } from 'lucide-react';
+import { Loader2, UploadCloud, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import imageCompression from 'browser-image-compression';
 import { cn } from '@/lib/utils';
@@ -22,7 +22,13 @@ interface BookingModalProps {
     barber: { id: number; name: string; username?: string; isHeadBarber?: boolean };
     timeSlot: { start: string; end: string; label: string };
     bookingDate: Date;
-    onSuccess?: () => void;
+    onSuccess?: (booking: BookingConfirmation) => void;
+}
+
+export interface BookingConfirmation {
+    bookingCode: string; bookingDate: string; timeSlot: string; serviceName: string | null;
+    servicePrice: number | null; status: string; barber: { id: number; name: string };
+    location?: { address?: string; mapsUrl?: string; whatsappNumber?: string };
 }
 
 interface Service {
@@ -48,19 +54,13 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        if (open) {
-            fetchServices();
-        }
-    }, [open]);
-
-    const fetchServices = async () => {
+    const fetchServices = useCallback(async () => {
         setIsLoadingServices(true);
         try {
             const res = await fetch(`${API_BASE_URL}/services`);
             if (res.ok) {
                 const data = await res.json();
-                let availableServices = data.filter((s: any) => s.isActive);
+                let availableServices = (data as (Service & { isActive: boolean })[]).filter((s) => s.isActive);
 
                 // Filter services based on barber type
                 // Services containing "head barber" or "by head" are exclusive to head barber
@@ -73,20 +73,20 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
 
                 if (isHeadBarber) {
                     // Head barber: hide regular haircut variants (non-head), show head barber services + everything else
-                    availableServices = availableServices.filter((s: any) => {
+                    availableServices = availableServices.filter((s) => {
                         const name = s.name.toLowerCase();
                         const isBasicHaircut = (name.includes('haircut') || name.includes('cukur')) && !isHeadBarberService(s.name);
                         return !isBasicHaircut;
                     });
                 } else {
                     // Regular barber: hide head barber exclusive services, show everything else
-                    availableServices = availableServices.filter((s: any) => {
+                    availableServices = availableServices.filter((s) => {
                         return !isHeadBarberService(s.name);
                     });
                 }
 
                 // Sort services: Haircut/Cukur first, then others
-                availableServices.sort((a: any, b: any) => {
+                availableServices.sort((a, b) => {
                     const aName = a.name.toLowerCase();
                     const bName = b.name.toLowerCase();
                     const aIsHaircut = aName.includes('haircut') || aName.includes('cukur');
@@ -113,7 +113,11 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
         } finally {
             setIsLoadingServices(false);
         }
-    };
+    }, [barber.isHeadBarber, barber.username]);
+
+    useEffect(() => {
+        if (open) fetchServices();
+    }, [open, fetchServices]);
 
     const handleServiceChange = (value: string) => {
         setSelectedServiceId(value);
@@ -182,9 +186,9 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
         if (!customerPhone.trim()) return setError('Nomor WhatsApp harus diisi');
 
         // Strict Indonesian phone validation
-        const phonePattern = /^08\d{8,11}$/;
+        const phonePattern = /^(?:(?:\+?62)|0)?8[1-9][\d\s-]{7,14}$/;
         if (!phonePattern.test(customerPhone.trim())) {
-            return setError('Nomor WhatsApp tidak valid. Format: 08xxxxxxxxxx');
+            return setError('Nomor WhatsApp tidak valid. Gunakan 08…, 8…, atau +62….');
         }
 
         if (!selectedServiceId) return setError('Pilih layanan');
@@ -220,6 +224,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                 throw new Error(data.error || 'Gagal membuat booking');
             }
 
+            const created: BookingConfirmation = await res.json();
             // Success - Clear form
             setCustomerName('');
             setCustomerPhone('');
@@ -267,12 +272,10 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                 },
             });
 
-            if (onSuccess) onSuccess();
-        } catch (err: any) {
-            const baseMsg = err.message || 'Terjadi kesalahan.';
-            setError(
-                `${baseMsg}\n\nJika Anda sudah transfer via QRIS, jangan khawatir — silakan coba lagi atau hubungi kami via WhatsApp di 0877-7099-5270 untuk konfirmasi manual.`
-            );
+            if (onSuccess) onSuccess(created);
+        } catch (err: unknown) {
+            const baseMsg = err instanceof Error ? err.message : 'Terjadi kesalahan.';
+            setError(`${baseMsg}\n\nJika sudah transfer via QRIS, coba lagi atau hubungi admin melalui informasi kontak di halaman utama.`);
         } finally {
             setIsSubmitting(false);
         }
@@ -293,7 +296,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                 {/* Header Section */}
                 <div className="bg-zinc-50 border-b border-zinc-100 p-4 flex flex-col items-center justify-center text-center">
                     <DialogTitle className="text-xl font-black text-zinc-900 uppercase tracking-wide">
-                        {step === 1 ? 'Booking Details' : 'Payment Verification'}
+                        {step === 1 ? 'Detail Booking' : 'Verifikasi Pembayaran'}
                     </DialogTitle>
                     <div className="mt-2 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-zinc-200 shadow-sm">
                         <span className="text-xs font-bold text-zinc-900">{barber.name}</span>
@@ -314,6 +317,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                         placeholder="Masukkan nama Anda"
                                         value={customerName}
                                         onChange={(e) => setCustomerName(e.target.value)}
+                                        autoComplete="name"
                                         className="h-12 rounded-2xl bg-zinc-50 border-transparent focus:ring-2 focus:ring-zinc-900 focus:bg-white transition-all text-sm font-medium"
                                     />
                                 </div>
@@ -325,6 +329,9 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                         placeholder="08xxxxxxxxxx"
                                         value={customerPhone}
                                         onChange={(e) => setCustomerPhone(e.target.value)}
+                                        type="tel"
+                                        inputMode="tel"
+                                        autoComplete="tel"
                                         className="h-12 rounded-2xl bg-zinc-50 border-transparent focus:ring-2 focus:ring-zinc-900 focus:bg-white transition-all text-sm font-medium"
                                     />
                                 </div>
@@ -419,12 +426,12 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                     <div className="relative group cursor-pointer bg-white p-1.5 rounded-xl border border-zinc-100 shadow-sm mb-2">
                                         <img
                                             src={QRIS_IMAGE}
-                                            alt="QRIS Code"
+                                            alt="Kode QRIS untuk pembayaran"
                                             className="w-28 h-28 object-cover rounded-lg"
                                         />
                                     </div>
                                     <p className="text-[10px] text-zinc-500 leading-tight">
-                                        Scan QRIS & Upload Bukti
+                                        Pindai QRIS dan unggah bukti
                                     </p>
                                 </div>
 
@@ -456,7 +463,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                         ) : (
                                             <div className="flex flex-col items-center justify-center text-zinc-400 group-hover:text-zinc-600">
                                                 <UploadCloud className="w-5 h-5 mb-1" />
-                                                <p className="text-[10px] font-medium text-center leading-tight">Tap to<br />Upload</p>
+                                                <p className="text-[10px] font-medium text-center leading-tight">Ketuk untuk<br />mengunggah</p>
                                             </div>
                                         )}
                                         <Input
@@ -489,7 +496,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                     onClick={() => onOpenChange(false)}
                                     className="flex-1 rounded-full hover:bg-zinc-100 text-zinc-500 font-bold"
                                 >
-                                    Cancel
+                                    Batal
                                 </Button>
                                 <Button
                                     type="button"
@@ -518,7 +525,7 @@ export default function BookingModal({ open, onOpenChange, barber, timeSlot, boo
                                     {isSubmitting ? (
                                         <>
                                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            Wait...
+                                            Memproses...
                                         </>
                                     ) : (
                                         'Konfirmasi'

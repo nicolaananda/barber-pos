@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, User, Phone, CalendarDays, History, Loader2, MoreHorizontal, Save, X } from 'lucide-react';
+import { Search, Phone, CalendarDays, History, Loader2, MoreHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -9,7 +9,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,7 @@ import {
     SheetDescription
 } from "@/components/ui/sheet";
 import { API_BASE_URL } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { toast } from 'sonner';
 
 
@@ -48,7 +47,7 @@ interface Transaction {
     totalAmount: number;
     paymentMethod: string;
     date: string;
-    items: any[];
+    items: { name: string; qty?: number; price?: number }[];
 }
 
 export default function CustomersPage() {

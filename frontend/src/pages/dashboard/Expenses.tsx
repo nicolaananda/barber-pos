@@ -13,7 +13,6 @@ import {
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2, Loader2, Wallet, Tag, TrendingDown, Target, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
 import {
     Select,
     SelectContent,
@@ -36,7 +35,6 @@ interface Expense {
 }
 
 const CATEGORIES = ['Operational', 'Supplies', 'Maintenance', 'Marketing', 'Salary', 'Other'];
-const COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#06b6d4', '#8b5cf6'];
 
 const MONTHS = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
