@@ -5,6 +5,7 @@ const authenticateToken = require('../middleware/auth');
 const requireOwner = require('../middleware/requireOwner');
 const { validate, requiredInt, optionalMoney } = require('../lib/validators');
 const { toNumber } = require('../lib/money');
+const { logAudit } = require('../lib/auditLogger');
 
 // GET /api/payroll
 router.get('/', authenticateToken, async (req, res) => {
@@ -178,6 +179,14 @@ router.post('/mark-paid', authenticateToken, requireOwner, validate((req) => ({
             }),
         ]);
 
+        logAudit('payroll.markPaid', req.user.id, {
+            payrollId: payroll.id,
+            expenseId: expense.id,
+            barberId,
+            period,
+            amount: Number(expense.amount),
+        });
+
         res.status(201).json(payroll);
     } catch (error) {
         console.error('Mark Payroll Paid Error:', error);
@@ -224,6 +233,14 @@ router.delete('/unmark-paid', authenticateToken, requireOwner, validate((req) =>
         }
 
         await prisma.$transaction(deleteOps);
+
+        logAudit('payroll.unmarkPaid', req.user.id, {
+            payrollId: existing.id,
+            expenseId: matchingExpense?.id || null,
+            barberId,
+            period,
+            amount: Number(existing.totalPayout),
+        });
 
         res.json({ message: 'Payroll payment cancelled successfully' });
     } catch (error) {

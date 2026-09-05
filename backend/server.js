@@ -18,6 +18,7 @@ const transactionsRoutes = require('./routes/transactions');
 const seedRoutes = require('./routes/seed');
 const bookingsRoutes = require('./routes/bookings');
 const analyticsRoutes = require('./routes/analytics');
+const auditRoutes = require('./routes/audit');
 const { sendError } = require('./lib/apiError');
 const { serializeMoney } = require('./lib/money');
 
@@ -109,6 +110,7 @@ app.use('/api/bookings', bookingsRoutes);
 app.use('/api/offdays', require('./routes/offdays'));
 app.use('/api/slots', require('./routes/slots'));
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/audit', auditRoutes);
 
 app.use('/api', (req, res) => {
     res.status(404).json({ error: 'API route not found', code: 'NOT_FOUND' });

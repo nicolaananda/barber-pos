@@ -21,6 +21,7 @@ const BarbersPage = lazy(() => import('./pages/dashboard/Barbers'));
 const SchedulePage = lazy(() => import('./pages/dashboard/Schedule'));
 const ProfitLossPage = lazy(() => import('./pages/dashboard/ProfitLoss'));
 const AnalyticsPage = lazy(() => import('./pages/dashboard/Analytics'));
+const AuditPage = lazy(() => import('./pages/dashboard/Audit'));
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
@@ -76,6 +77,7 @@ export default function App() {
                 <Route path="barbers" element={<BarbersPage />} />
                 <Route path="schedule" element={<SchedulePage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="audit" element={<AuditPage />} />
               </Route>
               <Route
                 path="/pos"

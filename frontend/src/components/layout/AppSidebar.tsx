@@ -17,7 +17,8 @@ import {
     BarChart3,
     ChevronLeft,
     ChevronRight,
-    Monitor
+    Monitor,
+    ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VersionFooter } from '@/components/VersionFooter';
@@ -73,7 +74,8 @@ export function AppSidebar({ defaultCollapsed = true, className }: AppSidebarPro
         { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
         ...(user?.role === 'owner' ? [
             { name: 'Barbers', href: '/dashboard/barbers', icon: UserCog },
-            { name: 'Schedule', href: '/dashboard/schedule', icon: CalendarClock }
+            { name: 'Schedule', href: '/dashboard/schedule', icon: CalendarClock },
+            { name: 'Audit Log', href: '/dashboard/audit', icon: ClipboardList }
         ] : []),
     ];
 

@@ -4,6 +4,7 @@ const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const requireOwner = require('../middleware/requireOwner');
 const { validate, requiredString, requiredMoney, optionalDate } = require('../lib/validators');
+const { logAudit } = require('../lib/auditLogger');
 
 // GET all capital entries
 router.get('/', authenticateToken, async (req, res) => {
@@ -59,6 +60,11 @@ router.post('/', authenticateToken, requireOwner, validate((req) => ({
                 type: 'injection'
             },
         });
+        logAudit('capital.create', req.user.id, {
+            capitalId: newCapital.id,
+            amount: Number(newCapital.amount),
+            description: newCapital.description,
+        });
         res.json(newCapital);
     } catch (error) {
         console.error('Create Capital Error:', error);
@@ -75,6 +81,10 @@ router.put('/:id', authenticateToken, requireOwner, validate((req) => ({
     try {
         const { id } = req.params;
         const { description, amount, date } = req.validated;
+        const previousCapital = await prisma.capital.findUnique({ where: { id: parseInt(id) } });
+
+        if (!previousCapital) return res.status(404).json({ error: 'Capital entry not found' });
+
         const updatedCapital = await prisma.capital.update({
             where: { id: parseInt(id) },
             data: {
@@ -82,6 +92,13 @@ router.put('/:id', authenticateToken, requireOwner, validate((req) => ({
                 amount,
                 date,
             },
+        });
+        logAudit('capital.edit', req.user.id, {
+            capitalId: updatedCapital.id,
+            previousAmount: Number(previousCapital.amount),
+            amount: Number(updatedCapital.amount),
+            previousDescription: previousCapital.description,
+            description: updatedCapital.description,
         });
         res.json(updatedCapital);
     } catch (error) {
@@ -94,8 +111,13 @@ router.put('/:id', authenticateToken, requireOwner, validate((req) => ({
 router.delete('/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { id } = req.params;
-        await prisma.capital.delete({
+        const capital = await prisma.capital.delete({
             where: { id: parseInt(id) },
+        });
+        logAudit('capital.delete', req.user.id, {
+            capitalId: capital.id,
+            amount: Number(capital.amount),
+            description: capital.description,
         });
         res.json({ message: 'Capital entry deleted' });
     } catch (error) {

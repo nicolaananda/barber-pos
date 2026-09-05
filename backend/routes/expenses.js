@@ -4,6 +4,7 @@ const prisma = require('../lib/prisma');
 const authenticateToken = require('../middleware/auth');
 const requireOwner = require('../middleware/requireOwner');
 const { validate, requiredString, requiredMoney, optionalDate } = require('../lib/validators');
+const { logAudit } = require('../lib/auditLogger');
 
 // GET /api/expenses?month=3&year=2026
 router.get('/', authenticateToken, async (req, res) => {
@@ -64,6 +65,13 @@ router.post('/', authenticateToken, requireOwner, validate((req) => ({
             },
         });
 
+        logAudit('expense.create', req.user.id, {
+            expenseId: expense.id,
+            amount: Number(expense.amount),
+            category: expense.category,
+            description: expense.description,
+        });
+
         res.status(201).json(expense);
     } catch (error) {
         console.error(error);
@@ -76,7 +84,14 @@ router.delete('/:id', authenticateToken, requireOwner, async (req, res) => {
     try {
         const { id } = req.params;
 
-        await prisma.expense.delete({ where: { id: Number(id) } });
+        const expense = await prisma.expense.delete({ where: { id: Number(id) } });
+
+        logAudit('expense.delete', req.user.id, {
+            expenseId: expense.id,
+            amount: Number(expense.amount),
+            category: expense.category,
+            description: expense.description,
+        });
 
         res.json({ message: 'Expense deleted' });
     } catch (error) {
@@ -125,6 +140,9 @@ router.patch('/:id', authenticateToken, requireOwner, validate((req) => ({
     try {
         const { description, amount, category } = req.validated;
         const { id } = req.params;
+        const previousExpense = await prisma.expense.findUnique({ where: { id: Number(id) } });
+
+        if (!previousExpense) return res.status(404).json({ error: 'Expense not found' });
 
         const expense = await prisma.expense.update({
             where: { id: Number(id) },
@@ -133,6 +151,16 @@ router.patch('/:id', authenticateToken, requireOwner, validate((req) => ({
                 amount,
                 category,
             },
+        });
+
+        logAudit('expense.edit', req.user.id, {
+            expenseId: expense.id,
+            previousAmount: Number(previousExpense.amount),
+            amount: Number(expense.amount),
+            previousCategory: previousExpense.category,
+            category: expense.category,
+            previousDescription: previousExpense.description,
+            description: expense.description,
         });
 
         res.json(expense);

@@ -161,6 +161,13 @@ router.post('/', authenticateToken, validate((req) => ({
             // Don't fail the request if backup fails
         });
 
+        logAudit('transaction.create', req.user.id, {
+            transactionId: transaction.id,
+            invoiceCode: transaction.invoiceCode,
+            amount: Number(transaction.totalAmount),
+            paymentMethod: transaction.paymentMethod,
+        });
+
         res.status(201).json(transaction);
     } catch (error) {
         if (error.statusCode) {
@@ -348,7 +355,14 @@ router.put('/:id', authenticateToken, requireOwner, async (req, res) => {
             }
         }
 
-        logAudit('transaction.edit', req.user.id, { transactionId });
+        logAudit('transaction.edit', req.user.id, {
+            transactionId,
+            invoiceCode: updatedTransaction.invoiceCode,
+            previousAmount: Number(oldTransaction.totalAmount),
+            amount: Number(updatedTransaction.totalAmount),
+            previousPaymentMethod: oldTransaction.paymentMethod,
+            paymentMethod: updatedTransaction.paymentMethod,
+        });
 
         res.json(updatedTransaction);
     } catch (error) {
